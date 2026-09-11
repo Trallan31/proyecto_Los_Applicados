@@ -1,0 +1,11 @@
+# Node
+node_modules/
+dist/
+out/
+
+# Variables de entorno
+.env
+
+# Archivos de sistema / IDE
+.DS_Store
+.vscode/
