@@ -4,8 +4,9 @@ export interface Activity {
     description: string
     project: number // id del proyecto al que la actividad pertenece
     members: number[] // ids de los miembros con esta actividad asignada
-    status: string  // estado de la actividad (en progreso, finalizada, etc.)
-    priority: string // prioridad de la actividad
+    status: "Completada" | "En progreso" | "Por hacer" | "No asignada"  
+            // estado de la actividad (en progreso, finalizada, etc.)
+    priority: "Baja" | "Media" | "Alta" | "Critica" // prioridad de la actividad
     endDate: string // fecha limite
     extra: string | null // informacion extra
     createdAt: string
