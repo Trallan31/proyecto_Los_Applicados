@@ -171,12 +171,12 @@ export function MultiMemberSelect({
   onCommit,
   onBlur,
 }: {
-  value: number[];
+  value: string[];
   members: Member[];
-  onCommit: (v: number[]) => void;
+  onCommit: (v: string[]) => void;
   onBlur: () => void;
 }) {
-  const [sel, setSel] = useState<number[]>(value);
+  const [sel, setSel] = useState<string[]>(value);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -18,7 +18,7 @@ export default function OrganizerView() {
   const [courses, setCourses] = useLocalStorage<Course[]>('organizer-courses', INITIAL_COURSES);
   const [sessions, setSessions] = useLocalStorage<CourseSession[]>('organizer-sessions', COURSE_SESSIONS);
   const [tasks, setTasks] = useLocalStorage<OrganizerTask[]>('organizer-tasks', INITIAL_TASKS);
-  const [activeCourse, setActiveCourse] = useState<string | number>("all");
+  const [activeCourse, setActiveCourse] = useState<string | "all">("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("todas");
   const [typeFilter, setTypeFilter] = useState<TaskType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<OrganizerTask["status"] | "all">("all");
@@ -47,7 +47,7 @@ export default function OrganizerView() {
     return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
   }), [filtered]);
 
-  function toggleStatus(id: string | number) {
+  function toggleStatus(id: string) {
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
@@ -58,7 +58,7 @@ export default function OrganizerView() {
     );
   }
 
-  function deleteTask(id: string | number) {
+  function deleteTask(id: string) {
     if (!window.confirm('¿Seguro que deseas eliminar esta actividad?')) return;
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
@@ -101,12 +101,12 @@ export default function OrganizerView() {
             onClick={() => setActiveCourse("all")}
           />
           {courses.map((c) => {
-            const stat = allCourseStats.find((s) => String(s.id) === String(c.id));
+            const stat = allCourseStats.find((s) => s.id === c.id);
             const pendingCount = stat ? stat.pending : 0;
             return (
               <CourseTab
                 key={c.id}
-                active={String(activeCourse) === String(c.id)}
+                active={activeCourse === c.id}
                 color={c.color}
                 code={c.code}
                 label={c.name}
@@ -293,12 +293,12 @@ export default function OrganizerView() {
             const validIds = new Set(newCourses.map((c) => c.id));
             setTasks((prev) =>
               prev.map((t) =>
-                t.courseId && t.courseId !== "all" && !validIds.has(t.courseId as string | number)
-                  ? { ...t, courseId: "all", scope: "Personal" }
+                t.courseId !== undefined && !validIds.has(t.courseId)
+                  ? { ...t, courseId: undefined, scope: "Personal" }
                   : t
               )
             );
-            if (activeCourse !== "all" && !validIds.has(activeCourse as string | number)) {
+            if (activeCourse !== "all" && !validIds.has(activeCourse)) {
               setActiveCourse("all");
             }
           }}
@@ -311,7 +311,7 @@ export default function OrganizerView() {
           defaultCourseId={activeCourse === "all" ? courses[0]?.id : activeCourse}
           onClose={() => setShowAddModal(false)}
           onAdd={(t) => {
-            setTasks((prev) => [...prev, { ...t, id: Date.now(), userId: 1 } as OrganizerTask]);
+            setTasks((prev) => [...prev, { ...t, id: crypto.randomUUID(), userId: "user-1" } as OrganizerTask]);
             setShowAddModal(false);
           }}
         />

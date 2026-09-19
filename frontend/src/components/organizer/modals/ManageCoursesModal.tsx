@@ -16,7 +16,7 @@ export function ManageCoursesModal({
 }) {
   const [localCourses, setLocalCourses] = useState<Course[]>(courses.map((c) => ({ ...c })));
   const [localSessions, setLocalSessions] = useState<CourseSession[]>(sessions.map((s) => ({ ...s })));
-  const [activeCourseId, setActiveCourseId] = useState<string | number>(courses[0]?.id ?? 1);
+  const [activeCourseId, setActiveCourseId] = useState<string>(courses[0]?.id ?? "course-1");
 
   // New Course Inputs
   const [newName, setNewName] = useState("");
@@ -33,10 +33,10 @@ export function ManageCoursesModal({
     if (!newName.trim() || !newCode.trim()) return;
     const codeUpper = newCode.trim().toUpperCase();
     const initials = codeUpper.slice(0, 4);
-    const newId = Date.now();
+    const newId = crypto.randomUUID();
     const newC: Course = {
       id: newId,
-      userId: 1,
+      userId: "user-1",
       name: newName.trim(),
       code: codeUpper,
       shortName: initials,
@@ -48,7 +48,7 @@ export function ManageCoursesModal({
     setNewCode("");
   }
 
-  function removeCourse(id: string | number) {
+  function removeCourse(id: string) {
     if (!window.confirm('¿Seguro que deseas eliminar este ramo y todos sus horarios asociados?')) return;
     setLocalCourses((prev) => prev.filter((c) => c.id !== id));
     setLocalSessions((prev) => prev.filter((s) => s.courseId !== id));
@@ -56,7 +56,7 @@ export function ManageCoursesModal({
 
   function addSession() {
     const newS: CourseSession = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       courseId: activeCourseId,
       dayOfWeek: sessDay,
       startHour: sessHour,
@@ -66,7 +66,7 @@ export function ManageCoursesModal({
     setLocalSessions((prev) => [...prev, newS]);
   }
 
-  function removeSession(id: string | number) {
+  function removeSession(id: string) {
     setLocalSessions((prev) => prev.filter((s) => s.id !== id));
   }
 

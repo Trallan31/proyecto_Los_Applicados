@@ -3,7 +3,7 @@ import type { Activity } from "./activities";
 import type { Sprint } from "./sprints";
 
 export interface Project {
-  id: string | number;
+  id: string;
   name: string;
   description: string;
   color: string;

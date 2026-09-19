@@ -21,8 +21,8 @@ export function TaskRow({
   ALL_SPRINTS: Sprint[];
   PRIORITY_META: Record<Priority, { color: string; bg: string }>;
   STATUS_META: Record<Status, { color: string; bg: string; dot: string }>;
-  onUpdate: <K extends keyof Activity>(id: string | number, field: K, value: Activity[K]) => void;
-  onDeleteTask?: (id: string | number) => void;
+  onUpdate: <K extends keyof Activity>(id: string, field: K, value: Activity[K]) => void;
+  onDeleteTask?: (id: string) => void;
   onCreateCategory?: (name: string) => void;
   onCreateSprint?: (name: string) => Sprint;
   cell: (field: string) => React.TdHTMLAttributes<HTMLTableCellElement>;
@@ -82,7 +82,7 @@ export function TaskRow({
                 setEditingCell(null);
               }
             }}
-            onCommit={(v) => { onUpdate(task.id, "sprintId", Number(v)); setEditingCell(null); }}
+            onCommit={(v) => { onUpdate(task.id, "sprintId", v); setEditingCell(null); }}
             onBlur={() => setEditingCell(null)}
           />
         ) : (

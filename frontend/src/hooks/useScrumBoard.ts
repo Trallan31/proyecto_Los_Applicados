@@ -7,12 +7,12 @@ import { ALL_SPRINTS as GLOBAL_SPRINTS, ALL_USERS, INITIAL_PROJECTS } from "../d
 
 export function useScrumBoard() {
   const [projects, setProjects] = useLocalStorage<Project[]>('scrum-projects', INITIAL_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useLocalStorage<string | number>('scrum-active-project-id', INITIAL_PROJECTS[0]?.id);
+  const [activeProjectId, setActiveProjectId] = useLocalStorage<string>('scrum-active-project-id', INITIAL_PROJECTS[0]?.id ?? "");
   const [allSprints, setAllSprints] = useLocalStorage<Sprint[]>('scrum-all-sprints', GLOBAL_SPRINTS);
 
   const project = projects.find((p) => p.id === activeProjectId) || projects[0];
 
-  function handleUpdateTask<K extends keyof Activity>(taskId: string | number, field: K, value: Activity[K]) {
+  function handleUpdateTask<K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) {
     setProjects((prev) =>
       prev.map((p) =>
         p.id !== activeProjectId
@@ -35,7 +35,7 @@ export function useScrumBoard() {
     );
   }
 
-  function handleDeleteTask(taskId: string | number) {
+  function handleDeleteTask(taskId: string) {
     if (!window.confirm('¿Seguro que deseas eliminar esta tarea?')) return;
     setProjects((prev) =>
       prev.map((p) =>
@@ -79,8 +79,8 @@ export function useScrumBoard() {
   function handleAddSprint(name: string): Sprint {
     const trimmed = name.trim();
     const newSprint: Sprint = {
-      id: Date.now(),
-      projectId: activeProjectId as number,
+      id: crypto.randomUUID(),
+      projectId: activeProjectId,
       name: trimmed,
     };
     setAllSprints((prev) => [...prev, newSprint]);
@@ -97,7 +97,7 @@ export function useScrumBoard() {
     return newSprint;
   }
 
-  function handleDeleteSprint(sprintId: number) {
+  function handleDeleteSprint(sprintId: string) {
     if (!window.confirm('¿Seguro que deseas eliminar este sprint y todas sus referencias?')) return;
     setAllSprints((prev) => prev.filter((s) => !(s.id === sprintId && s.projectId === activeProjectId)));
     setProjects((prev) =>
@@ -107,13 +107,13 @@ export function useScrumBoard() {
           : {
               ...p,
               sprints: p.sprints.filter((s) => s.id !== sprintId),
-              tasks: p.tasks.map((t) => (t.sprintId === sprintId ? { ...t, sprintId: 0 } : t)),
+              tasks: p.tasks.map((t) => (t.sprintId === sprintId ? { ...t, sprintId: "" } : t)),
             }
       )
     );
   }
 
-  function handleDeleteProject(projectId: string | number) {
+  function handleDeleteProject(projectId: string) {
     const remaining = projects.filter((p) => p.id !== projectId);
     setProjects(remaining);
     if (remaining.length > 0) {
@@ -122,8 +122,8 @@ export function useScrumBoard() {
   }
 
   function createProject(proj: Omit<Project, "id" | "tasks" | "sprints" | "categories" | "members">) {
-    const projectId = Date.now();
-    const sprintId = Date.now() + 1;
+    const projectId = crypto.randomUUID();
+    const sprintId = crypto.randomUUID();
     const newSprint: Sprint = { id: sprintId, projectId, name: "Sprint 1" };
     const newProj: Project = {
       ...proj,
@@ -147,7 +147,7 @@ export function useScrumBoard() {
     );
   }
 
-  function removeMember(memberId: string | number) {
+  function removeMember(memberId: string) {
     if (project && project.members.length <= 1) {
       alert("No puedes eliminar al único integrante del proyecto.");
       return;
@@ -174,7 +174,7 @@ export function useScrumBoard() {
     );
   }
 
-  function updateMemberRole(memberId: string | number, role: "Admin" | "Miembro") {
+  function updateMemberRole(memberId: string, role: "Admin" | "Miembro") {
     if (role === "Miembro") {
       const target = project?.members.find((m) => m.id === memberId);
       const adminCount = project?.members.filter((m) => m.role === "Admin").length || 0;

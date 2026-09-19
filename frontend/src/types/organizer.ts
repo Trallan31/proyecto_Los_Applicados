@@ -2,11 +2,11 @@ export type TaskType = "Tarea" | "Evaluación" | "Proyecto" | "Lectura";
 export type TaskScope = "Ramo" | "Proyecto Universitario" | "Personal";
 
 export interface OrganizerTask {
-  id: string | number;
-  userId: number;
+  id: string;
+  userId: string;
   title: string;
   scope: TaskScope;
-  courseId?: string | number;
+  courseId?: string;
   type: TaskType;
   endDate: string;
   dueTime?: string;

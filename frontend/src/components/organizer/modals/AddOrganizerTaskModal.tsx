@@ -11,13 +11,13 @@ export function AddOrganizerTaskModal({
   onAdd,
 }: {
   courses: Course[];
-  defaultCourseId: string | number;
+  defaultCourseId: string | undefined;
   onClose: () => void;
   onAdd: (t: Omit<OrganizerTask, "id" | "userId">) => void;
 }) {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<TaskType>("Tarea");
-  const [courseId, setCourseId] = useState(defaultCourseId);
+  const [courseId, setCourseId] = useState<string | undefined>(defaultCourseId);
   const [priority, setPriority] = useState<"Alta" | "Media" | "Baja">("Media");
   const [endDate, setEndDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -26,7 +26,7 @@ export function AddOrganizerTaskModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !endDate) return;
-    const finalCourseId = courseId === "all" ? "all" : (!isNaN(Number(courseId)) ? Number(courseId) : courseId);
+    const finalCourseId = courseId;
     onAdd({
       title: title.trim(),
       type,
@@ -36,7 +36,7 @@ export function AddOrganizerTaskModal({
       courseId: finalCourseId,
       notes: notes.trim() || undefined,
       priority,
-      scope: finalCourseId === "all" ? "Personal" : "Ramo",
+      scope: finalCourseId === undefined ? "Personal" : "Ramo",
     });
   }
 
@@ -54,7 +54,7 @@ export function AddOrganizerTaskModal({
           <div className="grid grid-cols-2 gap-3">
             <Field label="Ramo">
               <select value={courseId} onChange={(e) => setCourseId(e.target.value)} className="w-full bg-[#0d0f14] border border-[#2a2f45] rounded-md px-3 py-2 text-[12px] text-[#e8eaf2] focus:outline-none focus:border-[#4f7cff]">
-                <option value="all">Sin ramo (Personal)</option>
+                <option value="">Sin ramo (Personal)</option>
                 {courses.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
               </select>
             </Field>

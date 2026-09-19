@@ -109,10 +109,10 @@ export function SettingsModal({
   onClose,
 }: {
   project: Project;
-  onRemove: (id: number) => void;
-  onUpdateRole: (id: number, role: Member["role"]) => void;
+  onRemove: (id: string) => void;
+  onUpdateRole: (id: string, role: "Admin" | "Miembro") => void;
   onDeleteCategory?: (category: string) => void;
-  onDeleteSprint?: (sprintId: number) => void;
+  onDeleteSprint?: (sprintId: string) => void;
   onDeleteProject?: () => void;
   onClose: () => void;
 }) {

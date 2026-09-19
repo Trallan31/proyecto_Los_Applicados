@@ -2,13 +2,13 @@ export type Priority = "Baja" | "Media" | "Alta" | "Critica";
 export type Status = "Pendiente" | "En curso" | "Completada" | "En revisión" | "Cancelada";
 
 export interface Activity {
-  id: string | number;
+  id: string;
   title: string;
   description: string;
-  project: number | string;
-  sprintId: number;
+  project: string;
+  sprintId: string;
   category: string;
-  members: number[];
+  members: string[];
   priority: Priority;
   status: Status;
   hours: number;

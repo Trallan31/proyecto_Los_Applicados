@@ -26,9 +26,9 @@ export function AddRowForm({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [sprintId, setSprintId] = useState(projectSprints[0]?.id ?? 1);
+  const [sprintId, setSprintId] = useState<string>(projectSprints[0]?.id ?? "sprint-1");
   const [category, setCategory] = useState(project.categories[0] ?? "");
-  const [members, setMembers] = useState<number[]>([]);
+  const [members, setMembers] = useState<string[]>([]);
   const [priority, setPriority] = useState<Priority>("Media");
   const [status, setStatus] = useState<Status>("Pendiente");
   const [hours, setHours] = useState(0);
@@ -121,7 +121,7 @@ export function AddRowForm({
               if (e.target.value === "__NEW__") {
                 setIsCreatingSprint(true);
               } else {
-                setSprintId(Number(e.target.value));
+                setSprintId(e.target.value);
               }
             }}
             className="w-full bg-transparent text-[11px] font-mono text-[#7c82a0] focus:outline-none"
