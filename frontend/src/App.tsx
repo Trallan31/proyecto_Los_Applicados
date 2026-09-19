@@ -1,122 +1,51 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import OrganizerView from './OrganizerView'
+import { ScrumView } from './ScrumView'
+import './index.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [view, setView] = useState<'organizer' | 'scrum'>('organizer')
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="w-full h-full bg-[#0d0f14] text-white flex flex-col min-h-screen">
+      <header className="h-16 bg-[#151820]/80 backdrop-blur-md border-b border-[#2a2f45] flex items-center justify-between px-6 sticky top-0 z-50">
+        <div className="flex items-center gap-3 w-1/3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4f7cff] to-[#9b6dff] flex items-center justify-center shadow-lg shadow-[#4f7cff]/20">
+            <span className="font-bold text-white text-xs">APP</span>
+          </div>
+          <h1 className="text-lg font-bold tracking-tight text-white/90">
+            Applicate
+          </h1>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        {/* Segmented Control */}
+        <div className="flex justify-center w-1/3">
+          <div className="bg-[#0d0f14] p-1 rounded-full flex gap-1 border border-[#2a2f45]/50 shadow-inner">
+            <button 
+              onClick={() => setView('organizer')}
+              className={`px-6 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${view === 'organizer' ? 'bg-[#2a2f45] text-white shadow-md' : 'text-[#7c82a0] hover:text-[#e8eaf2]'}`}
+            >
+              Organizador Personal
+            </button>
+            <button 
+              onClick={() => setView('scrum')}
+              className={`px-6 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${view === 'scrum' ? 'bg-[#2a2f45] text-white shadow-md' : 'text-[#7c82a0] hover:text-[#e8eaf2]'}`}
+            >
+              Proyectos de Equipo
+            </button>
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        <div className="w-1/3 flex justify-end">
+          <div className="w-8 h-8 rounded-full bg-[#2a2f45] border border-[#4a5070] flex items-center justify-center">
+            <span className="text-xs font-semibold text-[#e8eaf2]">U</span>
+          </div>
+        </div>
+      </header>
+      
+      <main className="flex-1 overflow-hidden">
+        {view === 'organizer' ? <OrganizerView /> : <ScrumView />}
+      </main>
+    </div>
   )
 }
-
-export default App

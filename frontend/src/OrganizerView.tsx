@@ -1,0 +1,321 @@
+import { useState, useMemo } from "react";
+import { useLocalStorage } from "./hooks/useLocalStorage";
+import type { OrganizerTask, TaskType } from "./types/organizer";
+import type { Course, CourseSession } from "./types/courses";
+import { INITIAL_COURSES, INITIAL_TASKS, COURSE_SESSIONS, CATEGORY_COLORS, CATEGORY_LABELS } from "./data/mockOrganizer";
+import { parseLocalDate, getWeekBounds, getMonthBounds, type TimeFilter, type ViewTab } from "./utils/dateUtils";
+import { CourseTab } from "./components/organizer/CourseTab";
+import { StatPill } from "./components/organizer/StatPill";
+import { OrganizerTaskRow } from "./components/organizer/OrganizerTaskRow";
+import { WeekScheduleView } from "./components/organizer/WeekScheduleView";
+import { MonthScheduleView } from "./components/organizer/MonthScheduleView";
+import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesModal";
+import { AddOrganizerTaskModal } from "./components/organizer/modals/AddOrganizerTaskModal";
+
+const TODAY = new Date();
+
+export default function OrganizerView() {
+  const [courses, setCourses] = useLocalStorage<Course[]>('organizer-courses', INITIAL_COURSES);
+  const [sessions, setSessions] = useLocalStorage<CourseSession[]>('organizer-sessions', COURSE_SESSIONS);
+  const [tasks, setTasks] = useLocalStorage<OrganizerTask[]>('organizer-tasks', INITIAL_TASKS);
+  const [activeCourse, setActiveCourse] = useState<string | number>("all");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("todas");
+  const [typeFilter, setTypeFilter] = useState<TaskType | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<OrganizerTask["status"] | "all">("all");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showManageCourses, setShowManageCourses] = useState(false);
+  const [tab, setTab] = useState<ViewTab>("lista");
+
+  const weekBounds = useMemo(() => getWeekBounds(TODAY), []);
+  const monthBounds = useMemo(() => getMonthBounds(TODAY), []);
+
+  const filtered = useMemo(() => tasks.filter((t) => {
+    if (activeCourse !== "all" && t.courseId !== activeCourse) return false;
+    if (typeFilter !== "all" && t.type !== typeFilter) return false;
+    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+    if (timeFilter !== "todas") {
+      const due = parseLocalDate(t.endDate);
+      const bounds = timeFilter === "semana" ? weekBounds : monthBounds;
+      if (due < bounds.start || due > bounds.end) return false;
+    }
+    return true;
+  }), [tasks, activeCourse, typeFilter, statusFilter, timeFilter, weekBounds, monthBounds]);
+
+  const sorted = useMemo(() => [...filtered].sort((a, b) => {
+    if (a.status === "Completada" && b.status !== "Completada") return 1;
+    if (b.status === "Completada" && a.status !== "Completada") return -1;
+    return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+  }), [filtered]);
+
+  function toggleStatus(id: string | number) {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const next: OrganizerTask["status"] =
+          t.status === "Pendiente" ? "En curso" : t.status === "En curso" ? "Completada" : "Pendiente";
+        return { ...t, status: next };
+      })
+    );
+  }
+
+  function deleteTask(id: string | number) {
+    if (!window.confirm('¿Seguro que deseas eliminar esta actividad?')) return;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  }
+
+  const allCourseStats = useMemo(() => courses.map((c) => ({
+    ...c,
+    total: tasks.filter((t) => t.courseId === c.id).length,
+    done: tasks.filter((t) => t.courseId === c.id && t.status === "Completada").length,
+    pending: tasks.filter((t) => t.courseId === c.id && t.status !== "Completada").length,
+  })), [courses, tasks]);
+
+  const scopedTasks = activeCourse === "all" ? tasks : tasks.filter((t) => t.courseId === activeCourse);
+  const doneCount = scopedTasks.filter((t) => t.status === "Completada").length;
+  const totalCount = scopedTasks.length;
+
+  const activeCourseObj = courses.find((c) => c.id === activeCourse);
+
+  return (
+    <div className="flex h-full overflow-hidden text-[#e8eaf2]">
+      {/* Course sidebar */}
+      <div className="w-56 flex-shrink-0 border-r border-[#2a2f45] bg-[#151820] flex flex-col">
+        <div className="px-4 py-3 border-b border-[#2a2f45] flex items-center justify-between">
+          <span className="text-[10px] font-mono font-medium uppercase tracking-widest text-[#4a5070]">Mis Ramos</span>
+          <button
+            onClick={() => setShowManageCourses(true)}
+            className="text-[10px] font-mono text-[#4a5070] hover:text-[#4f7cff] transition-colors"
+            title="Gestionar ramos y horarios"
+          >
+            ⚙️ Ramos
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto scrollbar-hide p-2 space-y-1">
+          <CourseTab
+            active={activeCourse === "all"}
+            color="#4f7cff"
+            code="TODOS"
+            label="Todos los ramos"
+            count={tasks.filter((t) => t.status !== "Completada").length}
+            onClick={() => setActiveCourse("all")}
+          />
+          {courses.map((c) => {
+            const stat = allCourseStats.find((s) => String(s.id) === String(c.id));
+            const pendingCount = stat ? stat.pending : 0;
+            return (
+              <CourseTab
+                key={c.id}
+                active={String(activeCourse) === String(c.id)}
+                color={c.color}
+                code={c.code}
+                label={c.name}
+                count={pendingCount}
+                onClick={() => setActiveCourse(c.id)}
+              />
+            );
+          })}
+        </div>
+
+        {/* Mini legend */}
+        <div className="px-4 py-3 border-t border-[#2a2f45] space-y-1">
+          {(["Tarea", "Evaluación", "Proyecto", "Lectura"] as TaskType[]).map((c) => (
+            <div key={c} className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[c] }} />
+              <span className="text-[10px] font-mono text-[#4a5070]">{CATEGORY_LABELS[c]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="flex-shrink-0 px-5 py-3.5 border-b border-[#2a2f45] flex items-center justify-between gap-4 bg-[#151820]">
+          <div className="flex items-center gap-3">
+            {activeCourseObj && (
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeCourseObj.color }} />
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#1c2030] text-[#7c82a0] border border-[#2a2f45]">
+                  {activeCourseObj.code}
+                </span>
+              </div>
+            )}
+            <h1 className="font-display font-bold text-[16px] text-[#e8eaf2]">
+              {activeCourse === "all" ? "Mi Organizador Personal" : activeCourseObj?.name}
+            </h1>
+            <span className="text-[10px] font-mono text-[#4a5070] hidden sm:inline">
+              {TODAY.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
+            </span>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4f7cff] hover:bg-[#3d6ae0] text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-[#4f7cff]/20"
+          >
+            <span className="text-base leading-none">+</span> Nueva actividad
+          </button>
+        </header>
+
+        {/* Time filter + stats */}
+        <div className="flex-shrink-0 border-b border-[#2a2f45] bg-[#151820]">
+          <div className="flex items-center gap-0 px-5 pt-2">
+            {([
+              { key: "todas", label: "Todas" },
+              { key: "semana", label: "Esta semana" },
+              { key: "mes", label: "Este mes" },
+            ] as { key: TimeFilter; label: string }[]).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTimeFilter(t.key)}
+                className={`px-3 py-2 text-[12px] font-semibold border-b-2 -mb-px transition-all ${
+                  timeFilter === t.key
+                    ? "text-[#4f7cff] border-[#4f7cff]"
+                    : "text-[#4a5070] border-transparent hover:text-[#7c82a0]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-5 px-5 pb-2.5 pt-1">
+            <StatPill label="Pendientes" value={scopedTasks.filter((t) => t.status === "Pendiente").length} color="#7c82a0" />
+            <StatPill label="En curso" value={scopedTasks.filter((t) => t.status === "En curso").length} color="#f5c842" />
+            <StatPill label="Completadas" value={doneCount} color="#2dd67b" />
+            <div className="ml-auto flex items-center gap-2">
+              <div className="w-24 h-1.5 bg-[#2a2f45] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${totalCount > 0 ? (doneCount / totalCount) * 100 : 0}%`,
+                    backgroundColor: activeCourseObj?.color ?? "#4f7cff",
+                  }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-[#4a5070]">{doneCount}/{totalCount}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs: lista / semana / mes */}
+        <div className="flex-shrink-0 px-5 flex items-center gap-2 border-b border-[#2a2f45] bg-[#0d0f14]">
+          {[
+            { key: "lista", label: "📋 Lista de tareas" },
+            { key: "semana", label: "📅 Horario semanal" },
+            { key: "mes", label: "🗓️ Horario mensual" },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key as ViewTab)}
+              className={`px-3 py-2 text-[11px] font-semibold border-b-2 -mb-px transition-colors ${
+                tab === t.key ? "text-[#4f7cff] border-[#4f7cff]" : "text-[#4a5070] border-transparent hover:text-[#7c82a0]"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+
+          {/* Filters for list tab */}
+          {tab === "lista" && (
+            <div className="ml-auto flex items-center gap-2 py-1.5">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as TaskType | "all")}
+                className="bg-[#1c2030] border border-[#2a2f45] rounded-md px-2 py-1 text-[10px] font-mono text-[#7c82a0] focus:outline-none focus:border-[#4f7cff]"
+              >
+                <option value="all">Tipo: todos</option>
+                {(Object.keys(CATEGORY_LABELS) as TaskType[]).map((c) => (
+                  <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                ))}
+              </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as OrganizerTask["status"] | "all")}
+                className="bg-[#1c2030] border border-[#2a2f45] rounded-md px-2 py-1 text-[10px] font-mono text-[#7c82a0] focus:outline-none focus:border-[#4f7cff]"
+              >
+                <option value="all">Estado: todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En curso">En curso</option>
+                <option value="Completada">Completada</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Tab views */}
+        {tab === "lista" && (
+          <div className="flex-1 overflow-y-auto scrollbar-hide p-5 space-y-2">
+            {sorted.map((task) => (
+              <OrganizerTaskRow
+                key={task.id}
+                task={task}
+                course={courses.find((c) => c.id === task.courseId)}
+                onToggleStatus={() => toggleStatus(task.id)}
+                onDelete={() => deleteTask(task.id)}
+              />
+            ))}
+            {sorted.length === 0 && (
+              <div className="text-center py-16 text-[#4a5070] text-xs font-mono">
+                No hay actividades para mostrar
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "semana" && (
+          <WeekScheduleView
+            courses={courses}
+            sessions={sessions}
+            tasks={filtered}
+            activeCourse={activeCourse}
+          />
+        )}
+
+        {tab === "mes" && (
+          <MonthScheduleView
+            courses={courses}
+            sessions={sessions}
+            tasks={filtered}
+            activeCourse={activeCourse}
+            timeFilter={timeFilter}
+          />
+        )}
+      </div>
+
+      {/* Modals */}
+      {showManageCourses && (
+        <ManageCoursesModal
+          courses={courses}
+          sessions={sessions}
+          onClose={() => setShowManageCourses(false)}
+          onSave={(newCourses, newSessions) => {
+            setCourses(newCourses);
+            setSessions(newSessions);
+            const validIds = new Set(newCourses.map((c) => c.id));
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.courseId && t.courseId !== "all" && !validIds.has(t.courseId as string | number)
+                  ? { ...t, courseId: "all", scope: "Personal" }
+                  : t
+              )
+            );
+            if (activeCourse !== "all" && !validIds.has(activeCourse as string | number)) {
+              setActiveCourse("all");
+            }
+          }}
+        />
+      )}
+
+      {showAddModal && (
+        <AddOrganizerTaskModal
+          courses={courses}
+          defaultCourseId={activeCourse === "all" ? courses[0]?.id : activeCourse}
+          onClose={() => setShowAddModal(false)}
+          onAdd={(t) => {
+            setTasks((prev) => [...prev, { ...t, id: Date.now(), userId: 1 } as OrganizerTask]);
+            setShowAddModal(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
