@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import type { OrganizerTask, TaskType } from "../../../types/organizer";
 import type { Course } from "../../../types/courses";
-import { CATEGORY_LABELS } from "../../../data/mockOrganizer";
+import { CATEGORY_COLORS } from "../../../data/mockOrganizer";
 
 export function AddOrganizerTaskModal({
   courses,
@@ -60,7 +60,7 @@ export function AddOrganizerTaskModal({
             </Field>
             <Field label="Tipo">
               <select value={type} onChange={(e) => setType(e.target.value as TaskType)} className="w-full bg-[#0d0f14] border border-[#2a2f45] rounded-md px-3 py-2 text-[12px] text-[#e8eaf2] focus:outline-none focus:border-[#4f7cff]">
-                {(Object.keys(CATEGORY_LABELS) as TaskType[]).map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
+                {(Object.keys(CATEGORY_COLORS) as TaskType[]).map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
             <Field label="Prioridad">

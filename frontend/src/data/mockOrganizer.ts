@@ -44,12 +44,6 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Lectura: "#2dd67b",
 };
 
-export const CATEGORY_LABELS: Record<string, string> = {
-  Tarea: "Tarea",
-  "Evaluación": "Evaluación",
-  Proyecto: "Proyecto",
-  Lectura: "Lectura",
-};
 
 export const STATUS_COLORS: Record<string, string> = {
   Pendiente: "#4a5070",
