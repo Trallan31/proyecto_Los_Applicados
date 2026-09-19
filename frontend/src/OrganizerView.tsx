@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
-import { useLocalStorage } from "./hooks/useLocalStorage";
-import type { OrganizerTask, TaskType } from "./types/organizer";
-import type { Course, CourseSession } from "./types/courses";
-import { INITIAL_COURSES, INITIAL_TASKS, COURSE_SESSIONS, CATEGORY_COLORS, CATEGORY_LABELS } from "./data/mockOrganizer";
-import { parseLocalDate, getWeekBounds, getMonthBounds, type TimeFilter, type ViewTab } from "./utils/dateUtils";
+import { useState } from "react";
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "./data/mockOrganizer";
+import { type OrganizerTask, type TaskType } from "./types/organizer";
+import { type ViewTab, type TimeFilter } from "./utils/dateUtils";
+import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
 import { CourseTab } from "./components/organizer/CourseTab";
 import { StatPill } from "./components/organizer/StatPill";
 import { OrganizerTaskRow } from "./components/organizer/OrganizerTaskRow";
@@ -16,66 +15,35 @@ import { ConfirmModal } from "./components/shared/ConfirmModal";
 const TODAY = new Date();
 
 export default function OrganizerView() {
-  const [courses, setCourses] = useLocalStorage<Course[]>('organizer-courses', INITIAL_COURSES);
-  const [sessions, setSessions] = useLocalStorage<CourseSession[]>('organizer-sessions', COURSE_SESSIONS);
-  const [tasks, setTasks] = useLocalStorage<OrganizerTask[]>('organizer-tasks', INITIAL_TASKS);
-  const [activeCourse, setActiveCourse] = useState<string | "all">("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("todas");
-  const [typeFilter, setTypeFilter] = useState<TaskType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<OrganizerTask["status"] | "all">("all");
+  const {
+    courses,
+    sessions,
+    activeCourse,
+    setActiveCourse,
+    timeFilter,
+    setTimeFilter,
+    typeFilter,
+    setTypeFilter,
+    statusFilter,
+    setStatusFilter,
+    tab,
+    setTab,
+    filteredTasks,
+    sortedTasks,
+    toggleTaskStatus,
+    deleteTask,
+    handleSaveCourses,
+    handleAddTask,
+    allCourseStats,
+    scopedTasks,
+    doneCount,
+    totalCount,
+    activeCourseObj,
+  } = useOrganizerBoard();
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [tab, setTab] = useState<ViewTab>("lista");
-
-  const weekBounds = useMemo(() => getWeekBounds(TODAY), []);
-  const monthBounds = useMemo(() => getMonthBounds(TODAY), []);
-
-  const filtered = useMemo(() => tasks.filter((t) => {
-    if (activeCourse !== "all" && t.courseId !== activeCourse) return false;
-    if (typeFilter !== "all" && t.type !== typeFilter) return false;
-    if (statusFilter !== "all" && t.status !== statusFilter) return false;
-    if (timeFilter !== "todas") {
-      const due = parseLocalDate(t.endDate);
-      const bounds = timeFilter === "semana" ? weekBounds : monthBounds;
-      if (due < bounds.start || due > bounds.end) return false;
-    }
-    return true;
-  }), [tasks, activeCourse, typeFilter, statusFilter, timeFilter, weekBounds, monthBounds]);
-
-  const sorted = useMemo(() => [...filtered].sort((a, b) => {
-    if (a.status === "Completada" && b.status !== "Completada") return 1;
-    if (b.status === "Completada" && a.status !== "Completada") return -1;
-    return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-  }), [filtered]);
-
-  function toggleStatus(id: string) {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const next: OrganizerTask["status"] =
-          t.status === "Pendiente" ? "En curso" : t.status === "En curso" ? "Completada" : "Pendiente";
-        return { ...t, status: next };
-      })
-    );
-  }
-
-  function deleteTask(id: string) {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-  }
-
-  const allCourseStats = useMemo(() => courses.map((c) => ({
-    ...c,
-    total: tasks.filter((t) => t.courseId === c.id).length,
-    done: tasks.filter((t) => t.courseId === c.id && t.status === "Completada").length,
-    pending: tasks.filter((t) => t.courseId === c.id && t.status !== "Completada").length,
-  })), [courses, tasks]);
-
-  const scopedTasks = activeCourse === "all" ? tasks : tasks.filter((t) => t.courseId === activeCourse);
-  const doneCount = scopedTasks.filter((t) => t.status === "Completada").length;
-  const totalCount = scopedTasks.length;
-
-  const activeCourseObj = courses.find((c) => c.id === activeCourse);
 
   return (
     <div className="flex h-full overflow-hidden text-[#e8eaf2]">
@@ -98,7 +66,7 @@ export default function OrganizerView() {
             color="#4f7cff"
             code="TODOS"
             label="Todos los ramos"
-            count={tasks.filter((t) => t.status !== "Completada").length}
+            count={allCourseStats.reduce((acc, stat) => acc + stat.pending, 0)}
             onClick={() => setActiveCourse("all")}
           />
           {courses.map((c) => {
@@ -245,16 +213,16 @@ export default function OrganizerView() {
         {/* Tab views */}
         {tab === "lista" && (
           <div className="flex-1 overflow-y-auto scrollbar-hide p-5 space-y-2">
-            {sorted.map((task) => (
+            {sortedTasks.map((task) => (
               <OrganizerTaskRow
                 key={task.id}
                 task={task}
                 course={courses.find((c) => c.id === task.courseId)}
-                onToggleStatus={() => toggleStatus(task.id)}
+                onToggleStatus={() => toggleTaskStatus(task.id)}
                 onDelete={() => setConfirmDeleteId(task.id)}
               />
             ))}
-            {sorted.length === 0 && (
+            {sortedTasks.length === 0 && (
               <div className="text-center py-16 text-[#4a5070] text-xs font-mono">
                 No hay actividades para mostrar
               </div>
@@ -266,7 +234,7 @@ export default function OrganizerView() {
           <WeekScheduleView
             courses={courses}
             sessions={sessions}
-            tasks={filtered}
+            tasks={filteredTasks}
             activeCourse={activeCourse}
           />
         )}
@@ -275,7 +243,7 @@ export default function OrganizerView() {
           <MonthScheduleView
             courses={courses}
             sessions={sessions}
-            tasks={filtered}
+            tasks={filteredTasks}
             activeCourse={activeCourse}
             timeFilter={timeFilter}
           />
@@ -289,19 +257,7 @@ export default function OrganizerView() {
           sessions={sessions}
           onClose={() => setShowManageCourses(false)}
           onSave={(newCourses, newSessions) => {
-            setCourses(newCourses);
-            setSessions(newSessions);
-            const validIds = new Set(newCourses.map((c) => c.id));
-            setTasks((prev) =>
-              prev.map((t) =>
-                t.courseId !== undefined && !validIds.has(t.courseId)
-                  ? { ...t, courseId: undefined, scope: "Personal" }
-                  : t
-              )
-            );
-            if (activeCourse !== "all" && !validIds.has(activeCourse)) {
-              setActiveCourse("all");
-            }
+            handleSaveCourses(newCourses, newSessions);
           }}
         />
       )}
@@ -312,7 +268,7 @@ export default function OrganizerView() {
           defaultCourseId={activeCourse === "all" ? courses[0]?.id : activeCourse}
           onClose={() => setShowAddModal(false)}
           onAdd={(t) => {
-            setTasks((prev) => [...prev, { ...t, id: crypto.randomUUID(), userId: "user-1" } as OrganizerTask]);
+            handleAddTask(t);
             setShowAddModal(false);
           }}
         />
