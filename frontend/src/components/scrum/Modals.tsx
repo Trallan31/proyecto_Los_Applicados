@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Project } from "../../types/projects";
 import type { User, Member } from "../../types/users";
 import { COLORS } from "../../data/mockScrum";
+import { ConfirmModal } from "../shared/ConfirmModal";
 
 export function NewProjectModal({
   onCreate,
@@ -117,6 +118,7 @@ export function SettingsModal({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<"team" | "categories" | "sprints" | "danger">("team");
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'category' | 'sprint'; id: string } | null>(null);
 
   return (
     <div className="fixed inset-0 bg-[#0d0f14]/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -162,31 +164,43 @@ export function SettingsModal({
         <div className="p-6 overflow-auto flex-1 min-h-[250px]">
           {tab === "team" && (
             <div className="space-y-3">
-              {project.members.map(m => (
-                <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2a2f45] bg-[#0d0f14]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: m.avatarColor }}>
-                      {m.initials}
+              {project.members.map(m => {
+                const adminCount = project.members.filter((member) => member.role === "Admin").length;
+                const isOnlyAdmin = m.role === "Admin" && adminCount <= 1;
+                const isOnlyMember = project.members.length <= 1;
+                return (
+                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2a2f45] bg-[#0d0f14]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: m.avatarColor }}>
+                        {m.initials}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[#e8eaf2]">{m.name} {m.lastName}</p>
+                        <p className="text-xs font-mono text-[#7c82a0]">@{m.username}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-[#e8eaf2]">{m.name} {m.lastName}</p>
-                      <p className="text-xs font-mono text-[#7c82a0]">@{m.username}</p>
+                    
+                    <div className="flex items-center gap-3">
+                      <select 
+                        value={m.role} 
+                        onChange={(e) => onUpdateRole(m.id, e.target.value as Member["role"])}
+                        className="bg-transparent text-xs font-mono text-[#7c82a0] focus:outline-none cursor-pointer disabled:opacity-50"
+                        disabled={isOnlyAdmin}
+                        title={isOnlyAdmin ? "El proyecto debe conservar al menos un Administrador." : undefined}
+                      >
+                        <option value="Admin">Admin</option>
+                        <option value="Miembro">Miembro</option>
+                      </select>
+                      <button 
+                        onClick={() => onRemove(m.id)} 
+                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin ? 'text-[#2a2f45] cursor-not-allowed' : 'text-[#7c82a0] hover:text-[#ff5c6a]'}`}
+                        title={isOnlyMember ? "No puedes eliminar al único integrante del proyecto." : isOnlyAdmin ? "No puedes eliminar al único Administrador." : "Quitar miembro"}
+                        disabled={isOnlyMember || isOnlyAdmin}
+                      >✕</button>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <select 
-                      value={m.role} 
-                      onChange={(e) => onUpdateRole(m.id, e.target.value as Member["role"])}
-                      className="bg-transparent text-xs font-mono text-[#7c82a0] focus:outline-none cursor-pointer"
-                    >
-                      <option value="Admin">Admin</option>
-                      <option value="Miembro">Miembro</option>
-                    </select>
-                    <button onClick={() => onRemove(m.id)} className="text-[#2a2f45] hover:text-[#ff5c6a] transition-colors text-sm" title="Quitar miembro">✕</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -198,7 +212,7 @@ export function SettingsModal({
                   <span className="text-xs font-mono text-[#e8eaf2]">{cat}</span>
                   {onDeleteCategory && (
                     <button
-                      onClick={() => onDeleteCategory(cat)}
+                      onClick={() => setConfirmDelete({ type: 'category', id: cat })}
                       className="text-[#7c82a0] hover:text-[#ff5c6a] transition-colors text-xs font-bold px-2 py-1"
                       title="Eliminar categoría"
                     >
@@ -218,7 +232,7 @@ export function SettingsModal({
                   <span className="text-xs font-mono text-[#e8eaf2]">{s.name}</span>
                   {onDeleteSprint && (
                     <button
-                      onClick={() => onDeleteSprint(s.id)}
+                      onClick={() => setConfirmDelete({ type: 'sprint', id: s.id })}
                       className="text-[#7c82a0] hover:text-[#ff5c6a] transition-colors text-xs font-bold px-2 py-1"
                       title="Eliminar Sprint"
                     >
@@ -249,6 +263,19 @@ export function SettingsModal({
           )}
         </div>
       </div>
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.type === 'category' ? "Eliminar categoría" : "Eliminar sprint"}
+          message={confirmDelete.type === 'category' ? "Se removerá la categoría de todas las tareas. ¿Continuar?" : "Se eliminará el sprint y sus referencias. ¿Continuar?"}
+          confirmLabel="Sí, eliminar"
+          onConfirm={() => {
+            if (confirmDelete.type === 'category' && onDeleteCategory) onDeleteCategory(confirmDelete.id);
+            if (confirmDelete.type === 'sprint' && onDeleteSprint) onDeleteSprint(confirmDelete.id);
+            setConfirmDelete(null);
+          }}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }

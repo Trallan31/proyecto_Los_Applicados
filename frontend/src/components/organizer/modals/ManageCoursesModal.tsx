@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import type { Course, CourseSession, SessionType } from "../../../types/courses";
 import { PRESET_COLORS, FULL_DAYS, HOURS } from "../../../utils/dateUtils";
+import { ConfirmModal } from "../../shared/ConfirmModal";
 
 export function ManageCoursesModal({
   courses,
@@ -17,6 +17,7 @@ export function ManageCoursesModal({
   const [localCourses, setLocalCourses] = useState<Course[]>(courses.map((c) => ({ ...c })));
   const [localSessions, setLocalSessions] = useState<CourseSession[]>(sessions.map((s) => ({ ...s })));
   const [activeCourseId, setActiveCourseId] = useState<string>(courses[0]?.id ?? "course-1");
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'course' | 'session'; id: string } | null>(null);
 
   // New Course Inputs
   const [newName, setNewName] = useState("");
@@ -49,7 +50,6 @@ export function ManageCoursesModal({
   }
 
   function removeCourse(id: string) {
-    if (!window.confirm('¿Seguro que deseas eliminar este ramo y todos sus horarios asociados?')) return;
     setLocalCourses((prev) => prev.filter((c) => c.id !== id));
     setLocalSessions((prev) => prev.filter((s) => s.courseId !== id));
   }
@@ -104,7 +104,7 @@ export function ManageCoursesModal({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      removeCourse(c.id);
+                      setConfirmDelete({ type: 'course', id: c.id });
                     }}
                     className="text-[#4a5070] hover:text-[#ff5c6a] transition-colors text-xs font-bold p-1 ml-2"
                     title="Eliminar ramo"
@@ -181,7 +181,7 @@ export function ManageCoursesModal({
                             {s.startHour}:00 - {s.startHour + s.duration}:00 ({s.type})
                           </p>
                         </div>
-                        <button onClick={() => removeSession(s.id)} className="text-[#4a5070] hover:text-[#ff5c6a] text-xs font-bold">
+                        <button onClick={() => setConfirmDelete({ type: 'session', id: s.id })} className="text-[#4a5070] hover:text-[#ff5c6a] text-xs font-bold">
                           ✕
                         </button>
                       </div>
@@ -254,6 +254,19 @@ export function ManageCoursesModal({
           </button>
         </div>
       </div>
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.type === 'course' ? "Eliminar ramo" : "Eliminar horario"}
+          message={confirmDelete.type === 'course' ? "¿Seguro que deseas eliminar este ramo y todos sus horarios asociados?" : "¿Seguro que deseas eliminar este horario?"}
+          confirmLabel="Sí, eliminar"
+          onConfirm={() => {
+            if (confirmDelete.type === 'course') removeCourse(confirmDelete.id);
+            else removeSession(confirmDelete.id);
+            setConfirmDelete(null);
+          }}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }

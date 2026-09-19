@@ -5,6 +5,7 @@ import { TaskRow } from "./components/scrum/TaskRow";
 import { AddRowForm } from "./components/scrum/AddRowForm";
 import { NewProjectModal, InviteModal, SettingsModal } from "./components/scrum/Modals";
 import { StatsModal } from "./components/scrum/StatsModal";
+import { ConfirmModal } from "./components/shared/ConfirmModal";
 import { useScrumBoard } from "./hooks/useScrumBoard";
 
 export function ScrumView() {
@@ -33,6 +34,7 @@ export function ScrumView() {
   const [showSettings, setShowSettings] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'task' | 'project'; id: string } | null>(null);
 
   const doneCount = project?.tasks.filter((t) => t.status === "Completada").length || 0;
   const totalCount = project?.tasks.length || 0;
@@ -164,7 +166,7 @@ export function ScrumView() {
                 PRIORITY_META={PRIORITY_META}
                 STATUS_META={STATUS_META}
                 onUpdate={handleUpdateTask}
-                onDeleteTask={handleDeleteTask}
+                onDeleteTask={(id) => setConfirmDelete({ type: 'task', id })}
                 onCreateCategory={handleAddCategory}
                 onCreateSprint={handleAddSprint}
                 cell={() => ({})}
@@ -206,7 +208,24 @@ export function ScrumView() {
           onUpdateRole={updateMemberRole}
           onDeleteCategory={handleDeleteCategory}
           onDeleteSprint={handleDeleteSprint}
-          onDeleteProject={() => { handleDeleteProject(project.id); setShowSettings(false); }}
+          onDeleteProject={() => setConfirmDelete({ type: 'project', id: project.id })}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.type === 'task' ? "Eliminar tarea" : "Eliminar proyecto"}
+          message="Esta acción no se puede deshacer."
+          confirmLabel="Sí, eliminar"
+          onConfirm={() => {
+            if (confirmDelete.type === 'task') {
+              handleDeleteTask(confirmDelete.id);
+            } else {
+              handleDeleteProject(confirmDelete.id);
+              setShowSettings(false);
+            }
+            setConfirmDelete(null);
+          }}
+          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </div>

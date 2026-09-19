@@ -11,6 +11,7 @@ import { WeekScheduleView } from "./components/organizer/WeekScheduleView";
 import { MonthScheduleView } from "./components/organizer/MonthScheduleView";
 import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesModal";
 import { AddOrganizerTaskModal } from "./components/organizer/modals/AddOrganizerTaskModal";
+import { ConfirmModal } from "./components/shared/ConfirmModal";
 
 const TODAY = new Date();
 
@@ -24,6 +25,7 @@ export default function OrganizerView() {
   const [statusFilter, setStatusFilter] = useState<OrganizerTask["status"] | "all">("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageCourses, setShowManageCourses] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [tab, setTab] = useState<ViewTab>("lista");
 
   const weekBounds = useMemo(() => getWeekBounds(TODAY), []);
@@ -59,7 +61,6 @@ export default function OrganizerView() {
   }
 
   function deleteTask(id: string) {
-    if (!window.confirm('¿Seguro que deseas eliminar esta actividad?')) return;
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
@@ -250,7 +251,7 @@ export default function OrganizerView() {
                 task={task}
                 course={courses.find((c) => c.id === task.courseId)}
                 onToggleStatus={() => toggleStatus(task.id)}
-                onDelete={() => deleteTask(task.id)}
+                onDelete={() => setConfirmDeleteId(task.id)}
               />
             ))}
             {sorted.length === 0 && (
@@ -314,6 +315,18 @@ export default function OrganizerView() {
             setTasks((prev) => [...prev, { ...t, id: crypto.randomUUID(), userId: "user-1" } as OrganizerTask]);
             setShowAddModal(false);
           }}
+        />
+      )}
+      {confirmDeleteId && (
+        <ConfirmModal
+          title="Eliminar actividad"
+          message="¿Seguro que deseas eliminar esta actividad?"
+          confirmLabel="Sí, eliminar"
+          onConfirm={() => {
+            deleteTask(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }}
+          onCancel={() => setConfirmDeleteId(null)}
         />
       )}
     </div>

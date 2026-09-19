@@ -36,7 +36,6 @@ export function useScrumBoard() {
   }
 
   function handleDeleteTask(taskId: string) {
-    if (!window.confirm('¿Seguro que deseas eliminar esta tarea?')) return;
     setProjects((prev) =>
       prev.map((p) =>
         p.id !== activeProjectId
@@ -62,7 +61,6 @@ export function useScrumBoard() {
   }
 
   function handleDeleteCategory(categoryName: string) {
-    if (!window.confirm('¿Seguro que deseas eliminar esta categoría?')) return;
     setProjects((prev) =>
       prev.map((p) =>
         p.id !== activeProjectId
@@ -98,7 +96,6 @@ export function useScrumBoard() {
   }
 
   function handleDeleteSprint(sprintId: string) {
-    if (!window.confirm('¿Seguro que deseas eliminar este sprint y todas sus referencias?')) return;
     setAllSprints((prev) => prev.filter((s) => !(s.id === sprintId && s.projectId === activeProjectId)));
     setProjects((prev) =>
       prev.map((p) =>
@@ -149,13 +146,11 @@ export function useScrumBoard() {
 
   function removeMember(memberId: string) {
     if (project && project.members.length <= 1) {
-      alert("No puedes eliminar al único integrante del proyecto.");
       return;
     }
     const target = project?.members.find((m) => m.id === memberId);
     const adminCount = project?.members.filter((m) => m.role === "Admin").length || 0;
     if (target?.role === "Admin" && adminCount <= 1) {
-      alert("El proyecto debe conservar al menos un Administrador.");
       return;
     }
     setProjects((prev) =>
@@ -179,7 +174,6 @@ export function useScrumBoard() {
       const target = project?.members.find((m) => m.id === memberId);
       const adminCount = project?.members.filter((m) => m.role === "Admin").length || 0;
       if (target?.role === "Admin" && adminCount <= 1) {
-        alert("El proyecto debe conservar al menos un Administrador.");
         return;
       }
     }

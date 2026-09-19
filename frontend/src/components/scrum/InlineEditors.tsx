@@ -67,16 +67,10 @@ export function InlineSelectWithCreate({
 }) {
   const [isCreating, setIsCreating] = useState(false);
   const [newItemName, setNewItemName] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
-    function handleMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        onBlur();
-      }
-    }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
+    // Replaced with React overlay
   }, [onBlur]);
 
   function handleCreateSubmit() {
@@ -94,11 +88,11 @@ export function InlineSelectWithCreate({
 
   if (isCreating || options.length === 0) {
     return (
-      <div
-        ref={containerRef}
-        onMouseDown={(e) => e.stopPropagation()}
-        className="flex items-center gap-1 w-full bg-[#0d0f14] border border-[#4f7cff] rounded p-1"
-      >
+      <>
+        <div className="fixed inset-0 z-10" onClick={() => { setIsCreating(false); onBlur(); }} />
+        <div
+          className="relative z-20 flex items-center gap-1 w-full bg-[#0d0f14] border border-[#4f7cff] rounded p-1"
+        >
         <input
           autoFocus
           value={newItemName}
@@ -134,12 +128,15 @@ export function InlineSelectWithCreate({
         >
           ✕
         </button>
-      </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div ref={containerRef} onMouseDown={(e) => e.stopPropagation()} className="relative w-full">
+    <>
+      <div className="fixed inset-0 z-10" onClick={onBlur} />
+      <div className="relative z-20 w-full">
       <select
         autoFocus
         value={options.includes(value) ? value : (options[0] ?? "__NEW__")}
@@ -160,8 +157,9 @@ export function InlineSelectWithCreate({
         <option value="__NEW__" className="text-[#4f7cff] font-bold">
           {createLabel}
         </option>
-      </select>
-    </div>
+        </select>
+      </div>
+    </>
   );
 }
 
@@ -177,21 +175,16 @@ export function MultiMemberSelect({
   onBlur: () => void;
 }) {
   const [sel, setSel] = useState<string[]>(value);
-  const ref = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onCommit(sel);
-        onBlur();
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    // Replaced with React overlay
   }, [sel, onCommit, onBlur]);
 
   return (
-    <div ref={ref} className="absolute z-20 bg-[#1c2030] border border-[#4f7cff] rounded-md p-2 shadow-xl" style={{ minWidth: 160 }}>
+    <>
+      <div className="fixed inset-0 z-10" onClick={() => { onCommit(sel); onBlur(); }} />
+      <div className="absolute z-20 bg-[#1c2030] border border-[#4f7cff] rounded-md p-2 shadow-xl" style={{ minWidth: 160 }}>
       {members.map((m) => (
         <button
           key={m.id}
@@ -210,6 +203,7 @@ export function MultiMemberSelect({
           </div>
         </button>
       ))}
-    </div>
+      </div>
+    </>
   );
 }
