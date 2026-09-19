@@ -14,7 +14,6 @@ export function TaskRow({
   onDeleteTask,
   onCreateCategory,
   onCreateSprint,
-  cell,
 }: {
   task: Activity;
   project: Project;
@@ -25,7 +24,6 @@ export function TaskRow({
   onDeleteTask?: (id: string) => void;
   onCreateCategory?: (name: string) => void;
   onCreateSprint?: (name: string) => Sprint;
-  cell: (field: string) => React.TdHTMLAttributes<HTMLTableCellElement>;
 }) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
@@ -40,20 +38,12 @@ export function TaskRow({
     setEditingCell(field);
   };
 
-  const augmentedCell = (field: string) => ({
-    ...cell(field),
-    onDoubleClick: () => handleDoubleClick(field),
-    onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); handleDoubleClick(field); } },
-    tabIndex: 0,
-    role: 'gridcell' as const,
-  });
-
   return (
     <tr className="border-b border-[#2a2f45] hover:bg-[#1c2030] transition-colors group">
 
 
       {/* TAREA */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("title")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("title")}>
         {isEditing("title") ? (
           <InlineText
             value={task.title}
@@ -68,7 +58,7 @@ export function TaskRow({
       </td>
 
       {/* SPRINT */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("sprintId")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("sprintId")}>
         {isEditing("sprintId") ? (
           <InlineSelectWithCreate
             value={task.sprintId}
@@ -93,7 +83,7 @@ export function TaskRow({
       </td>
 
       {/* CATEGORÍA */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("category")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("category")}>
         {isEditing("category") ? (
           <InlineSelectWithCreate
             value={task.category || ""}
@@ -115,7 +105,7 @@ export function TaskRow({
       </td>
 
       {/* RESPONSABLE */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9 relative" {...augmentedCell("members")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("members")}>
         {isEditing("members") ? (
           <MultiMemberSelect
             value={task.members}
@@ -148,7 +138,7 @@ export function TaskRow({
       </td>
 
       {/* PRIORIDAD */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("priority")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("priority")}>
         {isEditing("priority") ? (
           <InlineSelect
             value={task.priority}
@@ -167,7 +157,7 @@ export function TaskRow({
       </td>
 
       {/* ESTADO */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("status")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("status")}>
         {isEditing("status") ? (
           <InlineSelect
             value={task.status}
@@ -187,7 +177,7 @@ export function TaskRow({
       </td>
 
       {/* HORAS */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("hours")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("hours")}>
         {isEditing("hours") ? (
           <InlineText
             value={String(task.hours || 0)}
@@ -202,7 +192,7 @@ export function TaskRow({
       </td>
 
       {/* DEADLINE */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("dueDate")}>
+      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("dueDate")}>
         {isEditing("dueDate") ? (
           <input
             autoFocus
@@ -225,7 +215,7 @@ export function TaskRow({
       </td>
 
       {/* NOTAS Y BORRAR */}
-      <td className="px-3 py-0 border-r border-[#2a2f45] h-9" {...augmentedCell("description")}>
+      <td className="px-3 py-2 group/cell relative" onDoubleClick={() => handleDoubleClick("description")}>
         <div className="flex items-center justify-between gap-2">
           {isEditing("description") ? (
             <InlineText

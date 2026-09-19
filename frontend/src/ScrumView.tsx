@@ -171,7 +171,6 @@ export function ScrumView() {
                 onDeleteTask={(id) => setConfirmDelete({ type: 'task', id })}
                 onCreateCategory={handleAddCategory}
                 onCreateSprint={handleAddSprint}
-                cell={() => ({})}
               />
             ))}
             {showNewRow && (
