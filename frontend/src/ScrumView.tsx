@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Priority, Status } from "./types/activities";
+import type { Priority, Status } from "./types";
 import { ALL_USERS, PRIORITY_META, STATUS_META } from "./data/mockScrum";
 import { TaskRow } from "./components/scrum/TaskRow";
 import { AddRowForm } from "./components/scrum/AddRowForm";

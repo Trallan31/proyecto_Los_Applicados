@@ -1,12 +1,6 @@
-
-
-import type { OrganizerTask } from "../../types/organizer";
-import type { Course, CourseSession } from "../../types/courses";
+import type { OrganizerTask, Course, CourseSession } from "../../types";
 import { CATEGORY_COLORS } from "../../data/mockOrganizer";
-import { FULL_DAYS, WEEK_DAYS, HOURS, formatLocalDate } from "../../utils/dateUtils";
-import type { DayScheduleItem } from "../../utils/dateUtils";
-
-const TODAY = new Date();
+import { FULL_DAYS, WEEK_DAYS, HOURS, formatLocalDate, getToday, type DayScheduleItem } from "../../utils/dateUtils";
 
 export function WeekScheduleView({
   courses,
@@ -17,8 +11,9 @@ export function WeekScheduleView({
   courses: Course[];
   sessions: CourseSession[];
   tasks: OrganizerTask[];
-  activeCourse: string | number | "all";
+  activeCourse: string | "all";
 }) {
+  const today = getToday();
   const CELL_HEIGHT = 56;
   const visibleSessions = activeCourse === "all" ? sessions : sessions.filter((s) => s.courseId === activeCourse);
 
@@ -29,11 +24,11 @@ export function WeekScheduleView({
         <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
           <div />
           {FULL_DAYS.map((d, i) => {
-            const date = new Date(TODAY);
-            const todayMonIdx = (TODAY.getDay() + 6) % 7;
+            const date = new Date(today);
+            const todayMonIdx = (today.getDay() + 6) % 7;
             const diff = i - todayMonIdx;
-            date.setDate(TODAY.getDate() + diff);
-            const isToday = date.toDateString() === TODAY.toDateString();
+            date.setDate(today.getDate() + diff);
+            const isToday = date.toDateString() === today.toDateString();
             return (
               <div key={d} className={`text-center py-2 rounded-md border ${isToday ? "bg-[#4f7cff]/20 border-[#4f7cff]" : "bg-[#151820] border-[#2a2f45]"}`}>
                 <p className={`text-[9px] font-mono uppercase ${isToday ? "text-[#4f7cff] font-bold" : "text-[#4a5070]"}`}>{WEEK_DAYS[i]}</p>
@@ -60,10 +55,10 @@ export function WeekScheduleView({
           <div className="absolute inset-0 pointer-events-none grid" style={{ gridTemplateColumns: "56px repeat(7, 1fr)", gap: 0 }}>
             <div />
             {FULL_DAYS.map((_, di) => {
-              const colDate = new Date(TODAY);
-              const todayMonIdx = (TODAY.getDay() + 6) % 7;
+              const colDate = new Date(today);
+              const todayMonIdx = (today.getDay() + 6) % 7;
               const diff = di - todayMonIdx;
-              colDate.setDate(TODAY.getDate() + diff);
+              colDate.setDate(today.getDate() + diff);
               const dateStr = formatLocalDate(colDate);
 
               const daySessions = visibleSessions.filter((s) => s.dayOfWeek === di);

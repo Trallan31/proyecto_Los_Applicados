@@ -1,8 +1,7 @@
 import { useState } from "react";
-import type { Activity, Priority, Status } from "../../types/activities";
-import type { Project } from "../../types/projects";
-import type { Sprint } from "../../types/sprints";
+import type { Activity, Priority, Status, Project, Sprint } from "../../types";
 import { InlineText, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
+import { parseLocalDate, isOverdue } from "../../utils/dateUtils";
 
 export function TaskRow({
   task,
@@ -28,7 +27,7 @@ export function TaskRow({
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
   const isEditing = (field: string) => editingCell === field;
-  const isOverdue = task.dueDate ? new Date(task.dueDate) < new Date() && task.status !== "Completada" : false;
+  const overdue = isOverdue(task.dueDate, task.status === "Completada");
   const sprint = ALL_SPRINTS.find((s) => s.id === task.sprintId);
 
   const pMeta = PRIORITY_META[task.priority] || PRIORITY_META["Media"];
@@ -202,10 +201,10 @@ export function TaskRow({
             className="w-full bg-transparent text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
           />
         ) : (
-          <span className={`text-[11px] font-mono cursor-pointer ${isOverdue ? "text-[#ff5c6a]" : "text-[#7c82a0]"}`}>
+          <span className={`text-[11px] font-mono cursor-pointer ${overdue ? "text-[#ff5c6a]" : "text-[#7c82a0]"}`}>
             {(() => {
               if (!task.dueDate) return <span className="text-[#2a2f45]">—</span>;
-              const d = new Date(task.dueDate + "T00:00:00");
+              const d = parseLocalDate(task.dueDate);
               return !isNaN(d.getTime())
                 ? d.toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "2-digit" })
                 : <span className="text-[#2a2f45]">—</span>;

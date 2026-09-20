@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import type { Member } from "../../types/users";
+import { useState, useRef } from "react";
+import type { Member } from "../../types";
 
 export function InlineText({ value, onCommit, onBlur }: { value: string; onCommit: (v: string) => void; onBlur: () => void }) {
   const [val, setVal] = useState(value);
@@ -27,9 +27,9 @@ export function InlineSelect({
   onCommit,
   onBlur,
 }: {
-  value: string | number;
-  options: (string | number)[];
-  labels?: Record<string | number, string>;
+  value: string;
+  options: string[];
+  labels?: Record<string, string>;
   onCommit: (v: string) => void;
   onBlur: () => void;
 }) {
@@ -57,9 +57,9 @@ export function InlineSelectWithCreate({
   onCommit,
   onBlur,
 }: {
-  value: string | number;
-  options: (string | number)[];
-  labels?: Record<string | number, string>;
+  value: string;
+  options: string[];
+  labels?: Record<string, string>;
   onCreateNew: (name: string) => void;
   createLabel?: string;
   onCommit: (v: string) => void;
@@ -67,11 +67,6 @@ export function InlineSelectWithCreate({
 }) {
   const [isCreating, setIsCreating] = useState(false);
   const [newItemName, setNewItemName] = useState("");
-
-
-  useEffect(() => {
-    // Replaced with React overlay
-  }, [onBlur]);
 
   function handleCreateSubmit() {
     if (newItemName.trim()) {
@@ -175,11 +170,6 @@ export function MultiMemberSelect({
   onBlur: () => void;
 }) {
   const [sel, setSel] = useState<string[]>(value);
-
-
-  useEffect(() => {
-    // Replaced with React overlay
-  }, [sel, onCommit, onBlur]);
 
   return (
     <>

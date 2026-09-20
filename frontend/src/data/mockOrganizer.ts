@@ -1,5 +1,4 @@
-import type { OrganizerTask } from "../types/organizer";
-import type { Course, CourseSession } from "../types/courses";
+import type { OrganizerTask, Course, CourseSession } from "../types";
 
 export const INITIAL_COURSES: Course[] = [
   { id: "course-1", userId: "user-1", name: "Cálculo III", code: "MAT1630", shortName: "CAL", color: "#9b6dff" },
@@ -43,12 +42,3 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Proyecto: "#9b6dff",
   Lectura: "#2dd67b",
 };
-
-
-export const STATUS_COLORS: Record<string, string> = {
-  Pendiente: "#4a5070",
-  "En curso": "#f5c842",
-  Completada: "#2dd67b",
-};
-
-export const PRIORITY_COLORS: Record<string, string> = { Alta: "#ff5c6a", Media: "#f5c842", Baja: "#2dd67b" };

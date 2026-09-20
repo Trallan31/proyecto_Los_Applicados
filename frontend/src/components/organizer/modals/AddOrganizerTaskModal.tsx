@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-import type { OrganizerTask, TaskType } from "../../../types/organizer";
-import type { Course } from "../../../types/courses";
+import type { OrganizerTask, TaskType, Course } from "../../../types";
 import { CATEGORY_COLORS } from "../../../data/mockOrganizer";
 
 export function AddOrganizerTaskModal({

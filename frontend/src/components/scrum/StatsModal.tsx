@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import type { Project } from "../../types/projects";
-import type { Status } from "../../types/activities";
+import type { Project, Status } from "../../types";
 import { STATUS_META, PRIORITY_META } from "../../data/mockScrum";
+import { isOverdue } from "../../utils/dateUtils";
 
 export function StatsModal({ project, onClose }: { project: Project; onClose: () => void }) {
   // calculate hours
-  const memberHours: Record<string | number, number> = {};
+  const memberHours: Record<string, number> = {};
   let grandTotalHours = 0;
   
   project.members.forEach((m) => { memberHours[m.id] = 0; });
@@ -57,7 +57,7 @@ export function StatsModal({ project, onClose }: { project: Project; onClose: ()
   });
 
   const doneCount = project.tasks.filter(t => t.status === "Completada").length;
-  const overdueCount = project.tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "Completada").length;
+  const overdueCount = project.tasks.filter(t => isOverdue(t.dueDate, t.status === "Completada")).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

@@ -1,10 +1,9 @@
 
 
-import type { OrganizerTask } from "../../types/organizer";
-import type { Course } from "../../types/courses";
+import type { OrganizerTask, Course } from "../../types";
 import { CATEGORY_COLORS } from "../../data/mockOrganizer";
+import { getToday, parseLocalDate, isOverdue } from "../../utils/dateUtils";
 
-const TODAY = new Date();
 
 export function OrganizerTaskRow({
   task,
@@ -17,10 +16,11 @@ export function OrganizerTaskRow({
   onToggleStatus: () => void;
   onDelete: () => void;
 }) {
+  const today = getToday();
   const isDone = task.status === "Completada";
-  const due = new Date(task.endDate + "T00:00:00");
-  const diffDays = Math.ceil((due.getTime() - TODAY.getTime()) / (1000 * 60 * 60 * 24));
-  const isOverdue = diffDays < 0 && !isDone;
+  const due = parseLocalDate(task.endDate);
+  const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const overdue = isOverdue(task.endDate, isDone);
 
   return (
     <div className={`p-3.5 rounded-xl border transition-all ${isDone ? "bg-[#151820]/40 border-[#2a2f45]/50 opacity-60" : "bg-[#151820] border-[#2a2f45] hover:border-[#3a4060]"}`}>
@@ -54,8 +54,8 @@ export function OrganizerTaskRow({
             {task.type}
           </span>
           <div className="text-right">
-            <p className={`text-[11px] font-mono ${isOverdue ? "text-[#ff5c6a]" : "text-[#7c82a0]"}`}>
-              {isOverdue ? "Vencida" : diffDays === 0 ? "Hoy" : diffDays === 1 ? "Mañana" : due.toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
+            <p className={`text-[11px] font-mono ${overdue ? "text-[#ff5c6a]" : "text-[#7c82a0]"}`}>
+              {overdue ? "Vencida" : diffDays === 0 ? "Hoy" : diffDays === 1 ? "Mañana" : due.toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
             </p>
             {task.dueTime && <p className="text-[9px] font-mono text-[#4a5070]">{task.dueTime}</p>}
           </div>

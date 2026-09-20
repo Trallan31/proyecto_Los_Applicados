@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CATEGORY_COLORS } from "./data/mockOrganizer";
-import { type OrganizerTask, type TaskType } from "./types/organizer";
-import { type ViewTab, type TimeFilter } from "./utils/dateUtils";
+import type { OrganizerTask, TaskType } from "./types";
+import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
 import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
 import { CourseTab } from "./components/organizer/CourseTab";
 import { StatPill } from "./components/organizer/StatPill";
@@ -12,7 +12,6 @@ import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesM
 import { AddOrganizerTaskModal } from "./components/organizer/modals/AddOrganizerTaskModal";
 import { ConfirmModal } from "./components/shared/ConfirmModal";
 
-const TODAY = new Date();
 
 export default function OrganizerView() {
   const {
@@ -41,6 +40,7 @@ export default function OrganizerView() {
     activeCourseObj,
   } = useOrganizerBoard();
 
+  const today = getToday();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -114,7 +114,7 @@ export default function OrganizerView() {
               {activeCourse === "all" ? "Mi Organizador Personal" : activeCourseObj?.name}
             </h1>
             <span className="text-[10px] font-mono text-[#4a5070] hidden sm:inline">
-              {TODAY.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
+              {today.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
             </span>
           </div>
           <button

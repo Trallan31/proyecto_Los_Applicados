@@ -1,12 +1,6 @@
-
-
-import type { OrganizerTask } from "../../types/organizer";
-import type { Course, CourseSession } from "../../types/courses";
+import type { OrganizerTask, Course, CourseSession } from "../../types";
 import { CATEGORY_COLORS } from "../../data/mockOrganizer";
-import { formatLocalDate, getWeekBounds } from "../../utils/dateUtils";
-import type { TimeFilter } from "../../utils/dateUtils";
-
-const TODAY = new Date();
+import { formatLocalDate, getWeekBounds, getToday, WEEK_DAYS, type TimeFilter } from "../../utils/dateUtils";
 
 export function MonthScheduleView({
   courses,
@@ -18,12 +12,13 @@ export function MonthScheduleView({
   courses: Course[];
   sessions: CourseSession[];
   tasks: OrganizerTask[];
-  activeCourse: string | number | "all";
+  activeCourse: string | "all";
   timeFilter: TimeFilter;
 }) {
-  const year = TODAY.getFullYear();
-  const month = TODAY.getMonth(); // 0-indexed
-  const currentWeekBounds = getWeekBounds(TODAY);
+  const today = getToday();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-indexed
+  const currentWeekBounds = getWeekBounds(today);
 
   // Build calendar days array for the month
   const firstDay = new Date(year, month, 1);
@@ -48,14 +43,14 @@ export function MonthScheduleView({
     <div className="flex-1 overflow-auto scrollbar-hide p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-display font-bold text-sm text-[#e8eaf2] uppercase tracking-wider">
-          {TODAY.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
+          {today.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
         </h3>
       </div>
 
       <div className="border border-[#2a2f45] rounded-xl overflow-hidden bg-[#151820]">
         {/* Day Header */}
         <div className="grid grid-cols-7 border-b border-[#2a2f45] bg-[#1c2030] text-center">
-          {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+          {WEEK_DAYS.map((d) => (
             <div key={d} className="py-2 text-[10px] font-mono font-bold text-[#7c82a0] uppercase">
               {d}
             </div>
@@ -72,7 +67,7 @@ export function MonthScheduleView({
             const dayNum = date.getDate();
             const dateStr = formatLocalDate(date);
             const dayOfWeek = (date.getDay() + 6) % 7; // Monday = 0
-            const isToday = date.toDateString() === TODAY.toDateString();
+            const isToday = date.toDateString() === today.toDateString();
 
             const inCurrentWeek = date >= currentWeekBounds.start && date <= currentWeekBounds.end;
 

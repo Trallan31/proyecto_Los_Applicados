@@ -1,6 +1,4 @@
-import type { CourseSession } from "../types/courses";
-import type { OrganizerTask } from "../types/organizer";
-import type { Course } from "../types/courses";
+import type { CourseSession, OrganizerTask, Course } from "../types";
 
 export type TimeFilter = "todas" | "semana" | "mes";
 export type ViewTab = "lista" | "semana" | "mes";
@@ -20,6 +18,24 @@ export function formatLocalDate(date: Date): string {
   const m = (date.getMonth() + 1).toString().padStart(2, "0");
   const d = date.getDate().toString().padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+/** Fecha de hoy a medianoche local. Se evalua en cada llamada, no al cargar el modulo. */
+export function getToday(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+/**
+ * true si la fecha (YYYY-MM-DD) ya quedo atras. Una tarea vence al pasar
+ * la medianoche local del dia de entrega: el propio dia aun cuenta como
+ * vigente. Usa hora local, no UTC.
+ */
+export function isOverdue(dateStr: string | undefined, isDone: boolean): boolean {
+  if (!dateStr || isDone) return false;
+  const due = parseLocalDate(dateStr);
+  if (isNaN(due.getTime())) return false;
+  return due < getToday();
 }
 
 export const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];

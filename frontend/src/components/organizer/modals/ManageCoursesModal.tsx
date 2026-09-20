@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Course, CourseSession, SessionType } from "../../../types/courses";
+import type { Course, CourseSession, SessionType } from "../../../types";
 import { PRESET_COLORS, FULL_DAYS, HOURS } from "../../../utils/dateUtils";
 import { ConfirmModal } from "../../shared/ConfirmModal";
 

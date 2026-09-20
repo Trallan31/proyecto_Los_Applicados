@@ -1,7 +1,5 @@
 import { useState } from "react";
-import type { Activity, Priority, Status } from "../../types/activities";
-import type { Project } from "../../types/projects";
-import type { Sprint } from "../../types/sprints";
+import type { Activity, Priority, Status, Project, Sprint } from "../../types";
 
 export function AddRowForm({
   project,

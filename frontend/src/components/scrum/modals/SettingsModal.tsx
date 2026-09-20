@@ -1,6 +1,5 @@
 import { useState } from "react";
-import type { Project } from "../../../types/projects";
-import type { Member } from "../../../types/users";
+import type { Project, Member } from "../../../types";
 import { ConfirmModal } from "../../shared/ConfirmModal";
 
 export function SettingsModal({

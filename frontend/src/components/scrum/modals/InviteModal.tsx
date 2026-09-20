@@ -1,6 +1,5 @@
 import { useState } from "react";
-import type { Project } from "../../../types/projects";
-import type { User } from "../../../types/users";
+import type { Project, User } from "../../../types";
 
 export function InviteModal({
   ALL_USERS,

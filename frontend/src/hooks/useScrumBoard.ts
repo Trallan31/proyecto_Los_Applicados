@@ -1,8 +1,5 @@
 import { useLocalStorage } from "./useLocalStorage";
-import type { Project } from "../types/projects";
-import type { Activity } from "../types/activities";
-import type { User, Member } from "../types/users";
-import type { Sprint } from "../types/sprints";
+import type { Project, Activity, User, Member, Sprint } from "../types";
 import { ALL_SPRINTS as GLOBAL_SPRINTS, ALL_USERS, INITIAL_PROJECTS } from "../data/mockScrum";
 
 export function useScrumBoard() {

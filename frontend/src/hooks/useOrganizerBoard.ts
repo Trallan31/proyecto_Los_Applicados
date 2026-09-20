@@ -1,11 +1,8 @@
 import { useState, useMemo } from "react";
 import { useLocalStorage } from "./useLocalStorage";
-import type { OrganizerTask, TaskType } from "../types/organizer";
-import type { Course, CourseSession } from "../types/courses";
+import type { OrganizerTask, TaskType, Course, CourseSession } from "../types";
 import { INITIAL_COURSES, INITIAL_TASKS, COURSE_SESSIONS } from "../data/mockOrganizer";
-import { parseLocalDate, getWeekBounds, getMonthBounds, type TimeFilter, type ViewTab } from "../utils/dateUtils";
-
-const TODAY = new Date();
+import { parseLocalDate, formatLocalDate, getToday, getWeekBounds, getMonthBounds, type TimeFilter, type ViewTab } from "../utils/dateUtils";
 
 export function useOrganizerBoard() {
   const [courses, setCourses] = useLocalStorage<Course[]>('organizer-courses', INITIAL_COURSES);
@@ -18,8 +15,12 @@ export function useOrganizerBoard() {
   const [statusFilter, setStatusFilter] = useState<OrganizerTask["status"] | "all">("all");
   const [tab, setTab] = useState<ViewTab>("lista");
 
-  const weekBounds = useMemo(() => getWeekBounds(TODAY), []);
-  const monthBounds = useMemo(() => getMonthBounds(TODAY), []);
+  // Clave del dia actual: mantiene estables weekBounds/monthBounds dentro
+  // del mismo dia (filteredTasks depende de su identidad) y los recalcula
+  // cuando el dia cambia.
+  const todayKey = formatLocalDate(getToday());
+  const weekBounds = useMemo(() => getWeekBounds(parseLocalDate(todayKey)), [todayKey]);
+  const monthBounds = useMemo(() => getMonthBounds(parseLocalDate(todayKey)), [todayKey]);
 
   const filteredTasks = useMemo(() => tasks.filter((t) => {
     if (activeCourse !== "all" && t.courseId !== activeCourse) return false;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Project } from "../../../types/projects";
+import type { Project } from "../../../types";
 import { COLORS } from "../../../data/mockScrum";
 
 export function NewProjectModal({

@@ -1,7 +1,4 @@
-import type { User } from "../types/users";
-import type { Sprint } from "../types/sprints";
-import type { Activity, Priority, Status } from "../types/activities";
-import type { Project } from "../types/projects";
+import type { User, Sprint, Activity, Priority, Status, Project } from "../types";
 
 export const COLORS = ["#4f7cff", "#9b6dff", "#2dd67b", "#f5c842", "#ff8c42", "#ff5c6a", "#00c9b1", "#e879f9"];
 
