@@ -1,5 +1,5 @@
 import type { OrganizerTask, Course, CourseSession } from "../../types";
-import { CATEGORY_COLORS } from "../../data/mockOrganizer";
+import { CATEGORY_COLORS } from "../../constants/ui";
 import { formatLocalDate, getWeekBounds, getToday, WEEK_DAYS, type TimeFilter } from "../../utils/dateUtils";
 
 export function MonthScheduleView({

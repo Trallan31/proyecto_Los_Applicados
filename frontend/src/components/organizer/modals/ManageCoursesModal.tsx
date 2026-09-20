@@ -1,28 +1,35 @@
 import { useState } from 'react';
 import type { Course, CourseSession, SessionType } from "../../../types";
-import { PRESET_COLORS, FULL_DAYS, HOURS } from "../../../utils/dateUtils";
+import { FULL_DAYS, HOURS } from "../../../utils/dateUtils";
+import { PALETTE } from "../../../constants/ui";
 import { ConfirmModal } from "../../shared/ConfirmModal";
 
 export function ManageCoursesModal({
   courses,
   sessions,
+  onAddCourse,
+  onDeleteCourse,
+  onAddSession,
+  onDeleteSession,
   onClose,
-  onSave,
 }: {
   courses: Course[];
   sessions: CourseSession[];
+  onAddCourse: (c: Omit<Course, "id" | "userId">) => void;
+  onDeleteCourse: (id: string) => void;
+  onAddSession: (s: Omit<CourseSession, "id">) => void;
+  onDeleteSession: (id: string) => void;
   onClose: () => void;
-  onSave: (c: Course[], s: CourseSession[]) => void;
 }) {
-  const [localCourses, setLocalCourses] = useState<Course[]>(courses.map((c) => ({ ...c })));
-  const [localSessions, setLocalSessions] = useState<CourseSession[]>(sessions.map((s) => ({ ...s })));
-  const [activeCourseId, setActiveCourseId] = useState<string>(courses[0]?.id ?? "course-1");
+  // El ramo seleccionado es lo unico que el modal guarda: el resto son los
+  // datos que vienen de la API, que se actualizan solos al escribir.
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'course' | 'session'; id: string } | null>(null);
 
   // New Course Inputs
   const [newName, setNewName] = useState("");
   const [newCode, setNewCode] = useState("");
-  const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
+  const [newColor, setNewColor] = useState(PALETTE[0]);
 
   // New Session Inputs for Active Course
   const [sessType, setSessType] = useState<SessionType>("Cátedra");
@@ -30,48 +37,33 @@ export function ManageCoursesModal({
   const [sessHour, setSessHour] = useState(8);
   const [sessDuration, setSessDuration] = useState(2);
 
-  function addCourse() {
+  function handleAddCourse() {
     if (!newName.trim() || !newCode.trim()) return;
     const codeUpper = newCode.trim().toUpperCase();
-    const initials = codeUpper.slice(0, 4);
-    const newId = crypto.randomUUID();
-    const newC: Course = {
-      id: newId,
-      userId: "user-1",
+    onAddCourse({
       name: newName.trim(),
       code: codeUpper,
-      shortName: initials,
+      shortName: codeUpper.slice(0, 4),
       color: newColor,
-    };
-    setLocalCourses((prev) => [...prev, newC]);
-    setActiveCourseId(newId);
+    });
     setNewName("");
     setNewCode("");
   }
 
-  function removeCourse(id: string) {
-    setLocalCourses((prev) => prev.filter((c) => c.id !== id));
-    setLocalSessions((prev) => prev.filter((s) => s.courseId !== id));
-  }
-
-  function addSession() {
-    const newS: CourseSession = {
-      id: crypto.randomUUID(),
-      courseId: activeCourseId,
+  function handleAddSession() {
+    if (!selectedCourse) return;
+    onAddSession({
+      courseId: selectedCourse.id,
       dayOfWeek: sessDay,
       startHour: sessHour,
       duration: sessDuration,
       type: sessType,
-    };
-    setLocalSessions((prev) => [...prev, newS]);
+    });
   }
 
-  function removeSession(id: string) {
-    setLocalSessions((prev) => prev.filter((s) => s.id !== id));
-  }
-
-  const selectedCourse = localCourses.find((c) => c.id === activeCourseId);
-  const courseSessions = localSessions.filter((s) => s.courseId === activeCourseId);
+  // Si no hay seleccion explicita, o el ramo elegido se borro, cae al primero.
+  const selectedCourse = courses.find((c) => c.id === selectedCourseId) ?? courses[0];
+  const courseSessions = sessions.filter((s) => s.courseId === selectedCourse?.id);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
@@ -84,14 +76,14 @@ export function ManageCoursesModal({
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left Course List */}
           <div className="w-1/2 border-r border-[#2a2f45] flex flex-col p-4 bg-[#151820]">
-            <h3 className="text-xs font-mono font-bold text-[#7c82a0] uppercase mb-3">Mis Ramos ({localCourses.length})</h3>
+            <h3 className="text-xs font-mono font-bold text-[#7c82a0] uppercase mb-3">Mis Ramos ({courses.length})</h3>
             <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2 pr-1">
-              {localCourses.map((c) => (
+              {courses.map((c) => (
                 <div
                   key={c.id}
-                  onClick={() => setActiveCourseId(c.id)}
+                  onClick={() => setSelectedCourseId(c.id)}
                   className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
-                    activeCourseId === c.id ? "bg-[#2a2f45] border-[#4f7cff]" : "bg-[#0d0f14] border-[#2a2f45] hover:border-[#3a4060]"
+                    selectedCourse?.id === c.id ? "bg-[#2a2f45] border-[#4f7cff]" : "bg-[#0d0f14] border-[#2a2f45] hover:border-[#3a4060]"
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -134,7 +126,7 @@ export function ManageCoursesModal({
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex gap-1">
-                  {PRESET_COLORS.slice(0, 6).map((pc: string) => (
+                  {PALETTE.slice(0, 6).map((pc: string) => (
                     <button
                       key={pc}
                       onClick={() => setNewColor(pc)}
@@ -144,7 +136,7 @@ export function ManageCoursesModal({
                   ))}
                 </div>
                 <button
-                  onClick={addCourse}
+                  onClick={handleAddCourse}
                   disabled={!newName.trim() || !newCode.trim()}
                   className="px-3 py-1 bg-[#4f7cff] text-white rounded text-xs font-bold hover:bg-[#3d6ae0] disabled:opacity-40"
                 >
@@ -228,7 +220,7 @@ export function ManageCoursesModal({
                         </select>
                       </div>
                     </div>
-                    <button onClick={addSession} className="w-full py-1.5 bg-[#2dd67b] text-black font-bold text-xs rounded hover:bg-[#25b868] transition-colors">
+                    <button onClick={handleAddSession} className="w-full py-1.5 bg-[#2dd67b] text-black font-bold text-xs rounded hover:bg-[#25b868] transition-colors">
                       + Agregar Horario a {selectedCourse.shortName || selectedCourse.code}
                     </button>
                   </div>
@@ -240,17 +232,11 @@ export function ManageCoursesModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-3 border-t border-[#2a2f45] flex justify-end gap-2 bg-[#151820]">
-          <button onClick={onClose} className="px-4 py-1.5 text-xs font-semibold text-[#7c82a0] hover:text-white">Cancelar</button>
-          <button
-            onClick={() => {
-              onSave(localCourses, localSessions);
-              onClose();
-            }}
-            className="px-4 py-1.5 text-xs font-bold bg-[#4f7cff] hover:bg-[#3d6ae0] text-white rounded transition-colors"
-          >
-            Guardar Cambios
+        {/* Footer: cada cambio ya quedo guardado en la API al hacerlo. */}
+        <div className="px-5 py-3 border-t border-[#2a2f45] flex items-center justify-between bg-[#151820]">
+          <span className="text-[10px] font-mono text-[#4a5070]">Los cambios se guardan al instante</span>
+          <button onClick={onClose} className="px-4 py-1.5 text-xs font-bold bg-[#4f7cff] hover:bg-[#3d6ae0] text-white rounded transition-colors">
+            Listo
           </button>
         </div>
       </div>
@@ -260,8 +246,8 @@ export function ManageCoursesModal({
           message={confirmDelete.type === 'course' ? "¿Seguro que deseas eliminar este ramo y todos sus horarios asociados?" : "¿Seguro que deseas eliminar este horario?"}
           confirmLabel="Sí, eliminar"
           onConfirm={() => {
-            if (confirmDelete.type === 'course') removeCourse(confirmDelete.id);
-            else removeSession(confirmDelete.id);
+            if (confirmDelete.type === 'course') onDeleteCourse(confirmDelete.id);
+            else onDeleteSession(confirmDelete.id);
             setConfirmDelete(null);
           }}
           onCancel={() => setConfirmDelete(null)}

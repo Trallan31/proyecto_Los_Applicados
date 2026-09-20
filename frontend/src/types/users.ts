@@ -1,3 +1,6 @@
+import type { ProjectRole } from "./projects";
+
+/** Recurso /users. */
 export interface User {
   id: string;
   username: string;
@@ -8,6 +11,10 @@ export interface User {
   avatarColor: string;
 }
 
+/**
+ * Usuario con su rol dentro del proyecto activo. No se persiste: lo compone
+ * useScrumBoard cruzando /users con project.members.
+ */
 export interface Member extends User {
-  role: "Admin" | "Miembro";
+  role: ProjectRole;
 }

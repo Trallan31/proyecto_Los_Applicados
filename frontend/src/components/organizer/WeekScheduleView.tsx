@@ -1,5 +1,5 @@
 import type { OrganizerTask, Course, CourseSession } from "../../types";
-import { CATEGORY_COLORS } from "../../data/mockOrganizer";
+import { CATEGORY_COLORS } from "../../constants/ui";
 import { FULL_DAYS, WEEK_DAYS, HOURS, formatLocalDate, getToday, type DayScheduleItem } from "../../utils/dateUtils";
 
 export function WeekScheduleView({

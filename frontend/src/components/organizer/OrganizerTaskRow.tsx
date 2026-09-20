@@ -1,7 +1,7 @@
 
 
 import type { OrganizerTask, Course } from "../../types";
-import { CATEGORY_COLORS } from "../../data/mockOrganizer";
+import { CATEGORY_COLORS } from "../../constants/ui";
 import { getToday, parseLocalDate, isOverdue } from "../../utils/dateUtils";
 
 

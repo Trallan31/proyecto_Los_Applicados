@@ -1,46 +1,44 @@
 import { useState } from "react";
-import type { Activity, Priority, Status, Project, Sprint } from "../../types";
+import type { Activity, Priority, Status, Member, Sprint } from "../../types";
+import { PRIORITIES, STATUSES } from "../../constants/ui";
 
 export function AddRowForm({
-  project,
-  ALL_SPRINTS,
-  PRIORITIES,
-  STATUSES,
+  sprints: projectSprints,
+  members: teamMembers,
+  categories,
   onAdd,
   onCreateCategory,
   onCreateSprint,
   onCancel,
 }: {
-  project: Project;
-  ALL_SPRINTS: Sprint[];
-  PRIORITIES: Priority[];
-  STATUSES: Status[];
-  onAdd: (t: Omit<Activity, "id" | "project">) => void;
+  sprints: Sprint[];
+  members: Member[];
+  categories: string[];
+  onAdd: (t: Omit<Activity, "id" | "projectId">) => void;
   onCreateCategory?: (name: string) => void;
-  onCreateSprint?: (name: string) => Sprint;
+  onCreateSprint?: (name: string) => Promise<Sprint | null>;
   onCancel: () => void;
 }) {
-  const projectSprints = ALL_SPRINTS.filter(s => s.projectId === project.id);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [sprintId, setSprintId] = useState<string>(projectSprints[0]?.id ?? "sprint-1");
-  const [category, setCategory] = useState(project.categories[0] ?? "");
+  const [sprintId, setSprintId] = useState<string>(projectSprints[0]?.id ?? "");
+  const [category, setCategory] = useState(categories[0] ?? "");
   const [members, setMembers] = useState<string[]>([]);
   const [priority, setPriority] = useState<Priority>("Media");
   const [status, setStatus] = useState<Status>("Pendiente");
   const [hours, setHours] = useState(0);
   const [dueDate, setDueDate] = useState("");
 
-  const [isCreatingCategory, setIsCreatingCategory] = useState(project.categories.length === 0);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(categories.length === 0);
   const [newCatName, setNewCatName] = useState("");
   const [isCreatingSprint, setIsCreatingSprint] = useState(projectSprints.length === 0);
   const [newSprintName, setNewSprintName] = useState("");
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!title.trim()) { onCancel(); return; }
-    
-    let finalCat = category || project.categories[0] || "";
+
+    let finalCat = category || categories[0] || "";
     if (isCreatingCategory && newCatName.trim() && onCreateCategory) {
       finalCat = newCatName.trim();
       onCreateCategory(finalCat);
@@ -51,9 +49,11 @@ export function AddRowForm({
 
     let finalSprintId = sprintId;
     if (isCreatingSprint && newSprintName.trim() && onCreateSprint) {
-      const newS = onCreateSprint(newSprintName.trim());
-      finalSprintId = newS.id;
-      setSprintId(finalSprintId);
+      const created = await onCreateSprint(newSprintName.trim());
+      if (created) {
+        finalSprintId = created.id;
+        setSprintId(finalSprintId);
+      }
       setNewSprintName("");
       setIsCreatingSprint(false);
     }
@@ -71,14 +71,12 @@ export function AddRowForm({
     }
   }
 
-  function handleCreateSprintSubmit() {
-    if (newSprintName.trim() && onCreateSprint) {
-      const trimmed = newSprintName.trim();
-      const newS = onCreateSprint(trimmed);
-      setSprintId(newS.id);
-      setNewSprintName("");
-      setIsCreatingSprint(false);
-    }
+  async function handleCreateSprintSubmit() {
+    if (!newSprintName.trim() || !onCreateSprint) return;
+    const created = await onCreateSprint(newSprintName.trim());
+    if (created) setSprintId(created.id);
+    setNewSprintName("");
+    setIsCreatingSprint(false);
   }
 
   return (
@@ -90,7 +88,7 @@ export function AddRowForm({
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); if (e.key === "Escape") onCancel(); }}
+          onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); if (e.key === "Escape") onCancel(); }}
           placeholder="Nombre de la tarea..."
           className="w-full bg-transparent px-2 py-1 text-[12px] font-medium text-[#e8eaf2] placeholder-[#2a2f45] focus:outline-none"
         />
@@ -104,7 +102,7 @@ export function AddRowForm({
               autoFocus={isCreatingSprint}
               value={newSprintName}
               onChange={(e) => setNewSprintName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleCreateSprintSubmit(); if (e.key === "Escape") setIsCreatingSprint(false); }}
+              onKeyDown={(e) => { if (e.key === "Enter") void handleCreateSprintSubmit(); if (e.key === "Escape") setIsCreatingSprint(false); }}
               placeholder="Nombre Sprint..."
               className="w-full bg-transparent text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
             />
@@ -132,7 +130,7 @@ export function AddRowForm({
 
       {/* CATEGORIA */}
       <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
-        {isCreatingCategory || project.categories.length === 0 ? (
+        {isCreatingCategory || categories.length === 0 ? (
           <div className="flex items-center gap-1">
             <input
               autoFocus={isCreatingCategory}
@@ -142,13 +140,13 @@ export function AddRowForm({
               placeholder="Categoría..."
               className="w-full bg-transparent text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
             />
-            {project.categories.length > 0 && (
+            {categories.length > 0 && (
               <button onClick={() => setIsCreatingCategory(false)} className="text-[10px] text-[#7c82a0]" aria-label="Cancelar">✕</button>
             )}
           </div>
         ) : (
           <select
-            value={project.categories.includes(category) ? category : (project.categories[0] ?? "")}
+            value={categories.includes(category) ? category : (categories[0] ?? "")}
             onChange={(e) => {
               if (e.target.value === "__NEW__") {
                 setIsCreatingCategory(true);
@@ -158,7 +156,7 @@ export function AddRowForm({
             }}
             className="w-full bg-transparent text-[11px] font-mono text-[#7c82a0] focus:outline-none"
           >
-            {project.categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             <option value="__NEW__" className="text-[#4f7cff] font-bold">+ Nueva categoría...</option>
           </select>
         )}
@@ -167,7 +165,7 @@ export function AddRowForm({
       {/* 4. RESPONSABLE (members) */}
       <td className="px-2 py-0 border-r border-[#2a2f45] h-9">
         <div className="flex flex-wrap gap-1">
-          {project.members.map((m) => (
+          {teamMembers.map((m) => (
             <button
               key={m.id}
               type="button"
@@ -209,13 +207,13 @@ export function AddRowForm({
 
       {/* 8. NOTAS (description) */}
       <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
-        <input value={description} onChange={(e) => setDescription(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); if (e.key === "Escape") onCancel(); }} placeholder="Notas..." className="w-full bg-transparent text-[11px] text-[#7c82a0] placeholder-[#2a2f45] focus:outline-none" />
+        <input value={description} onChange={(e) => setDescription(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); if (e.key === "Escape") onCancel(); }} placeholder="Notas..." className="w-full bg-transparent text-[11px] text-[#7c82a0] placeholder-[#2a2f45] focus:outline-none" />
       </td>
 
       {/* 9. Acciones */}
       <td className="h-9 px-2">
         <div className="flex items-center gap-1">
-          <button onClick={handleSubmit} className="text-[10px] font-mono text-[#4f7cff] hover:text-[#3d6ae0] transition-colors" aria-label="Guardar tarea">✓</button>
+          <button onClick={() => void handleSubmit()} className="text-[10px] font-mono text-[#4f7cff] hover:text-[#3d6ae0] transition-colors" aria-label="Guardar tarea">✓</button>
           <button onClick={onCancel} className="text-[10px] font-mono text-[#4a5070] hover:text-[#7c82a0] transition-colors" aria-label="Cancelar">✕</button>
         </div>
       </td>

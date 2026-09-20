@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Project } from "../../../types";
-import { COLORS } from "../../../data/mockScrum";
+import { PALETTE } from "../../../constants/ui";
 
 export function NewProjectModal({
   onCreate,
@@ -11,7 +11,7 @@ export function NewProjectModal({
 }) {
   const [name, setName] = useState("");
   const [course, setCourse] = useState("");
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(PALETTE[0]);
 
   return (
     <div className="fixed inset-0 bg-[#0d0f14]/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -30,7 +30,7 @@ export function NewProjectModal({
           <div>
             <label className="block text-xs font-mono text-[#7c82a0] mb-2 uppercase">Color</label>
             <div className="flex gap-2">
-              {COLORS.map(c => (
+              {PALETTE.map(c => (
                 <button key={c} onClick={() => setColor(c)} className={`w-6 h-6 rounded-full transition-transform hover:scale-110 ${color === c ? "ring-2 ring-white ring-offset-2 ring-offset-[#151820]" : ""}`} style={{ backgroundColor: c }} />
               ))}
             </div>

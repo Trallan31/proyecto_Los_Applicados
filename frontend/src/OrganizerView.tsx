@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATEGORY_COLORS, TASK_TYPES } from "./data/mockOrganizer";
+import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
 import type { OrganizerTask, TaskType } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
 import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
@@ -11,6 +11,7 @@ import { MonthScheduleView } from "./components/organizer/MonthScheduleView";
 import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesModal";
 import { AddOrganizerTaskModal } from "./components/organizer/modals/AddOrganizerTaskModal";
 import { ConfirmModal } from "./components/shared/ConfirmModal";
+import { Loading, ErrorBox } from "./components/shared/Feedback";
 
 
 export default function OrganizerView() {
@@ -29,10 +30,15 @@ export default function OrganizerView() {
     setTab,
     filteredTasks,
     sortedTasks,
+    loading,
+    error,
     toggleTaskStatus,
     deleteTask,
-    handleSaveCourses,
-    handleAddTask,
+    addTask,
+    addCourse,
+    deleteCourse,
+    addSession,
+    deleteSession,
     allCourseStats,
     scopedTasks,
     doneCount,
@@ -44,6 +50,9 @@ export default function OrganizerView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  if (loading) return <Loading label="Cargando organizador..." />;
+  if (error) return <ErrorBox message={error} />;
 
   return (
     <div className="flex h-full overflow-hidden text-[#e8eaf2]">
@@ -255,20 +264,21 @@ export default function OrganizerView() {
         <ManageCoursesModal
           courses={courses}
           sessions={sessions}
+          onAddCourse={addCourse}
+          onDeleteCourse={(id) => void deleteCourse(id)}
+          onAddSession={addSession}
+          onDeleteSession={deleteSession}
           onClose={() => setShowManageCourses(false)}
-          onSave={(newCourses, newSessions) => {
-            handleSaveCourses(newCourses, newSessions);
-          }}
         />
       )}
 
       {showAddModal && (
         <AddOrganizerTaskModal
           courses={courses}
-          defaultCourseId={activeCourse === "all" ? courses[0]?.id : activeCourse}
+          defaultCourseId={activeCourse === "all" ? (courses[0]?.id ?? null) : activeCourse}
           onClose={() => setShowAddModal(false)}
           onAdd={(t) => {
-            handleAddTask(t);
+            addTask(t);
             setShowAddModal(false);
           }}
         />

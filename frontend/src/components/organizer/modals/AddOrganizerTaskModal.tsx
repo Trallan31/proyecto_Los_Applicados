@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import type { OrganizerTask, TaskType, Course } from "../../../types";
-import { TASK_TYPES } from "../../../data/mockOrganizer";
+import { TASK_TYPES } from "../../../constants/ui";
 
 export function AddOrganizerTaskModal({
   courses,
@@ -10,13 +10,13 @@ export function AddOrganizerTaskModal({
   onAdd,
 }: {
   courses: Course[];
-  defaultCourseId: string | undefined;
+  defaultCourseId: string | null;
   onClose: () => void;
   onAdd: (t: Omit<OrganizerTask, "id" | "userId">) => void;
 }) {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<TaskType>("Tarea");
-  const [courseId, setCourseId] = useState<string | undefined>(defaultCourseId);
+  const [courseId, setCourseId] = useState<string | null>(defaultCourseId ?? null);
   const [priority, setPriority] = useState<"Alta" | "Media" | "Baja">("Media");
   const [endDate, setEndDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -25,7 +25,7 @@ export function AddOrganizerTaskModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !endDate) return;
-    const finalCourseId = courseId;
+    const finalCourseId = courseId || null;
     onAdd({
       title: title.trim(),
       type,
@@ -35,7 +35,7 @@ export function AddOrganizerTaskModal({
       courseId: finalCourseId,
       notes: notes.trim() || undefined,
       priority,
-      scope: finalCourseId === undefined ? "Personal" : "Ramo",
+      scope: finalCourseId === null ? "Personal" : "Ramo",
     });
   }
 
@@ -52,7 +52,7 @@ export function AddOrganizerTaskModal({
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Ramo">
-              <select value={courseId} onChange={(e) => setCourseId(e.target.value)} className="w-full bg-[#0d0f14] border border-[#2a2f45] rounded-md px-3 py-2 text-[12px] text-[#e8eaf2] focus:outline-none focus:border-[#4f7cff]">
+              <select value={courseId ?? ""} onChange={(e) => setCourseId(e.target.value || null)} className="w-full bg-[#0d0f14] border border-[#2a2f45] rounded-md px-3 py-2 text-[12px] text-[#e8eaf2] focus:outline-none focus:border-[#4f7cff]">
                 <option value="">Sin ramo (Personal)</option>
                 {courses.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
               </select>

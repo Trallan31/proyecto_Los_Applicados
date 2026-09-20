@@ -1,34 +1,33 @@
 import { useState } from "react";
-import type { Activity, Priority, Status, Project, Sprint } from "../../types";
+import type { Activity, Member, Sprint, Priority, Status } from "../../types";
 import { InlineText, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
 import { parseLocalDate, isOverdue } from "../../utils/dateUtils";
+import { PRIORITY_META, STATUS_META } from "../../constants/ui";
 
 export function TaskRow({
   task,
-  project,
-  ALL_SPRINTS,
-  PRIORITY_META,
-  STATUS_META,
+  sprints,
+  members,
+  categories,
   onUpdate,
   onDeleteTask,
   onCreateCategory,
   onCreateSprint,
 }: {
   task: Activity;
-  project: Project;
-  ALL_SPRINTS: Sprint[];
-  PRIORITY_META: Record<Priority, { color: string; bg: string }>;
-  STATUS_META: Record<Status, { color: string; bg: string; dot: string }>;
+  sprints: Sprint[];
+  members: Member[];
+  categories: string[];
   onUpdate: <K extends keyof Activity>(id: string, field: K, value: Activity[K]) => void;
   onDeleteTask?: (id: string) => void;
   onCreateCategory?: (name: string) => void;
-  onCreateSprint?: (name: string) => Sprint;
+  onCreateSprint?: (name: string) => Promise<Sprint | null>;
 }) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
   const isEditing = (field: string) => editingCell === field;
   const overdue = isOverdue(task.dueDate, task.status === "Completada");
-  const sprint = ALL_SPRINTS.find((s) => s.id === task.sprintId);
+  const sprint = sprints.find((s) => s.id === task.sprintId);
 
   const pMeta = PRIORITY_META[task.priority] || PRIORITY_META["Media"];
   const sMeta = STATUS_META[task.status] || STATUS_META["Pendiente"];
@@ -61,15 +60,15 @@ export function TaskRow({
         {isEditing("sprintId") ? (
           <InlineSelectWithCreate
             value={task.sprintId}
-            options={ALL_SPRINTS.filter(s => s.projectId === project.id).map((s) => s.id)}
-            labels={Object.fromEntries(ALL_SPRINTS.filter(s => s.projectId === project.id).map((s) => [s.id, s.name]))}
+            options={sprints.map((s) => s.id)}
+            labels={Object.fromEntries(sprints.map((s) => [s.id, s.name]))}
             createLabel="+ Nuevo Sprint..."
             onCreateNew={(name) => {
-              if (onCreateSprint) {
-                const newS = onCreateSprint(name);
-                onUpdate(task.id, "sprintId", newS.id);
-                setEditingCell(null);
-              }
+              if (!onCreateSprint) return;
+              setEditingCell(null);
+              void onCreateSprint(name).then((created) => {
+                if (created) onUpdate(task.id, "sprintId", created.id);
+              });
             }}
             onCommit={(v) => { onUpdate(task.id, "sprintId", v); setEditingCell(null); }}
             onBlur={() => setEditingCell(null)}
@@ -86,7 +85,7 @@ export function TaskRow({
         {isEditing("category") ? (
           <InlineSelectWithCreate
             value={task.category || ""}
-            options={project.categories}
+            options={categories}
             createLabel="+ Nueva categoría..."
             onCreateNew={(name) => {
               if (onCreateCategory) onCreateCategory(name);
@@ -108,7 +107,7 @@ export function TaskRow({
         {isEditing("members") ? (
           <MultiMemberSelect
             value={task.members}
-            members={project.members}
+            members={members}
             onCommit={(v) => { onUpdate(task.id, "members", v); setEditingCell(null); }}
             onBlur={() => setEditingCell(null)}
           />
@@ -118,7 +117,7 @@ export function TaskRow({
               <span className="text-[#2a2f45]">—</span>
             ) : (
               (task.members || []).map((id) => {
-                const member = project.members.find((m) => m.id === id);
+                const member = members.find((m) => m.id === id);
                 if (!member) return null;
                 return (
                   <div

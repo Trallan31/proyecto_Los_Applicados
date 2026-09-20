@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ALL_USERS, PRIORITY_META, STATUS_META, PRIORITIES, STATUSES } from "./data/mockScrum";
 import { TaskRow } from "./components/scrum/TaskRow";
 import { AddRowForm } from "./components/scrum/AddRowForm";
 import { NewProjectModal } from "./components/scrum/modals/NewProjectModal";
@@ -8,22 +7,28 @@ import { SettingsModal } from "./components/scrum/modals/SettingsModal";
 import { StatsModal } from "./components/scrum/StatsModal";
 import { ConfirmModal } from "./components/shared/ConfirmModal";
 import { useScrumBoard } from "./hooks/useScrumBoard";
+import { Loading, ErrorBox } from "./components/shared/Feedback";
 
 export function ScrumView() {
   const {
     projects,
+    users,
+    loading,
+    error,
     activeProjectId,
-    allSprints,
     project,
+    projectSprints,
+    projectTasks,
+    projectMembers,
     setActiveProjectId,
-    handleUpdateTask,
-    handleAddTask,
-    handleDeleteTask,
-    handleAddCategory,
-    handleDeleteCategory,
-    handleAddSprint,
-    handleDeleteSprint,
-    handleDeleteProject,
+    updateTask,
+    addTask,
+    deleteTask,
+    addCategory,
+    deleteCategory,
+    addSprint,
+    deleteSprint,
+    deleteProject,
     createProject,
     inviteMember,
     removeMember,
@@ -37,11 +42,12 @@ export function ScrumView() {
   const [showStats, setShowStats] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'task' | 'project'; id: string } | null>(null);
 
-  const doneCount = project?.tasks.filter((t) => t.status === "Completada").length || 0;
-  const totalCount = project?.tasks.length || 0;
+  const doneCount = projectTasks.filter((t) => t.status === "Completada").length;
+  const totalCount = projectTasks.length;
   const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
 
-
+  if (loading) return <Loading label="Cargando proyectos..." />;
+  if (error) return <ErrorBox message={error} />;
 
   if (!project) {
     return (
@@ -53,7 +59,7 @@ export function ScrumView() {
         >
           + Crear Proyecto
         </button>
-        {showNewProject && <NewProjectModal onCreate={(proj) => { createProject(proj); setShowNewProject(false); }} onClose={() => setShowNewProject(false)} />}
+        {showNewProject && <NewProjectModal onCreate={(proj) => { void createProject(proj); setShowNewProject(false); }} onClose={() => setShowNewProject(false)} />}
       </div>
     );
   }
@@ -116,7 +122,7 @@ export function ScrumView() {
             <div className="h-8 w-px bg-[#2a2f45]"></div>
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
-                {project.members.map((m) => (
+                {projectMembers.map((m) => (
                   <div key={m.id} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-[#151820]" style={{ backgroundColor: m.avatarColor }} title={`${m.name} (${m.role})`}>
                     {m.initials}
                   </div>
@@ -158,29 +164,27 @@ export function ScrumView() {
             </tr>
           </thead>
           <tbody>
-            {project.tasks.map((task) => (
+            {projectTasks.map((task) => (
               <TaskRow
                 key={task.id}
                 task={task}
-                project={project}
-                ALL_SPRINTS={allSprints}
-                PRIORITY_META={PRIORITY_META}
-                STATUS_META={STATUS_META}
-                onUpdate={handleUpdateTask}
+                sprints={projectSprints}
+                members={projectMembers}
+                categories={project.categories}
+                onUpdate={updateTask}
                 onDeleteTask={(id) => setConfirmDelete({ type: 'task', id })}
-                onCreateCategory={handleAddCategory}
-                onCreateSprint={handleAddSprint}
+                onCreateCategory={addCategory}
+                onCreateSprint={addSprint}
               />
             ))}
             {showNewRow && (
               <AddRowForm
-                project={project}
-                ALL_SPRINTS={allSprints}
-                PRIORITIES={PRIORITIES}
-                STATUSES={STATUSES}
-                onAdd={(t) => { handleAddTask(t); setShowNewRow(false); }}
-                onCreateCategory={handleAddCategory}
-                onCreateSprint={handleAddSprint}
+                sprints={projectSprints}
+                members={projectMembers}
+                categories={project.categories}
+                onAdd={(t) => { addTask(t); setShowNewRow(false); }}
+                onCreateCategory={addCategory}
+                onCreateSprint={addSprint}
                 onCancel={() => setShowNewRow(false)}
               />
             )}
@@ -197,18 +201,19 @@ export function ScrumView() {
         </table>
       </div>
 
-      {showNewProject && <NewProjectModal onCreate={(proj) => { createProject(proj); setShowNewProject(false); }} onClose={() => setShowNewProject(false)} />}
-      {showInvite && <InviteModal ALL_USERS={ALL_USERS} project={project} onInvite={(m) => { inviteMember(m); setShowInvite(false); }} onClose={() => setShowInvite(false)} />}
-      {showStats && <StatsModal project={project} onClose={() => setShowStats(false)} />}
+      {showNewProject && <NewProjectModal onCreate={(proj) => { void createProject(proj); setShowNewProject(false); }} onClose={() => setShowNewProject(false)} />}
+      {showInvite && <InviteModal users={users} members={projectMembers} onInvite={(u) => { inviteMember(u); setShowInvite(false); }} onClose={() => setShowInvite(false)} />}
+      {showStats && <StatsModal project={project} tasks={projectTasks} members={projectMembers} onClose={() => setShowStats(false)} />}
       {showSettings && (
         <SettingsModal
           project={project}
-          sprints={allSprints.filter((s) => s.projectId === project.id)}
+          members={projectMembers}
+          sprints={projectSprints}
           onClose={() => setShowSettings(false)}
           onRemove={removeMember}
           onUpdateRole={updateMemberRole}
-          onDeleteCategory={handleDeleteCategory}
-          onDeleteSprint={handleDeleteSprint}
+          onDeleteCategory={(c) => void deleteCategory(c)}
+          onDeleteSprint={(s) => void deleteSprint(s)}
           onDeleteProject={() => setConfirmDelete({ type: 'project', id: project.id })}
         />
       )}
@@ -219,9 +224,9 @@ export function ScrumView() {
           confirmLabel="Sí, eliminar"
           onConfirm={() => {
             if (confirmDelete.type === 'task') {
-              handleDeleteTask(confirmDelete.id);
+              deleteTask(confirmDelete.id);
             } else {
-              handleDeleteProject(confirmDelete.id);
+              void deleteProject(confirmDelete.id);
               setShowSettings(false);
             }
             setConfirmDelete(null);

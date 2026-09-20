@@ -1,190 +1,170 @@
-import { useLocalStorage } from "./useLocalStorage";
-import type { Project, Activity, User, Member, Sprint } from "../types";
-import { ALL_SPRINTS as GLOBAL_SPRINTS, ALL_USERS, INITIAL_PROJECTS } from "../data/mockScrum";
+import { useState, useMemo } from "react";
+import { useCollection } from "./useCollection";
+import type { Project, ProjectMember, ProjectRole, Activity, User, Member, Sprint } from "../types";
 
 export function useScrumBoard() {
-  const [projects, setProjects] = useLocalStorage<Project[]>('scrum-projects', INITIAL_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useLocalStorage<string>('scrum-active-project-id', INITIAL_PROJECTS[0]?.id ?? "");
-  const [allSprints, setAllSprints] = useLocalStorage<Sprint[]>('scrum-all-sprints', GLOBAL_SPRINTS);
+  const projects = useCollection<Project>("projects");
+  const sprints = useCollection<Sprint>("sprints");
+  const activities = useCollection<Activity>("activities");
+  const users = useCollection<User>("users");
 
-  const project = projects.find((p) => p.id === activeProjectId) || projects[0];
+  // Que proyecto se esta mirando es estado de la interfaz, no un dato: no
+  // viaja a la API. Si todavia no hay seleccion, se muestra el primero.
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
-  function handleUpdateTask<K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : {
-              ...p,
-              tasks: p.tasks.map((t) => (t.id === taskId ? { ...t, [field]: value } : t)),
-            }
-      )
-    );
+  const loading = projects.loading || sprints.loading || activities.loading || users.loading;
+  const error = projects.error ?? sprints.error ?? activities.error ?? users.error;
+
+  const project = projects.items.find((p) => p.id === selectedProjectId) ?? projects.items[0];
+  const activeProjectId = project?.id ?? "";
+
+  const projectSprints = useMemo(
+    () => sprints.items.filter((s) => s.projectId === activeProjectId),
+    [sprints.items, activeProjectId]
+  );
+
+  const projectTasks = useMemo(
+    () => activities.items.filter((a) => a.projectId === activeProjectId),
+    [activities.items, activeProjectId]
+  );
+
+  // El proyecto guarda solo { userId, role }. Para la interfaz se cruza con
+  // /users y se arma el Member completo.
+  const projectMembers = useMemo<Member[]>(() => {
+    if (!project) return [];
+    return project.members.flatMap((m) => {
+      const user = users.items.find((u) => u.id === m.userId);
+      return user ? [{ ...user, role: m.role }] : [];
+    });
+  }, [project, users.items]);
+
+  function updateTask<K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) {
+    void activities.edit(taskId, { [field]: value } as Partial<Omit<Activity, "id">>);
   }
 
-  function handleAddTask(task: Omit<Activity, "id" | "project">) {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : { ...p, tasks: [...p.tasks, { ...task, id: crypto.randomUUID(), project: p.id }] as Activity[] }
-      )
-    );
+  function addTask(task: Omit<Activity, "id" | "projectId">) {
+    if (!project) return;
+    void activities.add({ ...task, projectId: project.id });
   }
 
-  function handleDeleteTask(taskId: string) {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : { ...p, tasks: p.tasks.filter((t) => t.id !== taskId) }
-      )
-    );
+  function deleteTask(taskId: string) {
+    void activities.destroy(taskId);
   }
 
-  function handleAddCategory(name: string) {
-    if (!name.trim()) return;
+  function addCategory(name: string) {
     const trimmed = name.trim();
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : {
-              ...p,
-              categories: p.categories.includes(trimmed) ? p.categories : [...p.categories, trimmed],
-            }
-      )
+    if (!project || !trimmed || project.categories.includes(trimmed)) return;
+    void projects.edit(project.id, { categories: [...project.categories, trimmed] });
+  }
+
+  /** Borra la categoria del proyecto y la quita de las tareas que la usaban. */
+  async function deleteCategory(categoryName: string) {
+    if (!project) return;
+    await projects.edit(project.id, {
+      categories: project.categories.filter((c) => c !== categoryName),
+    });
+    await Promise.all(
+      projectTasks
+        .filter((t) => t.category === categoryName)
+        .map((t) => activities.edit(t.id, { category: "" }))
     );
   }
 
-  function handleDeleteCategory(categoryName: string) {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : {
-              ...p,
-              categories: p.categories.filter((c) => c !== categoryName),
-              tasks: p.tasks.map((t) => (t.category === categoryName ? { ...t, category: "" } : t)),
-            }
-      )
+  async function addSprint(name: string): Promise<Sprint | null> {
+    if (!project) return null;
+    return sprints.add({ projectId: project.id, name: name.trim() });
+  }
+
+  /** Borra el sprint y deja sin sprint a las tareas que lo tenian. */
+  async function deleteSprint(sprintId: string) {
+    await sprints.destroy(sprintId);
+    await Promise.all(
+      projectTasks
+        .filter((t) => t.sprintId === sprintId)
+        .map((t) => activities.edit(t.id, { sprintId: "" }))
     );
   }
 
-  function handleAddSprint(name: string): Sprint {
-    const trimmed = name.trim();
-    const newSprint: Sprint = {
-      id: crypto.randomUUID(),
-      projectId: activeProjectId,
-      name: trimmed,
-    };
-    setAllSprints((prev) => [...prev, newSprint]);
-    return newSprint;
-  }
-
-  function handleDeleteSprint(sprintId: string) {
-    setAllSprints((prev) => prev.filter((s) => !(s.id === sprintId && s.projectId === activeProjectId)));
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : {
-              ...p,
-              tasks: p.tasks.map((t) => (t.sprintId === sprintId ? { ...t, sprintId: "" } : t)),
-            }
-      )
+  /** Borra el proyecto con sus sprints y tareas, para no dejar huerfanos. */
+  async function deleteProject(projectId: string) {
+    await Promise.all(
+      activities.items.filter((a) => a.projectId === projectId).map((a) => activities.destroy(a.id))
     );
+    await Promise.all(
+      sprints.items.filter((s) => s.projectId === projectId).map((s) => sprints.destroy(s.id))
+    );
+    await projects.destroy(projectId);
+    if (selectedProjectId === projectId) setSelectedProjectId("");
   }
 
-  function handleDeleteProject(projectId: string) {
-    const remaining = projects.filter((p) => p.id !== projectId);
-    setProjects(remaining);
-    if (remaining.length > 0) {
-      setActiveProjectId(remaining[0].id);
-    }
-  }
-
-  function createProject(proj: Omit<Project, "id" | "tasks" | "categories" | "members">) {
-    const projectId = crypto.randomUUID();
-    const sprintId = crypto.randomUUID();
-    const newSprint: Sprint = { id: sprintId, projectId, name: "Sprint 1" };
-    const newProj: Project = {
+  async function createProject(proj: Omit<Project, "id" | "categories" | "members">) {
+    const creator = users.items[0];
+    if (!creator) return;
+    const created = await projects.add({
       ...proj,
-      id: projectId,
       categories: ["General"],
-      members: [{ ...ALL_USERS[0], role: "Admin" }],
-      tasks: [],
-    };
-    setAllSprints((prev) => [...prev, newSprint]);
-    setProjects((prev) => [...prev, newProj]);
-    setActiveProjectId(newProj.id);
+      members: [{ userId: creator.id, role: "Admin" }],
+    });
+    if (!created) return;
+    await sprints.add({ projectId: created.id, name: "Sprint 1" });
+    setSelectedProjectId(created.id);
   }
 
-  function inviteMember(member: User) {
-    if (project?.members.some((m) => m.id === member.id)) return;
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId ? p : { ...p, members: [...p.members, { ...member, role: "Miembro" } as Member] }
-      )
-    );
+  function inviteMember(user: User) {
+    if (!project || project.members.some((m) => m.userId === user.id)) return;
+    const members: ProjectMember[] = [...project.members, { userId: user.id, role: "Miembro" }];
+    void projects.edit(project.id, { members });
   }
 
+  /** No se puede dejar el proyecto sin miembros ni sin ningun Admin. */
   function removeMember(memberId: string) {
-    if (project && project.members.length <= 1) {
-      return;
-    }
-    const target = project?.members.find((m) => m.id === memberId);
-    const adminCount = project?.members.filter((m) => m.role === "Admin").length || 0;
-    if (target?.role === "Admin" && adminCount <= 1) {
-      return;
-    }
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : {
-              ...p,
-              members: p.members.filter((m) => m.id !== memberId),
-              tasks: p.tasks.map((t) => ({
-                ...t,
-                members: t.members ? t.members.filter((id) => id !== memberId) : [],
-              })),
-            }
-      )
+    if (!project) return;
+    const target = project.members.find((m) => m.userId === memberId);
+    if (!target || project.members.length <= 1) return;
+    const adminCount = project.members.filter((m) => m.role === "Admin").length;
+    if (target.role === "Admin" && adminCount <= 1) return;
+
+    void projects.edit(project.id, {
+      members: project.members.filter((m) => m.userId !== memberId),
+    });
+    void Promise.all(
+      projectTasks
+        .filter((t) => t.members.includes(memberId))
+        .map((t) => activities.edit(t.id, { members: t.members.filter((id) => id !== memberId) }))
     );
   }
 
-  function updateMemberRole(memberId: string, role: "Admin" | "Miembro") {
+  function updateMemberRole(memberId: string, role: ProjectRole) {
+    if (!project) return;
     if (role === "Miembro") {
-      const target = project?.members.find((m) => m.id === memberId);
-      const adminCount = project?.members.filter((m) => m.role === "Admin").length || 0;
-      if (target?.role === "Admin" && adminCount <= 1) {
-        return;
-      }
+      const target = project.members.find((m) => m.userId === memberId);
+      const adminCount = project.members.filter((m) => m.role === "Admin").length;
+      if (target?.role === "Admin" && adminCount <= 1) return;
     }
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : { ...p, members: p.members.map((m) => (m.id === memberId ? { ...m, role } : m)) }
-      )
-    );
+    void projects.edit(project.id, {
+      members: project.members.map((m) => (m.userId === memberId ? { ...m, role } : m)),
+    });
   }
 
   return {
-    projects,
-    activeProjectId,
-    allSprints,
+    projects: projects.items,
+    users: users.items,
+    loading,
+    error,
     project,
-    setActiveProjectId,
-    handleUpdateTask,
-    handleAddTask,
-    handleDeleteTask,
-    handleAddCategory,
-    handleDeleteCategory,
-    handleAddSprint,
-    handleDeleteSprint,
-    handleDeleteProject,
+    activeProjectId,
+    setActiveProjectId: setSelectedProjectId,
+    projectSprints,
+    projectTasks,
+    projectMembers,
+    updateTask,
+    addTask,
+    deleteTask,
+    addCategory,
+    deleteCategory,
+    addSprint,
+    deleteSprint,
+    deleteProject,
     createProject,
     inviteMember,
     removeMember,

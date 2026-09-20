@@ -1,15 +1,20 @@
 import { useMemo } from 'react';
-import type { Project, Status } from "../../types";
-import { STATUS_META, PRIORITY_META } from "../../data/mockScrum";
+import type { Project, Activity, Member, Status } from "../../types";
+import { STATUS_META, PRIORITY_META } from "../../constants/ui";
 import { isOverdue } from "../../utils/dateUtils";
 
-export function StatsModal({ project, onClose }: { project: Project; onClose: () => void }) {
+export function StatsModal({ project, tasks, members, onClose }: {
+  project: Project;
+  tasks: Activity[];
+  members: Member[];
+  onClose: () => void;
+}) {
   // calculate hours
   const memberHours: Record<string, number> = {};
   let grandTotalHours = 0;
   
-  project.members.forEach((m) => { memberHours[m.id] = 0; });
-  project.tasks.forEach((t) => {
+  members.forEach((m) => { memberHours[m.id] = 0; });
+  tasks.forEach((t) => {
     const hrs = Number(t.hours) || 0;
     grandTotalHours += hrs;
     if (t.members && t.members.length > 0) {
@@ -23,21 +28,21 @@ export function StatsModal({ project, onClose }: { project: Project; onClose: ()
   // Calculate status pie chart
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    project.tasks.forEach(t => {
+    tasks.forEach(t => {
       counts[t.status] = (counts[t.status] || 0) + 1;
     });
     return counts;
-  }, [project.tasks]);
+  }, [tasks]);
   
   const priorityCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    project.tasks.forEach(t => {
+    tasks.forEach(t => {
       counts[t.priority] = (counts[t.priority] || 0) + 1;
     });
     return counts;
-  }, [project.tasks]);
+  }, [tasks]);
 
-  const totalTasks = project.tasks.length;
+  const totalTasks = tasks.length;
   
   // Pie chart calculation
   let cumulativePercent = 0;
@@ -56,8 +61,8 @@ export function StatsModal({ project, onClose }: { project: Project; onClose: ()
     return segment;
   });
 
-  const doneCount = project.tasks.filter(t => t.status === "Completada").length;
-  const overdueCount = project.tasks.filter(t => isOverdue(t.dueDate, t.status === "Completada")).length;
+  const doneCount = tasks.filter(t => t.status === "Completada").length;
+  const overdueCount = tasks.filter(t => isOverdue(t.dueDate, t.status === "Completada")).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -172,7 +177,7 @@ export function StatsModal({ project, onClose }: { project: Project; onClose: ()
                     </tr>
                   </thead>
                   <tbody className="bg-[#151820]">
-                    {project.members.map((m) => (
+                    {members.map((m) => (
                       <tr key={m.id} className="border-b border-[#2a2f45]/50">
                         <td className="px-4 py-2 text-[#e8eaf2] flex items-center gap-2">
                           <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-[#2a2f45]" style={{ backgroundColor: m.avatarColor }}>

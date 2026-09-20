@@ -72,4 +72,3 @@ export interface DayScheduleItem {
   totalCols: number;
 }
 
-export const PRESET_COLORS = ["#4f7cff", "#9b6dff", "#2dd67b", "#f5c842", "#ff8c42", "#ff5c6a", "#00c9b1", "#e879f9", "#f97316", "#06b6d4"];

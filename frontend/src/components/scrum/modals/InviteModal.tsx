@@ -1,21 +1,21 @@
 import { useState } from "react";
-import type { Project, User } from "../../../types";
+import type { Member, User } from "../../../types";
 
 export function InviteModal({
-  ALL_USERS,
-  project,
+  users,
+  members,
   onInvite,
   onClose,
 }: {
-  ALL_USERS: User[];
-  project: Project;
-  onInvite: (m: User) => void;
+  users: User[];
+  members: Member[];
+  onInvite: (u: User) => void;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState("");
   
-  const availableUsers = ALL_USERS.filter(u => 
-    !project.members.some(m => m.id === u.id) &&
+  const availableUsers = users.filter(u =>
+    !members.some(m => m.id === u.id) &&
     (u.name.toLowerCase().includes(search.toLowerCase()) || u.username.toLowerCase().includes(search.toLowerCase()))
   );
 

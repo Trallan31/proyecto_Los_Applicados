@@ -4,6 +4,7 @@ import { ConfirmModal } from "../../shared/ConfirmModal";
 
 export function SettingsModal({
   project,
+  members,
   sprints,
   onRemove,
   onUpdateRole,
@@ -13,6 +14,7 @@ export function SettingsModal({
   onClose,
 }: {
   project: Project;
+  members: Member[];
   sprints: Sprint[];
   onRemove: (id: string) => void;
   onUpdateRole: (id: string, role: "Admin" | "Miembro") => void;
@@ -41,7 +43,7 @@ export function SettingsModal({
             onClick={() => setTab("team")}
             className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "team" ? "border-[#4f7cff] text-white" : "border-transparent text-[#7c82a0] hover:text-[#e8eaf2]"}`}
           >
-            Equipo ({project.members.length})
+            Equipo ({members.length})
           </button>
           <button
             onClick={() => setTab("categories")}
@@ -68,10 +70,10 @@ export function SettingsModal({
         <div className="p-6 overflow-auto flex-1 min-h-[250px]">
           {tab === "team" && (
             <div className="space-y-3">
-              {project.members.map(m => {
-                const adminCount = project.members.filter((member) => member.role === "Admin").length;
+              {members.map(m => {
+                const adminCount = members.filter((member) => member.role === "Admin").length;
                 const isOnlyAdmin = m.role === "Admin" && adminCount <= 1;
-                const isOnlyMember = project.members.length <= 1;
+                const isOnlyMember = members.length <= 1;
                 return (
                   <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2a2f45] bg-[#0d0f14]">
                     <div className="flex items-center gap-3">
