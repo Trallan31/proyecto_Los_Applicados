@@ -46,8 +46,7 @@ export const INITIAL_PROJECTS: Project[] = [
       { ...ALL_USERS[2], role: "Miembro" },
       { ...ALL_USERS[3], role: "Miembro" }
     ],
-    tasks: ALL_ACTIVITIES.filter(a => a.project === "project-1"),
-    sprints: ALL_SPRINTS.filter(s => s.projectId === "project-1")
+    tasks: ALL_ACTIVITIES.filter(a => a.project === "project-1")
   }, 
   { 
     id: "project-2", 
@@ -60,8 +59,7 @@ export const INITIAL_PROJECTS: Project[] = [
       { ...ALL_USERS[0], role: "Admin" },
       { ...ALL_USERS[4], role: "Miembro" }
     ],
-    tasks: ALL_ACTIVITIES.filter(a => a.project === "project-2"),
-    sprints: ALL_SPRINTS.filter(s => s.projectId === "project-2")
+    tasks: ALL_ACTIVITIES.filter(a => a.project === "project-2")
   }
 ];
 
@@ -79,3 +77,7 @@ export const STATUS_META: Record<Status, { color: string; bg: string; dot: strin
   "Completada":   { color: "#2dd67b", bg: "rgba(45,214,123,0.12)", dot: "#2dd67b" },
   "Cancelada":    { color: "#ff5c6a", bg: "rgba(255,92,106,0.12)", dot: "#ff5c6a" },
 };
+
+/** Unica fuente de prioridades y estados para desplegables y filtros. */
+export const PRIORITIES = Object.keys(PRIORITY_META) as Priority[];
+export const STATUSES = Object.keys(STATUS_META) as Status[];

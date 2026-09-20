@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import type { OrganizerTask, TaskType, Course } from "../../../types";
-import { CATEGORY_COLORS } from "../../../data/mockOrganizer";
+import { TASK_TYPES } from "../../../data/mockOrganizer";
 
 export function AddOrganizerTaskModal({
   courses,
@@ -59,7 +59,7 @@ export function AddOrganizerTaskModal({
             </Field>
             <Field label="Tipo">
               <select value={type} onChange={(e) => setType(e.target.value as TaskType)} className="w-full bg-[#0d0f14] border border-[#2a2f45] rounded-md px-3 py-2 text-[12px] text-[#e8eaf2] focus:outline-none focus:border-[#4f7cff]">
-                {(Object.keys(CATEGORY_COLORS) as TaskType[]).map((c) => <option key={c} value={c}>{c}</option>)}
+                {TASK_TYPES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
             <Field label="Prioridad">
@@ -91,7 +91,7 @@ export function AddOrganizerTaskModal({
   );
 }
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <label className="block text-[10px] font-mono text-[#4a5070] mb-1">{label.toUpperCase()}</label>

@@ -79,16 +79,6 @@ export function useScrumBoard() {
       name: trimmed,
     };
     setAllSprints((prev) => [...prev, newSprint]);
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id !== activeProjectId
-          ? p
-          : {
-              ...p,
-              sprints: [...p.sprints, newSprint],
-            }
-      )
-    );
     return newSprint;
   }
 
@@ -100,7 +90,6 @@ export function useScrumBoard() {
           ? p
           : {
               ...p,
-              sprints: p.sprints.filter((s) => s.id !== sprintId),
               tasks: p.tasks.map((t) => (t.sprintId === sprintId ? { ...t, sprintId: "" } : t)),
             }
       )
@@ -115,7 +104,7 @@ export function useScrumBoard() {
     }
   }
 
-  function createProject(proj: Omit<Project, "id" | "tasks" | "sprints" | "categories" | "members">) {
+  function createProject(proj: Omit<Project, "id" | "tasks" | "categories" | "members">) {
     const projectId = crypto.randomUUID();
     const sprintId = crypto.randomUUID();
     const newSprint: Sprint = { id: sprintId, projectId, name: "Sprint 1" };
@@ -125,7 +114,6 @@ export function useScrumBoard() {
       categories: ["General"],
       members: [{ ...ALL_USERS[0], role: "Admin" }],
       tasks: [],
-      sprints: [newSprint],
     };
     setAllSprints((prev) => [...prev, newSprint]);
     setProjects((prev) => [...prev, newProj]);

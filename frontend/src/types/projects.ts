@@ -1,6 +1,5 @@
 import type { Member } from "./users";
 import type { Activity } from "./activities";
-import type { Sprint } from "./sprints";
 
 export interface Project {
   id: string;
@@ -11,5 +10,4 @@ export interface Project {
   categories: string[];
   members: Member[];
   tasks: Activity[];
-  sprints: Sprint[];
 }

@@ -6,7 +6,7 @@ export function NewProjectModal({
   onCreate,
   onClose,
 }: {
-  onCreate: (p: Omit<Project, "id" | "tasks" | "sprints" | "categories" | "members">) => void;
+  onCreate: (p: Omit<Project, "id" | "tasks" | "categories" | "members">) => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState("");

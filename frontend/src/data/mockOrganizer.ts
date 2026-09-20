@@ -1,4 +1,4 @@
-import type { OrganizerTask, Course, CourseSession } from "../types";
+import type { OrganizerTask, Course, CourseSession, TaskType } from "../types";
 
 export const INITIAL_COURSES: Course[] = [
   { id: "course-1", userId: "user-1", name: "Cálculo III", code: "MAT1630", shortName: "CAL", color: "#9b6dff" },
@@ -36,9 +36,12 @@ export const COURSE_SESSIONS: CourseSession[] = [
   { id: "session-10", dayOfWeek: 4, startHour: 12, duration: 2, courseId: "course-4", type: "Cátedra" },
 ];
 
-export const CATEGORY_COLORS: Record<string, string> = {
+export const CATEGORY_COLORS: Record<TaskType, string> = {
   Tarea: "#4f7cff",
   "Evaluación": "#ff5c6a",
   Proyecto: "#9b6dff",
   Lectura: "#2dd67b",
 };
+
+/** Unica fuente de los tipos de actividad para desplegables y filtros. */
+export const TASK_TYPES = Object.keys(CATEGORY_COLORS) as TaskType[];

@@ -13,5 +13,5 @@ export interface OrganizerTask {
   status: "Pendiente" | "En curso" | "Completada";
   priority: "Alta" | "Media" | "Baja";
   notes?: string;
-  scrumActivityId?: number | null;
+  scrumActivityId?: string;
 }

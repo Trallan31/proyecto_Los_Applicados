@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATEGORY_COLORS } from "./data/mockOrganizer";
+import { CATEGORY_COLORS, TASK_TYPES } from "./data/mockOrganizer";
 import type { OrganizerTask, TaskType } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
 import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
@@ -88,7 +88,7 @@ export default function OrganizerView() {
 
         {/* Mini legend */}
         <div className="px-4 py-3 border-t border-[#2a2f45] space-y-1">
-          {(["Tarea", "Evaluación", "Proyecto", "Lectura"] as TaskType[]).map((c) => (
+          {TASK_TYPES.map((c) => (
             <div key={c} className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[c] }} />
               <span className="text-[10px] font-mono text-[#4a5070]">{c}</span>
@@ -192,7 +192,7 @@ export default function OrganizerView() {
                 className="bg-[#1c2030] border border-[#2a2f45] rounded-md px-2 py-1 text-[10px] font-mono text-[#7c82a0] focus:outline-none focus:border-[#4f7cff]"
               >
                 <option value="all">Tipo: todos</option>
-                {(Object.keys(CATEGORY_COLORS) as TaskType[]).map((c) => (
+                {TASK_TYPES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

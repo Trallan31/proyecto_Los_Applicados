@@ -1,6 +1,5 @@
 import { useState } from "react";
-import type { Priority, Status } from "./types";
-import { ALL_USERS, PRIORITY_META, STATUS_META } from "./data/mockScrum";
+import { ALL_USERS, PRIORITY_META, STATUS_META, PRIORITIES, STATUSES } from "./data/mockScrum";
 import { TaskRow } from "./components/scrum/TaskRow";
 import { AddRowForm } from "./components/scrum/AddRowForm";
 import { NewProjectModal } from "./components/scrum/modals/NewProjectModal";
@@ -177,8 +176,8 @@ export function ScrumView() {
               <AddRowForm
                 project={project}
                 ALL_SPRINTS={allSprints}
-                PRIORITIES={Object.keys(PRIORITY_META) as Priority[]}
-                STATUSES={Object.keys(STATUS_META) as Status[]}
+                PRIORITIES={PRIORITIES}
+                STATUSES={STATUSES}
                 onAdd={(t) => { handleAddTask(t); setShowNewRow(false); }}
                 onCreateCategory={handleAddCategory}
                 onCreateSprint={handleAddSprint}
@@ -204,6 +203,7 @@ export function ScrumView() {
       {showSettings && (
         <SettingsModal
           project={project}
+          sprints={allSprints.filter((s) => s.projectId === project.id)}
           onClose={() => setShowSettings(false)}
           onRemove={removeMember}
           onUpdateRole={updateMemberRole}

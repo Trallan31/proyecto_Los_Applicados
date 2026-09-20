@@ -1,9 +1,10 @@
 import { useState } from "react";
-import type { Project, Member } from "../../../types";
+import type { Project, Member, Sprint } from "../../../types";
 import { ConfirmModal } from "../../shared/ConfirmModal";
 
 export function SettingsModal({
   project,
+  sprints,
   onRemove,
   onUpdateRole,
   onDeleteCategory,
@@ -12,6 +13,7 @@ export function SettingsModal({
   onClose,
 }: {
   project: Project;
+  sprints: Sprint[];
   onRemove: (id: string) => void;
   onUpdateRole: (id: string, role: "Admin" | "Miembro") => void;
   onDeleteCategory?: (category: string) => void;
@@ -51,7 +53,7 @@ export function SettingsModal({
             onClick={() => setTab("sprints")}
             className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "sprints" ? "border-[#9b6dff] text-white" : "border-transparent text-[#7c82a0] hover:text-[#e8eaf2]"}`}
           >
-            Sprints ({project.sprints.length})
+            Sprints ({sprints.length})
           </button>
           {onDeleteProject && (
             <button
@@ -129,7 +131,7 @@ export function SettingsModal({
           {tab === "sprints" && (
             <div className="space-y-2">
               <p className="text-xs text-[#7c82a0] mb-3">Gestión de Sprints del proyecto:</p>
-              {project.sprints.map((s) => (
+              {sprints.map((s) => (
                 <div key={s.id} className="flex items-center justify-between p-2.5 rounded-lg border border-[#2a2f45] bg-[#0d0f14]">
                   <span className="text-xs font-mono text-[#e8eaf2]">{s.name}</span>
                   {onDeleteSprint && (
