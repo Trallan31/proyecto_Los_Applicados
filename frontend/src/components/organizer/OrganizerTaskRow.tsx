@@ -23,20 +23,20 @@ export function OrganizerTaskRow({
   const overdue = isOverdue(task.endDate, isDone);
 
   return (
-    <div className={`p-3.5 rounded-xl border transition-all ${isDone ? "bg-[#151820]/40 border-[#2a2f45]/50 opacity-60" : "bg-[#151820] border-[#2a2f45] hover:border-[#3a4060]"}`}>
+    <div className={`p-3.5 rounded-xl border transition-all ${isDone ? "bg-surface/40 border-border/50 opacity-60" : "bg-surface border-border hover:border-border-bright"}`}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onToggleStatus}
             className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-              isDone ? "bg-[#2dd67b] border-[#2dd67b] text-black font-bold" : "border-[#4a5070] hover:border-[#4f7cff]"
+              isDone ? "bg-[#2dd67b] border-[#2dd67b] text-black font-bold" : "border-text-dim hover:border-[#4f7cff]"
             }`}
           >
             {isDone && "✓"}
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className={`text-[13px] font-semibold ${isDone ? "line-through text-[#7c82a0]" : "text-[#e8eaf2]"}`}>
+              <span className={`text-[13px] font-semibold ${isDone ? "line-through text-text-muted" : "text-text"}`}>
                 {task.title}
               </span>
               {course && (
@@ -45,7 +45,7 @@ export function OrganizerTaskRow({
                 </span>
               )}
             </div>
-            {task.notes && <p className="text-[11px] text-[#7c82a0] mt-0.5 line-clamp-1">{task.notes}</p>}
+            {task.notes && <p className="text-[11px] text-text-muted mt-0.5 line-clamp-1">{task.notes}</p>}
           </div>
         </div>
 
@@ -54,12 +54,12 @@ export function OrganizerTaskRow({
             {task.type}
           </span>
           <div className="text-right">
-            <p className={`text-[11px] font-mono ${overdue ? "text-[#ff5c6a]" : "text-[#7c82a0]"}`}>
+            <p className={`text-[11px] font-mono ${overdue ? "text-[#ff5c6a]" : "text-text-muted"}`}>
               {overdue ? "Vencida" : diffDays === 0 ? "Hoy" : diffDays === 1 ? "Mañana" : due.toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
             </p>
-            {task.dueTime && <p className="text-[9px] font-mono text-[#4a5070]">{task.dueTime}</p>}
+            {task.dueTime && <p className="text-[9px] font-mono text-text-dim">{task.dueTime}</p>}
           </div>
-          <button onClick={onDelete} className="text-[#4a5070] hover:text-[#ff5c6a] transition-colors text-xs font-bold px-1">✕</button>
+          <button onClick={onDelete} className="text-text-dim hover:text-[#ff5c6a] transition-colors text-xs font-bold px-1">✕</button>
         </div>
       </div>
     </div>

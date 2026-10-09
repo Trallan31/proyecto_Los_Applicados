@@ -83,19 +83,19 @@ export function AddRowForm({
     <tr className="border-b border-[#4f7cff]/30 bg-[#4f7cff]/5">
 
       {/* 2. TAREA (title) */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
+      <td className="px-1 py-0 border-r border-border h-9">
         <input
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); if (e.key === "Escape") onCancel(); }}
           placeholder="Nombre de la tarea..."
-          className="w-full bg-transparent px-2 py-1 text-[12px] font-medium text-[#e8eaf2] placeholder-[#2a2f45] focus:outline-none"
+          className="w-full bg-transparent px-2 py-1 text-[12px] font-medium text-text placeholder-text-dim focus:outline-none"
         />
       </td>
 
       {/* 3. SPRINT */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
+      <td className="px-1 py-0 border-r border-border h-9">
         {isCreatingSprint || projectSprints.length === 0 ? (
           <div className="flex items-center gap-1">
             <input
@@ -104,10 +104,10 @@ export function AddRowForm({
               onChange={(e) => setNewSprintName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") void handleCreateSprintSubmit(); if (e.key === "Escape") setIsCreatingSprint(false); }}
               placeholder="Nombre Sprint..."
-              className="w-full bg-transparent text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
+              className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-dim focus:outline-none"
             />
             {projectSprints.length > 0 && (
-              <button onClick={() => setIsCreatingSprint(false)} className="text-[10px] text-[#7c82a0]" aria-label="Cancelar">✕</button>
+              <button onClick={() => setIsCreatingSprint(false)} className="text-[10px] text-text-muted" aria-label="Cancelar">✕</button>
             )}
           </div>
         ) : (
@@ -120,16 +120,16 @@ export function AddRowForm({
                 setSprintId(e.target.value);
               }
             }}
-            className="w-full bg-transparent text-[11px] font-mono text-[#7c82a0] focus:outline-none"
+            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
           >
-            {projectSprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            <option value="__NEW__" className="text-[#4f7cff] font-bold">+ Nuevo Sprint...</option>
+            {projectSprints.map((s) => <option key={s.id} value={s.id} className="bg-surface text-text">{s.name}</option>)}
+            <option value="__NEW__" className="bg-surface text-[#4f7cff] font-bold">+ Nuevo Sprint...</option>
           </select>
         )}
       </td>
 
       {/* CATEGORIA */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
+      <td className="px-1 py-0 border-r border-border h-9">
         {isCreatingCategory || categories.length === 0 ? (
           <div className="flex items-center gap-1">
             <input
@@ -138,10 +138,10 @@ export function AddRowForm({
               onChange={(e) => setNewCatName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleCreateCategorySubmit(); if (e.key === "Escape") setIsCreatingCategory(false); }}
               placeholder="Categoría..."
-              className="w-full bg-transparent text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
+              className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-dim focus:outline-none"
             />
             {categories.length > 0 && (
-              <button onClick={() => setIsCreatingCategory(false)} className="text-[10px] text-[#7c82a0]" aria-label="Cancelar">✕</button>
+              <button onClick={() => setIsCreatingCategory(false)} className="text-[10px] text-text-muted" aria-label="Cancelar">✕</button>
             )}
           </div>
         ) : (
@@ -154,16 +154,16 @@ export function AddRowForm({
                 setCategory(e.target.value);
               }
             }}
-            className="w-full bg-transparent text-[11px] font-mono text-[#7c82a0] focus:outline-none"
+            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
           >
-            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-            <option value="__NEW__" className="text-[#4f7cff] font-bold">+ Nueva categoría...</option>
+            {categories.map((c) => <option key={c} value={c} className="bg-surface text-text">{c}</option>)}
+            <option value="__NEW__" className="bg-surface text-[#4f7cff] font-bold">+ Nueva categoría...</option>
           </select>
         )}
       </td>
 
       {/* 4. RESPONSABLE (members) */}
-      <td className="px-2 py-0 border-r border-[#2a2f45] h-9">
+      <td className="px-2 py-0 border-r border-border h-9">
         <div className="flex flex-wrap gap-1">
           {teamMembers.map((m) => (
             <button
@@ -171,7 +171,7 @@ export function AddRowForm({
               type="button"
               onClick={() => setMembers((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : [...prev, m.id])}
               className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white transition-all"
-              style={{ backgroundColor: members.includes(m.id) ? m.avatarColor : "#2a2f45", opacity: members.includes(m.id) ? 1 : 0.5 }}
+              style={{ backgroundColor: members.includes(m.id) ? m.avatarColor : "var(--color-border)", opacity: members.includes(m.id) ? 1 : 0.5 }}
               title={m.name}
               aria-label={`Asignar a ${m.name}`}
             >
@@ -182,39 +182,39 @@ export function AddRowForm({
       </td>
 
       {/* 5. PRIORIDAD */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
-        <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full bg-transparent text-[11px] font-mono text-[#7c82a0] focus:outline-none">
-          {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+      <td className="px-1 py-0 border-r border-border h-9">
+        <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none">
+          {PRIORITIES.map((p) => <option key={p} value={p} className="bg-surface text-text">{p}</option>)}
         </select>
       </td>
 
       {/* 6. ESTADO */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
-        <select value={status} onChange={(e) => setStatus(e.target.value as Status)} className="w-full bg-transparent text-[11px] font-mono text-[#7c82a0] focus:outline-none">
-          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+      <td className="px-1 py-0 border-r border-border h-9">
+        <select value={status} onChange={(e) => setStatus(e.target.value as Status)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none">
+          {STATUSES.map((s) => <option key={s} value={s} className="bg-surface text-text">{s}</option>)}
         </select>
       </td>
 
       {/* HORAS */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
-        <input type="number" min="0" value={hours || ""} onChange={(e) => setHours(Number(e.target.value))} placeholder="h" className="w-full bg-transparent px-2 text-[11px] font-mono text-[#7c82a0] focus:outline-none" />
+      <td className="px-1 py-0 border-r border-border h-9">
+        <input type="number" min="0" value={hours || ""} onChange={(e) => setHours(Number(e.target.value))} placeholder="h" className="w-full bg-transparent px-2 text-[11px] font-mono text-text placeholder-text-dim focus:outline-none" />
       </td>
 
       {/* 7. DEADLINE (dueDate) */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
-        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full bg-transparent text-[11px] font-mono text-[#7c82a0] focus:outline-none" />
+      <td className="px-1 py-0 border-r border-border h-9">
+        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none" />
       </td>
 
       {/* 8. NOTAS (description) */}
-      <td className="px-1 py-0 border-r border-[#2a2f45] h-9">
-        <input value={description} onChange={(e) => setDescription(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); if (e.key === "Escape") onCancel(); }} placeholder="Notas..." className="w-full bg-transparent text-[11px] text-[#7c82a0] placeholder-[#2a2f45] focus:outline-none" />
+      <td className="px-1 py-0 border-r border-border h-9">
+        <input value={description} onChange={(e) => setDescription(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); if (e.key === "Escape") onCancel(); }} placeholder="Notas..." className="w-full bg-transparent text-[11px] text-text placeholder-text-dim focus:outline-none" />
       </td>
 
       {/* 9. Acciones */}
       <td className="h-9 px-2">
         <div className="flex items-center gap-1">
           <button onClick={() => void handleSubmit()} className="text-[10px] font-mono text-[#4f7cff] hover:text-[#3d6ae0] transition-colors" aria-label="Guardar tarea">✓</button>
-          <button onClick={onCancel} className="text-[10px] font-mono text-[#4a5070] hover:text-[#7c82a0] transition-colors" aria-label="Cancelar">✕</button>
+          <button onClick={onCancel} className="text-[10px] font-mono text-text-dim hover:text-text-muted transition-colors" aria-label="Cancelar">✕</button>
         </div>
       </td>
     </tr>

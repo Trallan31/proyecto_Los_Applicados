@@ -55,14 +55,14 @@ export default function OrganizerView() {
   if (error) return <ErrorBox message={error} />;
 
   return (
-    <div className="flex h-full overflow-hidden text-[#e8eaf2]">
+    <div className="flex h-full overflow-hidden text-text">
       {/* Course sidebar */}
-      <div className="w-56 flex-shrink-0 border-r border-[#2a2f45] bg-[#151820] flex flex-col">
-        <div className="px-4 py-3 border-b border-[#2a2f45] flex items-center justify-between">
-          <span className="text-[10px] font-mono font-medium uppercase tracking-widest text-[#4a5070]">Mis Ramos</span>
+      <div className="w-56 flex-shrink-0 border-r border-border bg-surface flex flex-col">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <span className="text-[10px] font-mono font-medium uppercase tracking-widest text-text-dim">Mis Ramos</span>
           <button
             onClick={() => setShowManageCourses(true)}
-            className="text-[10px] font-mono text-[#4a5070] hover:text-[#4f7cff] transition-colors"
+            className="text-[10px] font-mono text-text-dim hover:text-[#4f7cff] transition-colors"
             title="Gestionar ramos y horarios"
           >
             ⚙️ Ramos
@@ -96,11 +96,11 @@ export default function OrganizerView() {
         </div>
 
         {/* Mini legend */}
-        <div className="px-4 py-3 border-t border-[#2a2f45] space-y-1">
+        <div className="px-4 py-3 border-t border-border space-y-1">
           {TASK_TYPES.map((c) => (
             <div key={c} className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[c] }} />
-              <span className="text-[10px] font-mono text-[#4a5070]">{c}</span>
+              <span className="text-[10px] font-mono text-text-dim">{c}</span>
             </div>
           ))}
         </div>
@@ -109,20 +109,20 @@ export default function OrganizerView() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex-shrink-0 px-5 py-3.5 border-b border-[#2a2f45] flex items-center justify-between gap-4 bg-[#151820]">
+        <header className="flex-shrink-0 px-5 py-3.5 border-b border-border flex items-center justify-between gap-4 bg-surface">
           <div className="flex items-center gap-3">
             {activeCourseObj && (
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeCourseObj.color }} />
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#1c2030] text-[#7c82a0] border border-[#2a2f45]">
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-panel text-text-muted border border-border">
                   {activeCourseObj.code}
                 </span>
               </div>
             )}
-            <h1 className="font-display font-bold text-[16px] text-[#e8eaf2]">
+            <h1 className="font-display font-bold text-[16px] text-text">
               {activeCourse === "all" ? "Mi Organizador Personal" : activeCourseObj?.name}
             </h1>
-            <span className="text-[10px] font-mono text-[#4a5070] hidden sm:inline">
+            <span className="text-[10px] font-mono text-text-dim hidden sm:inline">
               {today.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
             </span>
           </div>
@@ -135,7 +135,7 @@ export default function OrganizerView() {
         </header>
 
         {/* Time filter + stats */}
-        <div className="flex-shrink-0 border-b border-[#2a2f45] bg-[#151820]">
+        <div className="flex-shrink-0 border-b border-border bg-surface">
           <div className="flex items-center gap-0 px-5 pt-2">
             {([
               { key: "todas", label: "Todas" },
@@ -148,7 +148,7 @@ export default function OrganizerView() {
                 className={`px-3 py-2 text-[12px] font-semibold border-b-2 -mb-px transition-all ${
                   timeFilter === t.key
                     ? "text-[#4f7cff] border-[#4f7cff]"
-                    : "text-[#4a5070] border-transparent hover:text-[#7c82a0]"
+                    : "text-text-dim border-transparent hover:text-text-muted"
                 }`}
               >
                 {t.label}
@@ -156,11 +156,11 @@ export default function OrganizerView() {
             ))}
           </div>
           <div className="flex items-center gap-5 px-5 pb-2.5 pt-1">
-            <StatPill label="Pendientes" value={scopedTasks.filter((t) => t.status === "Pendiente").length} color="#7c82a0" />
+            <StatPill label="Pendientes" value={scopedTasks.filter((t) => t.status === "Pendiente").length} color="var(--color-text-muted)" />
             <StatPill label="En curso" value={scopedTasks.filter((t) => t.status === "En curso").length} color="#f5c842" />
             <StatPill label="Completadas" value={doneCount} color="#2dd67b" />
             <div className="ml-auto flex items-center gap-2">
-              <div className="w-24 h-1.5 bg-[#2a2f45] rounded-full overflow-hidden">
+              <div className="w-24 h-1.5 bg-border rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
@@ -169,13 +169,13 @@ export default function OrganizerView() {
                   }}
                 />
               </div>
-              <span className="text-[10px] font-mono text-[#4a5070]">{doneCount}/{totalCount}</span>
+              <span className="text-[10px] font-mono text-text-dim">{doneCount}/{totalCount}</span>
             </div>
           </div>
         </div>
 
         {/* Tabs: lista / semana / mes */}
-        <div className="flex-shrink-0 px-5 flex items-center gap-2 border-b border-[#2a2f45] bg-[#0d0f14]">
+        <div className="flex-shrink-0 px-5 flex items-center gap-2 border-b border-border bg-background">
           {[
             { key: "lista", label: "📋 Lista de tareas" },
             { key: "semana", label: "📅 Horario semanal" },
@@ -185,7 +185,7 @@ export default function OrganizerView() {
               key={t.key}
               onClick={() => setTab(t.key as ViewTab)}
               className={`px-3 py-2 text-[11px] font-semibold border-b-2 -mb-px transition-colors ${
-                tab === t.key ? "text-[#4f7cff] border-[#4f7cff]" : "text-[#4a5070] border-transparent hover:text-[#7c82a0]"
+                tab === t.key ? "text-[#4f7cff] border-[#4f7cff]" : "text-text-dim border-transparent hover:text-text-muted"
               }`}
             >
               {t.label}
@@ -198,7 +198,7 @@ export default function OrganizerView() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as TaskType | "all")}
-                className="bg-[#1c2030] border border-[#2a2f45] rounded-md px-2 py-1 text-[10px] font-mono text-[#7c82a0] focus:outline-none focus:border-[#4f7cff]"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[10px] font-mono text-text-muted focus:outline-none focus:border-[#4f7cff]"
               >
                 <option value="all">Tipo: todos</option>
                 {TASK_TYPES.map((c) => (
@@ -208,7 +208,7 @@ export default function OrganizerView() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as OrganizerTask["status"] | "all")}
-                className="bg-[#1c2030] border border-[#2a2f45] rounded-md px-2 py-1 text-[10px] font-mono text-[#7c82a0] focus:outline-none focus:border-[#4f7cff]"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[10px] font-mono text-text-muted focus:outline-none focus:border-[#4f7cff]"
               >
                 <option value="all">Estado: todos</option>
                 <option value="Pendiente">Pendiente</option>
@@ -232,7 +232,7 @@ export default function OrganizerView() {
               />
             ))}
             {sortedTasks.length === 0 && (
-              <div className="text-center py-16 text-[#4a5070] text-xs font-mono">
+              <div className="text-center py-16 text-text-dim text-xs font-mono">
                 No hay actividades para mostrar
               </div>
             )}

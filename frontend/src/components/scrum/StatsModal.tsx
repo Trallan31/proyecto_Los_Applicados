@@ -48,7 +48,7 @@ export function StatsModal({ project, tasks, members, onClose }: {
   let cumulativePercent = 0;
   const pieSegments = Object.entries(statusCounts).map(([status, count]) => {
     const percent = totalTasks === 0 ? 0 : (count / totalTasks) * 100;
-    const meta = STATUS_META[status as Status] || { color: '#7c82a0' };
+    const meta = STATUS_META[status as Status] || { color: 'var(--color-text-muted)' };
     const segment = {
       status,
       count,
@@ -66,14 +66,14 @@ export function StatsModal({ project, tasks, members, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-4xl bg-[#151820] rounded-xl shadow-2xl shadow-[#4f7cff]/10 border border-[#2a2f45] overflow-hidden flex flex-col max-h-full">
+      <div className="w-full max-w-4xl bg-surface rounded-xl shadow-2xl shadow-[#4f7cff]/10 border border-border overflow-hidden flex flex-col max-h-full">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#2a2f45] flex items-center justify-between sticky top-0 bg-[#151820]/90 backdrop-blur z-10">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between sticky top-0 bg-surface/90 backdrop-blur z-10">
           <div>
-            <h2 className="text-lg font-bold text-[#e8eaf2]">Estadísticas del Proyecto</h2>
-            <p className="text-[11px] font-mono text-[#7c82a0] mt-1">{project.name}</p>
+            <h2 className="text-lg font-bold text-text">Estadísticas del Proyecto</h2>
+            <p className="text-[11px] font-mono text-text-muted mt-1">{project.name}</p>
           </div>
-          <button onClick={onClose} className="text-[#7c82a0] hover:text-[#ff5c6a] transition-colors p-2 rounded-full hover:bg-[#2a2f45]" title="Cerrar">
+          <button onClick={onClose} className="text-text-muted hover:text-[#ff5c6a] transition-colors p-2 rounded-full hover:bg-panel-hover" title="Cerrar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
@@ -84,12 +84,12 @@ export function StatsModal({ project, tasks, members, onClose }: {
           {/* Left Column: Charts and Priorities */}
           <div className="space-y-8">
             {/* Pie Chart */}
-            <div className="bg-[#1c2030]/50 rounded-xl p-5 border border-[#2a2f45]">
-              <h3 className="text-sm font-bold text-[#e8eaf2] mb-4">Estado de las Tareas</h3>
+            <div className="bg-panel/50 rounded-xl p-5 border border-border">
+              <h3 className="text-sm font-bold text-text mb-4">Estado de las Tareas</h3>
               <div className="flex items-center gap-6">
                 <div className="w-32 h-32 relative flex-shrink-0">
                   <svg viewBox="0 0 32 32" className="w-full h-full transform -rotate-90 rounded-full">
-                    <circle r="16" cx="16" cy="16" fill="#151820" />
+                    <circle r="16" cx="16" cy="16" className="fill-surface" />
                     {totalTasks > 0 ? pieSegments.map((seg, i) => (
                       <circle
                         key={i}
@@ -103,12 +103,12 @@ export function StatsModal({ project, tasks, members, onClose }: {
                         strokeDashoffset={seg.strokeDashoffset}
                       />
                     )) : (
-                      <circle r="16" cx="16" cy="16" fill="none" stroke="#2a2f45" strokeWidth="32" />
+                      <circle r="16" cx="16" cy="16" fill="none" className="stroke-border" strokeWidth="32" />
                     )}
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#151820] m-4 rounded-full shadow-inner border border-[#2a2f45]/50">
-                     <span className="text-lg font-bold text-white">{totalTasks > 0 ? Math.round((doneCount/totalTasks)*100) : 0}%</span>
-                     <span className="text-[8px] font-mono text-[#7c82a0]">Done</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface m-4 rounded-full shadow-inner border border-border/50">
+                     <span className="text-lg font-bold text-text">{totalTasks > 0 ? Math.round((doneCount/totalTasks)*100) : 0}%</span>
+                     <span className="text-[8px] font-mono text-text-muted">Done</span>
                   </div>
                 </div>
                 
@@ -118,9 +118,9 @@ export function StatsModal({ project, tasks, members, onClose }: {
                     <div key={seg.status} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: seg.color }}></span>
-                        <span className="text-[11px] font-mono text-[#e8eaf2]">{seg.status}</span>
+                        <span className="text-[11px] font-mono text-text">{seg.status}</span>
                       </div>
-                      <span className="text-[11px] font-mono text-[#7c82a0]">{seg.count} ({Math.round(seg.percent)}%)</span>
+                      <span className="text-[11px] font-mono text-text-muted">{seg.count} ({Math.round(seg.percent)}%)</span>
                     </div>
                   ))}
                 </div>
@@ -129,9 +129,9 @@ export function StatsModal({ project, tasks, members, onClose }: {
 
             {/* General Highlights */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#1c2030]/50 rounded-xl p-4 border border-[#2a2f45] flex flex-col justify-center items-center text-center">
-                <span className="text-3xl font-bold text-[#e8eaf2]">{totalTasks}</span>
-                <span className="text-[10px] font-mono text-[#7c82a0] uppercase mt-2">Tareas Totales</span>
+              <div className="bg-panel/50 rounded-xl p-4 border border-border flex flex-col justify-center items-center text-center">
+                <span className="text-3xl font-bold text-text">{totalTasks}</span>
+                <span className="text-[10px] font-mono text-text-muted uppercase mt-2">Tareas Totales</span>
               </div>
               <div className="bg-[#ff5c6a]/10 rounded-xl p-4 border border-[#ff5c6a]/30 flex flex-col justify-center items-center text-center">
                 <span className="text-3xl font-bold text-[#ff5c6a]">{overdueCount}</span>
@@ -144,8 +144,8 @@ export function StatsModal({ project, tasks, members, onClose }: {
           {/* Right Column: Priorities and Hours */}
           <div className="space-y-8">
             {/* Priority Distribution */}
-            <div className="bg-[#1c2030]/50 rounded-xl p-5 border border-[#2a2f45]">
-              <h3 className="text-sm font-bold text-[#e8eaf2] mb-4">Por Prioridad</h3>
+            <div className="bg-panel/50 rounded-xl p-5 border border-border">
+              <h3 className="text-sm font-bold text-text mb-4">Por Prioridad</h3>
               <div className="space-y-3">
                 {Object.entries(PRIORITY_META).map(([prio, meta]) => {
                   const count = priorityCounts[prio] || 0;
@@ -154,9 +154,9 @@ export function StatsModal({ project, tasks, members, onClose }: {
                     <div key={prio}>
                       <div className="flex justify-between text-[11px] font-mono mb-1.5">
                         <span style={{ color: meta.color }}>{prio}</span>
-                        <span className="text-[#7c82a0]">{count} ({Math.round(pct)}%)</span>
+                        <span className="text-text-muted">{count} ({Math.round(pct)}%)</span>
                       </div>
-                      <div className="h-2 w-full bg-[#151820] rounded-full overflow-hidden border border-[#2a2f45]/50">
+                      <div className="h-2 w-full bg-surface rounded-full overflow-hidden border border-border/50">
                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: meta.color }}></div>
                       </div>
                     </div>
@@ -166,33 +166,33 @@ export function StatsModal({ project, tasks, members, onClose }: {
             </div>
 
             {/* Resumen de Horas */}
-            <div className="bg-[#1c2030]/50 rounded-xl p-5 border border-[#2a2f45]">
-              <h3 className="text-sm font-bold text-[#e8eaf2] mb-4">Carga de Horas</h3>
-              <div className="w-full border border-[#2a2f45] rounded overflow-hidden">
+            <div className="bg-panel/50 rounded-xl p-5 border border-border">
+              <h3 className="text-sm font-bold text-text mb-4">Carga de Horas</h3>
+              <div className="w-full border border-border rounded overflow-hidden">
                 <table className="w-full text-[12px] text-left border-collapse">
                   <thead>
                     <tr className="bg-[#4f7cff] text-white">
-                      <th className="px-4 py-2.5 font-medium border-b border-[#2a2f45]">Encargado</th>
-                      <th className="px-4 py-2.5 font-medium border-b border-[#2a2f45] text-right">Horas</th>
+                      <th className="px-4 py-2.5 font-medium border-b border-border">Encargado</th>
+                      <th className="px-4 py-2.5 font-medium border-b border-border text-right">Horas</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-[#151820]">
+                  <tbody className="bg-surface">
                     {members.map((m) => (
-                      <tr key={m.id} className="border-b border-[#2a2f45]/50">
-                        <td className="px-4 py-2 text-[#e8eaf2] flex items-center gap-2">
-                          <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-[#2a2f45]" style={{ backgroundColor: m.avatarColor }}>
+                      <tr key={m.id} className="border-b border-border/50">
+                        <td className="px-4 py-2 text-text flex items-center gap-2">
+                          <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-border" style={{ backgroundColor: m.avatarColor }}>
                             {m.initials}
                           </span>
                           {m.name} {m.lastName}
                         </td>
-                        <td className="px-4 py-2 text-right font-mono text-[#e8eaf2]">{Number((memberHours[m.id] || 0).toFixed(1))}h</td>
+                        <td className="px-4 py-2 text-right font-mono text-text">{Number((memberHours[m.id] || 0).toFixed(1))}h</td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-[#2a2f45] font-bold">
+                  <tfoot className="bg-panel font-bold border-t border-border">
                     <tr>
-                      <td className="px-4 py-2.5 text-white">Total del Proyecto</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-white">{Number(grandTotalHours.toFixed(1))}h</td>
+                      <td className="px-4 py-2.5 text-text">Total del Proyecto</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-text">{Number(grandTotalHours.toFixed(1))}h</td>
                     </tr>
                   </tfoot>
                 </table>

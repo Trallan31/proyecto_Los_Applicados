@@ -30,23 +30,23 @@ export function WeekScheduleView({
             date.setDate(today.getDate() + diff);
             const isToday = date.toDateString() === today.toDateString();
             return (
-              <div key={d} className={`text-center py-2 rounded-md border ${isToday ? "bg-[#4f7cff]/20 border-[#4f7cff]" : "bg-[#151820] border-[#2a2f45]"}`}>
-                <p className={`text-[9px] font-mono uppercase ${isToday ? "text-[#4f7cff] font-bold" : "text-[#4a5070]"}`}>{WEEK_DAYS[i]}</p>
-                <p className={`text-[14px] font-bold ${isToday ? "text-white" : "text-[#e8eaf2]"}`}>{date.getDate()}</p>
+              <div key={d} className={`text-center py-2 rounded-md border ${isToday ? "bg-[#4f7cff]/20 border-[#4f7cff]" : "bg-surface border-border"}`}>
+                <p className={`text-[9px] font-mono uppercase ${isToday ? "text-[#4f7cff] font-bold" : "text-text-dim"}`}>{WEEK_DAYS[i]}</p>
+                <p className={`text-[14px] font-bold ${isToday ? "text-[#4f7cff]" : "text-text"}`}>{date.getDate()}</p>
               </div>
             );
           })}
         </div>
 
         {/* Time Grid */}
-        <div className="relative border border-[#2a2f45] rounded-xl bg-[#151820]/40 overflow-hidden">
+        <div className="relative border border-border rounded-xl bg-surface/40 overflow-hidden">
           {HOURS.map((h) => (
-            <div key={h} className="grid gap-1 border-b border-[#2a2f45]/40" style={{ gridTemplateColumns: "56px repeat(7, 1fr)", height: CELL_HEIGHT }}>
-              <div className="flex items-start justify-end pr-2 pt-1 border-r border-[#2a2f45]">
-                <span className="text-[9px] font-mono text-[#4a5070]">{h}:00</span>
+            <div key={h} className="grid gap-1 border-b border-border/40" style={{ gridTemplateColumns: "56px repeat(7, 1fr)", height: CELL_HEIGHT }}>
+              <div className="flex items-start justify-end pr-2 pt-1 border-r border-border">
+                <span className="text-[9px] font-mono text-text-dim">{h}:00</span>
               </div>
               {FULL_DAYS.map((d) => (
-                <div key={d} className="border-r border-[#2a2f45]/20" />
+                <div key={d} className="border-r border-border/20" />
               ))}
             </div>
           ))}
@@ -205,12 +205,12 @@ export function WeekScheduleView({
                             <p className="text-[10px] font-mono font-bold truncate" style={{ color: item.color }}>
                               {course?.code}
                             </p>
-                            <span className="text-[7.5px] font-mono px-1 rounded bg-[#0d0f14]/60 text-white flex-shrink-0">
+                            <span className="text-[7.5px] font-mono px-1 rounded bg-background/60 text-text flex-shrink-0">
                               {s.type}
                             </span>
                           </div>
-                          <p className="text-[10px] font-semibold text-white truncate mt-0.5">{course?.name}</p>
-                          <p className="text-[8.5px] font-mono text-[#7c82a0] mt-0.5">
+                          <p className="text-[10px] font-semibold text-text truncate mt-0.5">{course?.name}</p>
+                          <p className="text-[8.5px] font-mono text-text-muted mt-0.5">
                             {s.startHour}:00 - {s.startHour + s.duration}:00
                           </p>
                         </div>
@@ -225,24 +225,23 @@ export function WeekScheduleView({
                         <div
                           key={item.id}
                           title={titleText}
-                          className="absolute rounded-md px-1.5 py-1 shadow-lg pointer-events-auto border transition-all hover:z-20 hover:scale-[1.02]"
+                          className="absolute rounded-md px-1.5 py-1 shadow-lg pointer-events-auto border transition-all hover:z-20 hover:scale-[1.02] bg-surface"
                           style={{
                             top: topPx + 1,
                             height: heightPx,
                             left: `calc(${leftPercent}% + 2px)`,
                             width: `calc(${widthPercent}% - 4px)`,
-                            backgroundColor: "#151820",
                             borderColor: item.color,
                             borderLeft: `4px solid ${item.color}`,
                           }}
                         >
                           <div className="flex items-center justify-between gap-1">
-                            <span className="text-[7.5px] font-mono px-1 rounded text-white flex-shrink-0" style={{ backgroundColor: `${item.color}40` }}>
+                            <span className="text-[7.5px] font-mono px-1 rounded text-text flex-shrink-0" style={{ backgroundColor: `${item.color}40` }}>
                               {item.hasTime ? t.dueTime : "📍 Sin hora"}
                             </span>
-                            <span className="text-[7.5px] font-mono text-[#7c82a0] truncate">{t.type}</span>
+                            <span className="text-[7.5px] font-mono text-text-muted truncate">{t.type}</span>
                           </div>
-                          <p className="text-[9.5px] font-bold text-white truncate mt-0.5">{t.title}</p>
+                          <p className="text-[9.5px] font-bold text-text truncate mt-0.5">{t.title}</p>
                         </div>
                       );
                     }

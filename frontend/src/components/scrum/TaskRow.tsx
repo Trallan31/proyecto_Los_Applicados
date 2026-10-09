@@ -37,11 +37,11 @@ export function TaskRow({
   };
 
   return (
-    <tr className="border-b border-[#2a2f45] hover:bg-[#1c2030] transition-colors group">
+    <tr className="border-b border-border hover:bg-panel-hover transition-colors group">
 
 
       {/* TAREA */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("title")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("title")}>
         {isEditing("title") ? (
           <InlineText
             value={task.title}
@@ -49,14 +49,14 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[12px] font-medium text-[#e8eaf2] cursor-pointer hover:text-[#4f7cff] transition-colors line-clamp-1">
+          <span className="text-[12px] font-medium text-text cursor-pointer hover:text-[#4f7cff] transition-colors line-clamp-1">
             {task.title}
           </span>
         )}
       </td>
 
       {/* SPRINT */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("sprintId")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("sprintId")}>
         {isEditing("sprintId") ? (
           <InlineSelectWithCreate
             value={task.sprintId}
@@ -74,14 +74,14 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[11px] font-mono text-[#7c82a0] cursor-pointer hover:text-[#e8eaf2] transition-colors">
-            {sprint?.name || <span className="text-[#2a2f45]">—</span>}
+          <span className="text-[11px] font-mono text-text-muted cursor-pointer hover:text-text transition-colors">
+            {sprint?.name || <span className="text-text-dim">—</span>}
           </span>
         )}
       </td>
 
       {/* CATEGORÍA */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("category")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("category")}>
         {isEditing("category") ? (
           <InlineSelectWithCreate
             value={task.category || ""}
@@ -96,14 +96,14 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[11px] font-mono text-[#7c82a0] cursor-pointer hover:text-[#e8eaf2] transition-colors">
-            {task.category || <span className="text-[#2a2f45]">—</span>}
+          <span className="text-[11px] font-mono text-text-muted cursor-pointer hover:text-text transition-colors">
+            {task.category || <span className="text-text-dim">—</span>}
           </span>
         )}
       </td>
 
       {/* RESPONSABLE */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("members")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("members")}>
         {isEditing("members") ? (
           <MultiMemberSelect
             value={task.members}
@@ -114,7 +114,7 @@ export function TaskRow({
         ) : (
           <div className="flex -space-x-1 cursor-pointer">
             {(!task.members || task.members.length === 0) ? (
-              <span className="text-[#2a2f45]">—</span>
+              <span className="text-text-dim">—</span>
             ) : (
               (task.members || []).map((id) => {
                 const member = members.find((m) => m.id === id);
@@ -122,7 +122,7 @@ export function TaskRow({
                 return (
                   <div
                     key={member.id}
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-[#151820]"
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-surface"
                     style={{ backgroundColor: member.avatarColor }}
                     title={member.name}
                   >
@@ -136,7 +136,7 @@ export function TaskRow({
       </td>
 
       {/* PRIORIDAD */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("priority")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("priority")}>
         {isEditing("priority") ? (
           <InlineSelect
             value={task.priority}
@@ -155,7 +155,7 @@ export function TaskRow({
       </td>
 
       {/* ESTADO */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("status")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("status")}>
         {isEditing("status") ? (
           <InlineSelect
             value={task.status}
@@ -175,7 +175,7 @@ export function TaskRow({
       </td>
 
       {/* HORAS */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("hours")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("hours")}>
         {isEditing("hours") ? (
           <InlineText
             value={String(task.hours || 0)}
@@ -183,30 +183,30 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[11px] font-mono text-[#7c82a0] cursor-pointer hover:text-[#e8eaf2] transition-colors">
-            {task.hours ? task.hours + "h" : <span className="text-[#2a2f45]">—</span>}
+          <span className="text-[11px] font-mono text-text-muted cursor-pointer hover:text-text transition-colors">
+            {task.hours ? task.hours + "h" : <span className="text-text-dim">—</span>}
           </span>
         )}
       </td>
 
       {/* DEADLINE */}
-      <td className="px-3 py-2 border-r border-[#2a2f45] group/cell relative" onDoubleClick={() => handleDoubleClick("dueDate")}>
+      <td className="px-3 py-2 border-r border-border group/cell relative" onDoubleClick={() => handleDoubleClick("dueDate")}>
         {isEditing("dueDate") ? (
           <input
             autoFocus
             type="date"
             defaultValue={task.dueDate}
             onBlur={(e) => { onUpdate(task.id, "dueDate", e.target.value); setEditingCell(null); }}
-            className="w-full bg-transparent text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
+            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
           />
         ) : (
-          <span className={`text-[11px] font-mono cursor-pointer ${overdue ? "text-[#ff5c6a]" : "text-[#7c82a0]"}`}>
+          <span className={`text-[11px] font-mono cursor-pointer ${overdue ? "text-[#ff5c6a]" : "text-text-muted"}`}>
             {(() => {
-              if (!task.dueDate) return <span className="text-[#2a2f45]">—</span>;
+              if (!task.dueDate) return <span className="text-text-dim">—</span>;
               const d = parseLocalDate(task.dueDate);
               return !isNaN(d.getTime())
                 ? d.toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "2-digit" })
-                : <span className="text-[#2a2f45]">—</span>;
+                : <span className="text-text-dim">—</span>;
             })()}
           </span>
         )}
@@ -222,8 +222,8 @@ export function TaskRow({
               onBlur={() => setEditingCell(null)}
             />
           ) : (
-            <span className="text-[11px] text-[#7c82a0] cursor-pointer hover:text-[#e8eaf2] transition-colors line-clamp-1 flex-1">
-              {task.description || <span className="text-[#2a2f45]">—</span>}
+            <span className="text-[11px] text-text-muted cursor-pointer hover:text-text transition-colors line-clamp-1 flex-1">
+              {task.description || <span className="text-text-dim">—</span>}
             </span>
           )}
           {onDeleteTask && (
@@ -232,7 +232,7 @@ export function TaskRow({
                 e.stopPropagation();
                 onDeleteTask(task.id);
               }}
-              className="opacity-0 group-hover:opacity-100 text-[#7c82a0] hover:text-[#ff5c6a] transition-all text-xs font-bold px-1"
+              className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-[#ff5c6a] transition-all text-xs font-bold px-1"
               title="Eliminar tarea"
               aria-label="Eliminar tarea"
             >

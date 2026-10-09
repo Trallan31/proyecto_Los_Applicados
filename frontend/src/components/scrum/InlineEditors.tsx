@@ -14,7 +14,7 @@ export function InlineText({ value, onCommit, onBlur }: { value: string; onCommi
         if (e.key === "Escape") { cancelledRef.current = true; onBlur(); }
       }}
       onBlur={() => { if (!cancelledRef.current) onCommit(val); }}
-      className="w-full bg-[#0d0f14] border border-[#4f7cff] rounded px-2 py-0.5 text-[12px] text-[#e8eaf2] focus:outline-none"
+      className="w-full bg-background border border-[#4f7cff] rounded px-2 py-0.5 text-[12px] text-text focus:outline-none"
       aria-label="Editar texto"
     />
   );
@@ -39,10 +39,10 @@ export function InlineSelect({
       defaultValue={value}
       onChange={(e) => onCommit(e.target.value)}
       onBlur={onBlur}
-      className="w-full bg-[#0d0f14] border border-[#4f7cff] rounded px-1 py-0.5 text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
+      className="w-full bg-background border border-[#4f7cff] rounded px-1 py-0.5 text-[11px] font-mono text-text focus:outline-none"
     >
       {options.map((o) => (
-        <option key={o} value={o}>{labels ? labels[o] ?? o : o}</option>
+        <option key={o} value={o} className="bg-surface text-text">{labels ? labels[o] ?? o : o}</option>
       ))}
     </select>
   );
@@ -86,7 +86,7 @@ export function InlineSelectWithCreate({
       <>
         <div className="fixed inset-0 z-10" onClick={() => { setIsCreating(false); onBlur(); }} />
         <div
-          className="relative z-20 flex items-center gap-1 w-full bg-[#0d0f14] border border-[#4f7cff] rounded p-1"
+          className="relative z-20 flex items-center gap-1 w-full bg-background border border-[#4f7cff] rounded p-1"
         >
         <input
           autoFocus
@@ -100,7 +100,7 @@ export function InlineSelectWithCreate({
             }
           }}
           placeholder="Nombre..."
-          className="w-full bg-transparent text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
+          className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-dim focus:outline-none"
         />
         <button
           type="button"
@@ -118,7 +118,7 @@ export function InlineSelectWithCreate({
             setIsCreating(false);
             onBlur();
           }}
-          className="text-[10px] text-[#7c82a0] hover:text-[#ff5c6a] font-bold px-1"
+          className="text-[10px] text-text-muted hover:text-[#ff5c6a] font-bold px-1"
           title="Cancelar"
         >
           ✕
@@ -142,14 +142,14 @@ export function InlineSelectWithCreate({
             onCommit(e.target.value);
           }
         }}
-        className="w-full bg-[#0d0f14] border border-[#4f7cff] rounded px-1 py-0.5 text-[11px] font-mono text-[#e8eaf2] focus:outline-none"
+        className="w-full bg-background border border-[#4f7cff] rounded px-1 py-0.5 text-[11px] font-mono text-text focus:outline-none"
       >
         {options.map((o) => (
-          <option key={o} value={o}>
+          <option key={o} value={o} className="bg-surface text-text">
             {labels ? labels[o] ?? o : o}
           </option>
         ))}
-        <option value="__NEW__" className="text-[#4f7cff] font-bold">
+        <option value="__NEW__" className="bg-surface text-[#4f7cff] font-bold">
           {createLabel}
         </option>
         </select>
@@ -174,12 +174,12 @@ export function MultiMemberSelect({
   return (
     <>
       <div className="fixed inset-0 z-10" onClick={() => { onCommit(sel); onBlur(); }} />
-      <div className="absolute z-20 bg-[#1c2030] border border-[#4f7cff] rounded-md p-2 shadow-xl" style={{ minWidth: 160 }}>
+      <div className="absolute z-20 bg-panel border border-[#4f7cff] rounded-md p-2 shadow-xl" style={{ minWidth: 160 }}>
       {members.map((m) => (
         <button
           key={m.id}
           onClick={() => setSel((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : [...prev, m.id])}
-          className="flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-[#2a2f45] transition-colors"
+          className="flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-panel-hover transition-colors"
         >
           <div
             className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
@@ -187,8 +187,8 @@ export function MultiMemberSelect({
           >
             {m.initials}
           </div>
-          <span className="text-[12px] text-[#e8eaf2] flex-1 text-left">{m.name} {m.lastName}</span>
-          <div className={`w-3 h-3 rounded-sm border ${sel.includes(m.id) ? "bg-[#4f7cff] border-[#4f7cff]" : "border-[#4a5070]"}`}>
+          <span className="text-[12px] text-text flex-1 text-left">{m.name} {m.lastName}</span>
+          <div className={`w-3 h-3 rounded-sm border ${sel.includes(m.id) ? "bg-[#4f7cff] border-[#4f7cff]" : "border-text-dim"}`}>
             {sel.includes(m.id) && <span className="text-[9px] text-white flex justify-center">✓</span>}
           </div>
         </button>
