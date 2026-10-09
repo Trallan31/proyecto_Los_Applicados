@@ -59,12 +59,17 @@ export function useOrganizerBoard() {
     [filteredTasks]
   );
 
-  function toggleTaskStatus(id: string) {
+  function toggleTaskStatus(id: string): OrganizerTask["status"] | undefined {
     const task = tasks.items.find((t) => t.id === id);
-    if (!task) return;
+    if (!task) return undefined;
     const next: OrganizerTask["status"] =
-      task.status === "Pendiente" ? "En curso" : task.status === "En curso" ? "Completada" : "Pendiente";
+      task.status === "Completada" ? "Pendiente" : "Completada";
     void tasks.edit(id, { status: next });
+    return next;
+  }
+
+  function setTaskStatus(id: string, status: OrganizerTask["status"]) {
+    void tasks.edit(id, { status });
   }
 
   function deleteTask(id: string) {
@@ -137,6 +142,7 @@ export function useOrganizerBoard() {
     filteredTasks,
     sortedTasks,
     toggleTaskStatus,
+    setTaskStatus,
     deleteTask,
     addTask,
     addCourse,

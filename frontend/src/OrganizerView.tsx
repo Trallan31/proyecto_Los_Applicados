@@ -11,7 +11,7 @@ import { MonthScheduleView } from "./components/organizer/MonthScheduleView";
 import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesModal";
 import { AddOrganizerTaskModal } from "./components/organizer/modals/AddOrganizerTaskModal";
 import { ConfirmModal } from "./components/shared/ConfirmModal";
-import { Loading, ErrorBox } from "./components/shared/Feedback";
+import { Loading, ErrorBox, Toast } from "./components/shared/Feedback";
 
 
 export default function OrganizerView() {
@@ -33,6 +33,7 @@ export default function OrganizerView() {
     loading,
     error,
     toggleTaskStatus,
+    setTaskStatus,
     deleteTask,
     addTask,
     addCourse,
@@ -50,6 +51,27 @@ export default function OrganizerView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; taskId: string; previousStatus: OrganizerTask["status"] } | null>(null);
+
+  function handleToggleStatus(task: OrganizerTask) {
+    const previousStatus = task.status;
+    const nextStatus = toggleTaskStatus(task.id);
+    if (nextStatus === "Completada") {
+      setToast({
+        message: `"${task.title}" marcada como lista`,
+        taskId: task.id,
+        previousStatus,
+      });
+    } else {
+      setToast(null);
+    }
+  }
+
+  function handleUndo() {
+    if (!toast) return;
+    setTaskStatus(toast.taskId, toast.previousStatus);
+    setToast(null);
+  }
 
   if (loading) return <Loading label="Cargando organizador..." />;
   if (error) return <ErrorBox message={error} />;
@@ -227,7 +249,7 @@ export default function OrganizerView() {
                 key={task.id}
                 task={task}
                 course={courses.find((c) => c.id === task.courseId)}
-                onToggleStatus={() => toggleTaskStatus(task.id)}
+                onToggleStatus={() => handleToggleStatus(task)}
                 onDelete={() => setConfirmDeleteId(task.id)}
               />
             ))}
@@ -293,6 +315,14 @@ export default function OrganizerView() {
             setConfirmDeleteId(null);
           }}
           onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {toast && (
+        <Toast
+          message={toast.message}
+          actionLabel="Deshacer"
+          onAction={handleUndo}
+          onClose={() => setToast(null)}
         />
       )}
     </div>
