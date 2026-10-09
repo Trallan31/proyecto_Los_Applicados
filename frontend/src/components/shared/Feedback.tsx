@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, X, RotateCcw } from "lucide-react";
 
 /** Estados de carga y de error de la API, compartidos por las dos vistas. */
@@ -36,23 +36,50 @@ export function Toast({
   onClose: () => void;
   duration?: number;
 }) {
+  const [isClosing, setIsClosing] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(onClose, duration);
+    requestAnimationFrame(() => setIsMounted(true));
+    
+    const timer = setTimeout(() => {
+      setIsClosing(true);
+      setTimeout(() => {
+        onClose();
+      }, 300); 
+    }, duration);
     return () => clearTimeout(timer);
-  }, [onClose, duration]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duration]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
+
+  const handleAction = () => {
+    if (onAction) onAction();
+    handleClose();
+  };
+
+  const baseClasses = "flex items-center gap-3 bg-surface border border-border px-4 py-3 rounded-xl shadow-lg shadow-black/10 text-text transition-all duration-300 transform";
+  const stateClasses = isClosing 
+    ? "opacity-0 translate-x-12" 
+    : isMounted 
+      ? "opacity-100 translate-y-0 translate-x-0" 
+      : "opacity-0 translate-y-4";
 
   return (
-    <div className="flex items-center gap-3 bg-surface border border-border px-4 py-3 rounded-xl shadow-lg shadow-black/10 text-text transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
+    <div className={`${baseClasses} ${stateClasses}`}>
       <div className="w-6 h-6 rounded-full bg-[#2dd67b]/20 text-[#2dd67b] flex items-center justify-center flex-shrink-0">
         <CheckCircle2 className="w-4 h-4" />
       </div>
       <span className="text-[13px] font-medium">{message}</span>
       {onAction && (
         <button
-          onClick={() => {
-            onAction();
-            onClose();
-          }}
+          onClick={handleAction}
           className="ml-2 flex items-center gap-1 text-xs font-bold text-[#4f7cff] hover:text-[#3d6ae0] transition-colors"
         >
           <RotateCcw className="w-3 h-3" />
@@ -60,7 +87,7 @@ export function Toast({
         </button>
       )}
       <button
-        onClick={onClose}
+        onClick={handleClose}
         className="ml-1 text-text-dim hover:text-text p-1 transition-colors rounded"
         aria-label="Cerrar notificación"
       >
