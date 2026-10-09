@@ -42,7 +42,7 @@ export function Toast({
   }, [onClose, duration]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-surface border border-border px-4 py-3 rounded-xl shadow-2xl shadow-black/20 text-text transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
+    <div className="flex items-center gap-3 bg-surface border border-border px-4 py-3 rounded-xl shadow-lg shadow-black/10 text-text transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
       <div className="w-6 h-6 rounded-full bg-[#2dd67b]/20 text-[#2dd67b] flex items-center justify-center flex-shrink-0">
         <CheckCircle2 className="w-4 h-4" />
       </div>
