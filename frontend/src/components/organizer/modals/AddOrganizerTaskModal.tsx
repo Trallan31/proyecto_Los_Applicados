@@ -44,7 +44,7 @@ export function AddOrganizerTaskModal({
       <div className="bg-panel border border-border rounded-xl w-full max-w-md mx-4 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-surface">
           <h2 className="font-display font-bold text-[14px] text-text">Nueva Actividad Individual</h2>
-          <button onClick={onClose} className="text-text-dim hover:text-text-muted text-lg leading-none">✕</button>
+          <button onClick={onClose} className="text-text-muted hover:text-text text-lg leading-none">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3">
           <Field label="Título">
@@ -80,7 +80,7 @@ export function AddOrganizerTaskModal({
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Detalles adicionales" rows={2} className="w-full bg-background border border-border rounded-md px-3 py-2 text-[12px] text-text placeholder-text-dim focus:outline-none focus:border-[#4f7cff] resize-none" />
           </Field>
           <div className="flex items-center justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="px-4 py-1.5 text-[12px] font-semibold text-text-dim hover:text-text-muted">Cancelar</button>
+            <button type="button" onClick={onClose} className="px-4 py-1.5 text-[12px] font-semibold text-text-muted hover:text-text transition-colors">Cancelar</button>
             <button type="submit" disabled={!title.trim() || !endDate} className="px-4 py-1.5 text-[12px] font-semibold bg-[#4f7cff] hover:bg-[#3d6ae0] text-white rounded-md disabled:opacity-40">
               Crear actividad
             </button>
@@ -94,7 +94,7 @@ export function AddOrganizerTaskModal({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] font-mono text-text-dim mb-1">{label.toUpperCase()}</label>
+      <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">{label.toUpperCase()}</label>
       {children}
     </div>
   );

@@ -26,7 +26,7 @@ export const PRIORITY_META: Record<Priority, { color: string; bg: string }> = {
 };
 
 export const STATUS_META: Record<Status, { color: string; bg: string; dot: string }> = {
-  "Pendiente":    { color: "#7c82a0", bg: "rgba(124,130,160,0.12)", dot: "#7c82a0" },
+  "Pendiente":    { color: "#94a3b8", bg: "rgba(148,163,184,0.18)", dot: "#94a3b8" },
   "En curso":     { color: "#f5c842", bg: "rgba(245,200,66,0.12)", dot: "#f5c842" },
   "En revisión":  { color: "#9b6dff", bg: "rgba(155,109,255,0.12)", dot: "#9b6dff" },
   "Completada":   { color: "#2dd67b", bg: "rgba(45,214,123,0.12)", dot: "#2dd67b" },

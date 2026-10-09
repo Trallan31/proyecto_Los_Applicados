@@ -81,10 +81,10 @@ export default function OrganizerView() {
       {/* Course sidebar */}
       <div className="w-56 flex-shrink-0 border-r border-border bg-surface flex flex-col">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <span className="text-[10px] font-mono font-medium uppercase tracking-widest text-text-dim">Mis Ramos</span>
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">Mis Ramos</span>
           <button
             onClick={() => setShowManageCourses(true)}
-            className="text-[10px] font-mono text-text-dim hover:text-[#4f7cff] transition-colors"
+            className="text-[10px] font-mono text-text-muted hover:text-[#4f7cff] transition-colors"
             title="Gestionar ramos y horarios"
           >
             ⚙️ Ramos
@@ -122,7 +122,7 @@ export default function OrganizerView() {
           {TASK_TYPES.map((c) => (
             <div key={c} className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[c] }} />
-              <span className="text-[10px] font-mono text-text-dim">{c}</span>
+              <span className="text-[10px] font-mono text-text-muted">{c}</span>
             </div>
           ))}
         </div>
@@ -136,7 +136,7 @@ export default function OrganizerView() {
             {activeCourseObj && (
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeCourseObj.color }} />
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-panel text-text-muted border border-border">
+                <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-panel text-text border border-border">
                   {activeCourseObj.code}
                 </span>
               </div>
@@ -144,7 +144,7 @@ export default function OrganizerView() {
             <h1 className="font-display font-bold text-[16px] text-text">
               {activeCourse === "all" ? "Mi Organizador Personal" : activeCourseObj?.name}
             </h1>
-            <span className="text-[10px] font-mono text-text-dim hidden sm:inline">
+            <span className="text-[11px] font-mono text-text-muted hidden sm:inline">
               {today.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
             </span>
           </div>
@@ -170,7 +170,7 @@ export default function OrganizerView() {
                 className={`px-3 py-2 text-[12px] font-semibold border-b-2 -mb-px transition-all ${
                   timeFilter === t.key
                     ? "text-[#4f7cff] border-[#4f7cff]"
-                    : "text-text-dim border-transparent hover:text-text-muted"
+                    : "text-text-muted border-transparent hover:text-text"
                 }`}
               >
                 {t.label}
@@ -191,7 +191,7 @@ export default function OrganizerView() {
                   }}
                 />
               </div>
-              <span className="text-[10px] font-mono text-text-dim">{doneCount}/{totalCount}</span>
+              <span className="text-[10px] font-mono text-text-muted font-medium">{doneCount}/{totalCount}</span>
             </div>
           </div>
         </div>
@@ -207,7 +207,7 @@ export default function OrganizerView() {
               key={t.key}
               onClick={() => setTab(t.key as ViewTab)}
               className={`px-3 py-2 text-[11px] font-semibold border-b-2 -mb-px transition-colors ${
-                tab === t.key ? "text-[#4f7cff] border-[#4f7cff]" : "text-text-dim border-transparent hover:text-text-muted"
+                tab === t.key ? "text-[#4f7cff] border-[#4f7cff] font-bold" : "text-text-muted border-transparent hover:text-text"
               }`}
             >
               {t.label}
@@ -220,7 +220,7 @@ export default function OrganizerView() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as TaskType | "all")}
-                className="bg-panel border border-border rounded-md px-2 py-1 text-[10px] font-mono text-text-muted focus:outline-none focus:border-[#4f7cff]"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-[#4f7cff]"
               >
                 <option value="all">Tipo: todos</option>
                 {TASK_TYPES.map((c) => (
@@ -230,7 +230,7 @@ export default function OrganizerView() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as OrganizerTask["status"] | "all")}
-                className="bg-panel border border-border rounded-md px-2 py-1 text-[10px] font-mono text-text-muted focus:outline-none focus:border-[#4f7cff]"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-[#4f7cff]"
               >
                 <option value="all">Estado: todos</option>
                 <option value="Pendiente">Pendiente</option>
@@ -254,7 +254,7 @@ export default function OrganizerView() {
               />
             ))}
             {sortedTasks.length === 0 && (
-              <div className="text-center py-16 text-text-dim text-xs font-mono">
+              <div className="text-center py-16 text-text-muted text-xs font-mono">
                 No hay actividades para mostrar
               </div>
             )}

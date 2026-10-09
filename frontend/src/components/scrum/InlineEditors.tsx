@@ -188,7 +188,7 @@ export function MultiMemberSelect({
             {m.initials}
           </div>
           <span className="text-[12px] text-text flex-1 text-left">{m.name} {m.lastName}</span>
-          <div className={`w-3 h-3 rounded-sm border ${sel.includes(m.id) ? "bg-[#4f7cff] border-[#4f7cff]" : "border-text-dim"}`}>
+          <div className={`w-3 h-3 rounded-sm border ${sel.includes(m.id) ? "bg-[#4f7cff] border-[#4f7cff]" : "border-text-muted"}`}>
             {sel.includes(m.id) && <span className="text-[9px] text-white flex justify-center">✓</span>}
           </div>
         </button>

@@ -17,7 +17,7 @@ export function ErrorBox({ message }: { message: string }) {
       <div className="max-w-md text-center space-y-2">
         <p className="text-[13px] font-semibold text-[#ff5c6a]">No se pudieron cargar los datos</p>
         <p className="text-[12px] text-text-muted">{message}</p>
-        <p className="text-[11px] font-mono text-text-dim">npm run dev --prefix backend</p>
+        <p className="text-[11px] font-mono text-text-muted">npm run dev --prefix backend</p>
       </div>
     </div>
   );
@@ -61,7 +61,7 @@ export function Toast({
       )}
       <button
         onClick={onClose}
-        className="ml-1 text-text-dim hover:text-text p-1 transition-colors rounded"
+        className="ml-1 text-text-muted hover:text-text p-1 transition-colors rounded"
         aria-label="Cerrar notificación"
       >
         <X className="w-3.5 h-3.5" />

@@ -213,8 +213,8 @@ export function AddRowForm({
       {/* 9. Acciones */}
       <td className="h-9 px-2">
         <div className="flex items-center gap-1">
-          <button onClick={() => void handleSubmit()} className="text-[10px] font-mono text-[#4f7cff] hover:text-[#3d6ae0] transition-colors" aria-label="Guardar tarea">✓</button>
-          <button onClick={onCancel} className="text-[10px] font-mono text-text-dim hover:text-text-muted transition-colors" aria-label="Cancelar">✕</button>
+          <button onClick={() => void handleSubmit()} className="text-[11px] font-mono text-[#4f7cff] hover:text-[#3d6ae0] font-bold transition-colors" aria-label="Guardar tarea">✓</button>
+          <button onClick={onCancel} className="text-[11px] font-mono text-text-muted hover:text-[#ff5c6a] font-bold transition-colors" aria-label="Cancelar">✕</button>
         </div>
       </td>
     </tr>

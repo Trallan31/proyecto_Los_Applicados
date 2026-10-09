@@ -95,7 +95,7 @@ export function MonthScheduleView({
                     {dayNum}
                   </span>
                   {(daySessions.length > 0 || dayTasks.length > 0) && (
-                    <span className="text-[8px] font-mono text-text-dim">
+                    <span className="text-[9px] font-mono text-text-muted font-medium">
                       {daySessions.length + dayTasks.length} ítems
                     </span>
                   )}

@@ -70,7 +70,7 @@ export function ManageCoursesModal({
       <div className="bg-panel border border-border rounded-xl w-full max-w-2xl mx-4 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-surface">
           <h2 className="font-display font-bold text-[15px] text-text">Gestionar Ramos y Horarios de Clases</h2>
-          <button onClick={onClose} className="text-text-dim hover:text-text text-lg">✕</button>
+          <button onClick={onClose} className="text-text-muted hover:text-text text-lg">✕</button>
         </div>
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -98,7 +98,7 @@ export function ManageCoursesModal({
                       e.stopPropagation();
                       setConfirmDelete({ type: 'course', id: c.id });
                     }}
-                    className="text-text-dim hover:text-[#ff5c6a] transition-colors text-xs font-bold p-1 ml-2"
+                    className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold p-1 ml-2"
                     title="Eliminar ramo"
                   >
                     ✕
@@ -109,7 +109,7 @@ export function ManageCoursesModal({
 
             {/* Form to add new Course */}
             <div className="mt-4 pt-3 border-t border-border space-y-2">
-              <span className="text-[10px] font-mono text-text-dim uppercase font-bold">Agregar nuevo ramo</span>
+              <span className="text-[10px] font-mono text-text-muted uppercase font-bold">Agregar nuevo ramo</span>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   value={newName}
@@ -173,13 +173,13 @@ export function ManageCoursesModal({
                             {s.startHour}:00 - {s.startHour + s.duration}:00 ({s.type})
                           </p>
                         </div>
-                        <button onClick={() => setConfirmDelete({ type: 'session', id: s.id })} className="text-text-dim hover:text-[#ff5c6a] text-xs font-bold">
+                        <button onClick={() => setConfirmDelete({ type: 'session', id: s.id })} className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold">
                           ✕
                         </button>
                       </div>
                     ))}
                     {courseSessions.length === 0 && (
-                      <p className="text-xs text-text-dim font-mono italic">Sin horarios registrados para este ramo.</p>
+                      <p className="text-xs text-text-muted font-mono italic">Sin horarios registrados para este ramo.</p>
                     )}
                   </div>
 
@@ -188,7 +188,7 @@ export function ManageCoursesModal({
                     <h5 className="text-[10px] font-mono font-bold text-[#4f7cff] uppercase">+ Añadir Horario de Clase</h5>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[9px] font-mono text-text-dim mb-1">TIPO</label>
+                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">TIPO</label>
                         <select value={sessType} onChange={(e) => setSessType(e.target.value as SessionType)} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
                           <option value="Cátedra">Cátedra</option>
                           <option value="Auxiliar">Auxiliar</option>
@@ -196,7 +196,7 @@ export function ManageCoursesModal({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[9px] font-mono text-text-dim mb-1">DÍA</label>
+                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">DÍA</label>
                         <select value={sessDay} onChange={(e) => setSessDay(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
                           {FULL_DAYS.map((d: string, idx: number) => (
                             <option key={d} value={idx}>{d}</option>
@@ -204,7 +204,7 @@ export function ManageCoursesModal({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[9px] font-mono text-text-dim mb-1">HORA INICIO</label>
+                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">HORA INICIO</label>
                         <select value={sessHour} onChange={(e) => setSessHour(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
                           {HOURS.map((h: number) => (
                             <option key={h} value={h}>{h}:00</option>
@@ -212,7 +212,7 @@ export function ManageCoursesModal({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[9px] font-mono text-text-dim mb-1">DURACIÓN (HORAS)</label>
+                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">DURACIÓN (HORAS)</label>
                         <select value={sessDuration} onChange={(e) => setSessDuration(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
                           <option value={1}>1 hora</option>
                           <option value={2}>2 horas</option>
@@ -227,14 +227,14 @@ export function ManageCoursesModal({
                 </div>
               </>
             ) : (
-              <p className="text-xs text-text-dim font-mono">Selecciona o agrega un ramo para configurar sus horarios.</p>
+              <p className="text-xs text-text-muted font-mono">Selecciona o agrega un ramo para configurar sus horarios.</p>
             )}
           </div>
         </div>
 
         {/* Footer: cada cambio ya quedo guardado en la API al hacerlo. */}
         <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface">
-          <span className="text-[10px] font-mono text-text-dim">Los cambios se guardan al instante</span>
+          <span className="text-[10px] font-mono text-text-muted">Los cambios se guardan al instante</span>
           <button onClick={onClose} className="px-4 py-1.5 text-xs font-bold bg-[#4f7cff] hover:bg-[#3d6ae0] text-white rounded transition-colors">
             Listo
           </button>

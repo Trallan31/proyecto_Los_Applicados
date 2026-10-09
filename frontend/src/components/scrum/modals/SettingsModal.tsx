@@ -34,7 +34,7 @@ export function SettingsModal({
             <h2 className="text-lg font-bold text-text">Ajustes del Proyecto</h2>
             <p className="text-xs font-mono text-text-muted mt-1">{project.name}</p>
           </div>
-          <button onClick={onClose} className="text-text-dim hover:text-text">✕</button>
+          <button onClick={onClose} className="text-text-muted hover:text-text transition-colors">✕</button>
         </div>
 
         {/* Tabs */}

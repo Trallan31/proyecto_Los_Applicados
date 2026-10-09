@@ -74,9 +74,13 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[11px] font-mono text-text-muted cursor-pointer hover:text-text transition-colors">
-            {sprint?.name || <span className="text-text-dim">—</span>}
-          </span>
+          sprint ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-panel border border-border text-text hover:border-[#4f7cff] hover:text-[#4f7cff] transition-all cursor-pointer">
+              {sprint.name}
+            </span>
+          ) : (
+            <span className="text-text-dim font-mono text-[11px]">—</span>
+          )
         )}
       </td>
 
@@ -96,9 +100,13 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[11px] font-mono text-text-muted cursor-pointer hover:text-text transition-colors">
-            {task.category || <span className="text-text-dim">—</span>}
-          </span>
+          task.category ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-surface border border-border text-text-muted hover:text-text hover:border-border-bright transition-all cursor-pointer">
+              {task.category}
+            </span>
+          ) : (
+            <span className="text-text-dim font-mono text-[11px]">—</span>
+          )
         )}
       </td>
 
@@ -183,8 +191,8 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[11px] font-mono text-text-muted cursor-pointer hover:text-text transition-colors">
-            {task.hours ? task.hours + "h" : <span className="text-text-dim">—</span>}
+          <span className="text-[11px] font-mono font-medium text-text cursor-pointer hover:text-[#4f7cff] transition-colors">
+            {task.hours ? task.hours + "h" : <span className="text-text-dim font-normal">—</span>}
           </span>
         )}
       </td>
@@ -200,13 +208,13 @@ export function TaskRow({
             className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
           />
         ) : (
-          <span className={`text-[11px] font-mono cursor-pointer ${overdue ? "text-[#ff5c6a]" : "text-text-muted"}`}>
+          <span className={`text-[11px] font-mono font-medium cursor-pointer transition-colors ${overdue ? "text-[#ff5c6a]" : "text-text-muted hover:text-text"}`}>
             {(() => {
-              if (!task.dueDate) return <span className="text-text-dim">—</span>;
+              if (!task.dueDate) return <span className="text-text-dim font-normal">—</span>;
               const d = parseLocalDate(task.dueDate);
               return !isNaN(d.getTime())
                 ? d.toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "2-digit" })
-                : <span className="text-text-dim">—</span>;
+                : <span className="text-text-dim font-normal">—</span>;
             })()}
           </span>
         )}

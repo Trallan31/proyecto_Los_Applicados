@@ -128,7 +128,7 @@ export function ScrumView() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => setShowInvite(true)} className="w-7 h-7 rounded-full border border-dashed border-text-dim flex items-center justify-center text-text-muted hover:border-[#4f7cff] hover:text-[#4f7cff] transition-colors" title="Invitar al equipo">
+              <button onClick={() => setShowInvite(true)} className="w-7 h-7 rounded-full border border-dashed border-text-muted flex items-center justify-center text-text-muted hover:border-[#4f7cff] hover:text-[#4f7cff] transition-colors" title="Invitar al equipo">
                 +
               </button>
             </div>
@@ -155,7 +155,7 @@ export function ScrumView() {
               ].map((col) => (
                 <th
                   key={col.key}
-                  className="px-3 py-2.5 text-left border-r border-border font-mono font-medium text-[10px] text-text-dim tracking-wider whitespace-nowrap"
+                  className="px-3 py-2.5 text-left border-r border-border font-mono font-semibold text-[10px] text-text-muted tracking-wider uppercase whitespace-nowrap bg-panel/60"
                   style={{ width: col.w, minWidth: col.w === "auto" ? 160 : col.w }}
                 >
                   {col.label}
@@ -191,7 +191,7 @@ export function ScrumView() {
             {!showNewRow && (
               <tr>
                 <td colSpan={10} className="p-0">
-                  <button onClick={() => setShowNewRow(true)} className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] font-mono text-text-dim hover:text-[#4f7cff] hover:bg-[#4f7cff]/5 transition-all border-b border-border">
+                  <button onClick={() => setShowNewRow(true)} className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] font-mono text-text-muted hover:text-[#4f7cff] hover:bg-[#4f7cff]/5 transition-all border-b border-border">
                     <span>+</span> Añadir tarea
                   </button>
                 </td>

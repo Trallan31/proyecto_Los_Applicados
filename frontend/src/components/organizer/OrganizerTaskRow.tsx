@@ -34,7 +34,7 @@ export function OrganizerTaskRow({
             className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-200 transform active:scale-75 flex-shrink-0 ${
               isDone
                 ? "bg-[#2dd67b] border-[#2dd67b] text-[#0d0f14] shadow-sm shadow-[#2dd67b]/30 scale-100"
-                : "border-text-dim hover:border-[#4f7cff] hover:bg-[#4f7cff]/10 text-transparent"
+                : "border-text-muted hover:border-[#4f7cff] hover:bg-[#4f7cff]/10 text-transparent"
             }`}
           >
             <Check className={`w-3.5 h-3.5 stroke-[3] transition-all duration-200 ${isDone ? "scale-100 opacity-100" : "scale-0 opacity-0"}`} />
@@ -50,21 +50,21 @@ export function OrganizerTaskRow({
                 </span>
               )}
             </div>
-            {task.notes && <p className="text-[11px] text-text-muted mt-0.5 line-clamp-1">{task.notes}</p>}
+            {task.notes && <p className="text-[12px] text-text-muted mt-0.5 line-clamp-1">{task.notes}</p>}
           </div>
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ backgroundColor: `${CATEGORY_COLORS[task.type]}20`, color: CATEGORY_COLORS[task.type] }}>
+          <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded" style={{ backgroundColor: `${CATEGORY_COLORS[task.type]}20`, color: CATEGORY_COLORS[task.type] }}>
             {task.type}
           </span>
           <div className="text-right">
-            <p className={`text-[11px] font-mono ${overdue ? "text-[#ff5c6a]" : "text-text-muted"}`}>
+            <p className={`text-[11px] font-mono font-medium ${overdue ? "text-[#ff5c6a]" : "text-text-muted"}`}>
               {overdue ? "Vencida" : diffDays === 0 ? "Hoy" : diffDays === 1 ? "Mañana" : due.toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
             </p>
-            {task.dueTime && <p className="text-[9px] font-mono text-text-dim">{task.dueTime}</p>}
+            {task.dueTime && <p className="text-[10px] font-mono text-text-muted">{task.dueTime}</p>}
           </div>
-          <button onClick={onDelete} className="text-text-dim hover:text-[#ff5c6a] transition-colors text-xs font-bold px-1">✕</button>
+          <button onClick={onDelete} className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold px-1" title="Eliminar actividad">✕</button>
         </div>
       </div>
     </div>

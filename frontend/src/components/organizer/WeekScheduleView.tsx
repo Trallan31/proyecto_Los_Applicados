@@ -31,7 +31,7 @@ export function WeekScheduleView({
             const isToday = date.toDateString() === today.toDateString();
             return (
               <div key={d} className={`text-center py-2 rounded-md border ${isToday ? "bg-[#4f7cff]/20 border-[#4f7cff]" : "bg-surface border-border"}`}>
-                <p className={`text-[9px] font-mono uppercase ${isToday ? "text-[#4f7cff] font-bold" : "text-text-dim"}`}>{WEEK_DAYS[i]}</p>
+                <p className={`text-[9px] font-mono uppercase ${isToday ? "text-[#4f7cff] font-bold" : "text-text-muted"}`}>{WEEK_DAYS[i]}</p>
                 <p className={`text-[14px] font-bold ${isToday ? "text-[#4f7cff]" : "text-text"}`}>{date.getDate()}</p>
               </div>
             );
@@ -43,7 +43,7 @@ export function WeekScheduleView({
           {HOURS.map((h) => (
             <div key={h} className="grid gap-1 border-b border-border/40" style={{ gridTemplateColumns: "56px repeat(7, 1fr)", height: CELL_HEIGHT }}>
               <div className="flex items-start justify-end pr-2 pt-1 border-r border-border">
-                <span className="text-[9px] font-mono text-text-dim">{h}:00</span>
+                <span className="text-[10px] font-mono text-text-muted">{h}:00</span>
               </div>
               {FULL_DAYS.map((d) => (
                 <div key={d} className="border-r border-border/20" />

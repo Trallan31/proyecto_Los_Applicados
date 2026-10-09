@@ -27,7 +27,7 @@ export function CourseTab({
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
         <div className="truncate">
           <p className="text-[12px] font-semibold truncate leading-tight">{label}</p>
-          {code && <p className="text-[9px] font-mono text-text-dim">{code}</p>}
+          {code && <p className="text-[10px] font-mono text-text-muted">{code}</p>}
         </div>
       </div>
       {count > 0 && (
