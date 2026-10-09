@@ -2,8 +2,9 @@
 
 import type { OrganizerTask, Course } from "../../types";
 import { CATEGORY_COLORS } from "../../constants/ui";
-import { getToday, parseLocalDate, isOverdue } from "../../utils/dateUtils";
+import { parseLocalDate } from "../../utils/dateUtils";
 import { Check } from "lucide-react";
+import { CountdownBadge } from "../shared/CountdownBadge";
 
 export function OrganizerTaskRow({
   task,
@@ -16,11 +17,8 @@ export function OrganizerTaskRow({
   onToggleStatus: () => void;
   onDelete: () => void;
 }) {
-  const today = getToday();
   const isDone = task.status === "Completada";
   const due = parseLocalDate(task.endDate);
-  const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  const overdue = isOverdue(task.endDate, isDone);
 
   return (
     <div className={`p-3.5 rounded-xl border transition-all duration-300 ${isDone ? "bg-surface/40 border-border/50 opacity-65" : "bg-surface border-border hover:border-border-bright"}`}>
@@ -58,11 +56,12 @@ export function OrganizerTaskRow({
           <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ backgroundColor: `${CATEGORY_COLORS[task.type]}20`, color: CATEGORY_COLORS[task.type] }}>
             {task.type}
           </span>
-          <div className="text-right">
-            <p className={`text-[11px] font-mono ${overdue ? "text-[#ff5c6a]" : "text-text-muted"}`}>
-              {overdue ? "Vencida" : diffDays === 0 ? "Hoy" : diffDays === 1 ? "Mañana" : due.toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
-            </p>
-            {task.dueTime && <p className="text-[9px] font-mono text-text-dim">{task.dueTime}</p>}
+          <div className="text-right flex flex-col items-end gap-1">
+            <CountdownBadge dateStr={task.endDate} isDone={isDone} />
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted">
+              <span>{due.toLocaleDateString("es-CL", { day: "numeric", month: "short" })}</span>
+              {task.dueTime && <span>• {task.dueTime}</span>}
+            </div>
           </div>
           <button onClick={onDelete} className="text-text-dim hover:text-[#ff5c6a] transition-colors text-xs font-bold px-1">✕</button>
         </div>

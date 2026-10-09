@@ -3,6 +3,7 @@ import type { Activity, Member, Sprint, Priority, Status } from "../../types";
 import { InlineText, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
 import { parseLocalDate, isOverdue } from "../../utils/dateUtils";
 import { PRIORITY_META, STATUS_META } from "../../constants/ui";
+import { CountdownBadge } from "../shared/CountdownBadge";
 
 export function TaskRow({
   task,
@@ -200,15 +201,23 @@ export function TaskRow({
             className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
           />
         ) : (
-          <span className={`text-[11px] font-mono cursor-pointer ${overdue ? "text-[#ff5c6a]" : "text-text-muted"}`}>
-            {(() => {
-              if (!task.dueDate) return <span className="text-text-dim">—</span>;
-              const d = parseLocalDate(task.dueDate);
-              return !isNaN(d.getTime())
-                ? d.toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "2-digit" })
-                : <span className="text-text-dim">—</span>;
-            })()}
-          </span>
+          <div className="flex flex-col items-start gap-1 cursor-pointer">
+            {task.dueDate ? (
+              <>
+                <span className={`text-[11px] font-mono ${overdue ? "text-[#ff5c6a] font-semibold" : "text-text"}`}>
+                  {(() => {
+                    const d = parseLocalDate(task.dueDate);
+                    return !isNaN(d.getTime())
+                      ? d.toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "2-digit" })
+                      : task.dueDate;
+                  })()}
+                </span>
+                <CountdownBadge dateStr={task.dueDate} isDone={task.status === "Completada"} />
+              </>
+            ) : (
+              <span className="text-text-dim">—</span>
+            )}
+          </div>
         )}
       </td>
 

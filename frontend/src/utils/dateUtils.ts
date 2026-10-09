@@ -38,6 +38,89 @@ export function isOverdue(dateStr: string | undefined, isDone: boolean): boolean
   return due < getToday();
 }
 
+export interface CountdownData {
+  days: number;
+  label: string;
+  shortLabel: string;
+  urgency: "overdue" | "today" | "near" | "normal" | "done";
+  isOverdue: boolean;
+  isToday: boolean;
+  isDone: boolean;
+}
+
+/**
+ * Calcula los días restantes para una fecha límite y entrega información
+ * formateada de cuenta regresiva.
+ */
+export function getCountdown(dateStr: string | undefined, isDone: boolean = false): CountdownData | null {
+  if (!dateStr || typeof dateStr !== "string") return null;
+  const due = parseLocalDate(dateStr);
+  if (isNaN(due.getTime())) return null;
+
+  const today = getToday();
+  const diffTime = due.getTime() - today.getTime();
+  const days = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (isDone) {
+    return {
+      days,
+      label: "Completada",
+      shortLabel: "Lista",
+      urgency: "done",
+      isOverdue: false,
+      isToday: false,
+      isDone: true,
+    };
+  }
+
+  if (days < 0) {
+    const overdueDays = Math.abs(days);
+    return {
+      days,
+      label: overdueDays === 1 ? "Vencida hace 1 día" : `Vencida hace ${overdueDays} días`,
+      shortLabel: `-${overdueDays}d`,
+      urgency: "overdue",
+      isOverdue: true,
+      isToday: false,
+      isDone: false,
+    };
+  }
+
+  if (days === 0) {
+    return {
+      days: 0,
+      label: "¡Vence hoy!",
+      shortLabel: "Hoy",
+      urgency: "today",
+      isOverdue: false,
+      isToday: true,
+      isDone: false,
+    };
+  }
+
+  if (days === 1) {
+    return {
+      days: 1,
+      label: "1 día restante",
+      shortLabel: "1d rest.",
+      urgency: "near",
+      isOverdue: false,
+      isToday: false,
+      isDone: false,
+    };
+  }
+
+  return {
+    days,
+    label: `${days} días restantes`,
+    shortLabel: `${days}d rest.`,
+    urgency: days <= 3 ? "near" : "normal",
+    isOverdue: false,
+    isToday: false,
+    isDone: false,
+  };
+}
+
 export const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 export const FULL_DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 export const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
