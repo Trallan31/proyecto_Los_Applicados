@@ -212,7 +212,7 @@ export function TaskRow({
           <div className="flex flex-col items-start gap-1 cursor-pointer">
             {task.dueDate ? (
               <>
-                <span className={`text-[11px] font-mono font-medium ${overdue ? "text-accent-red font-semibold" : "text-text"}`}>
+                <span className={`text-[11px] font-mono font-medium ${overdue ? "text-accent-red font-semibold" : task.status === "Completada" ? "text-text-muted" : "text-text"}`}>
                   {(() => {
                     const d = parseLocalDate(task.dueDate);
                     return !isNaN(d.getTime())
@@ -220,7 +220,9 @@ export function TaskRow({
                       : task.dueDate;
                   })()}
                 </span>
-                <CountdownBadge dateStr={task.dueDate} isDone={task.status === "Completada"} />
+                {task.status !== "Completada" && (
+                  <CountdownBadge dateStr={task.dueDate} />
+                )}
               </>
             ) : (
               <span className="text-text-dim font-normal cursor-pointer">—</span>
