@@ -51,26 +51,27 @@ export default function OrganizerView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; taskId: string; previousStatus: OrganizerTask["status"] } | null>(null);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; taskId: string; previousStatus: OrganizerTask["status"] }>>([]);
 
   function handleToggleStatus(task: OrganizerTask) {
     const previousStatus = task.status;
     const nextStatus = toggleTaskStatus(task.id);
     if (nextStatus === "Completada") {
-      setToast({
+      const toastId = Math.random().toString(36).substring(2, 9);
+      setToasts(prev => [...prev, {
+        id: toastId,
         message: `"${task.title}" marcada como lista`,
         taskId: task.id,
         previousStatus,
-      });
+      }]);
     } else {
-      setToast(null);
+      setToasts(prev => prev.filter(t => t.taskId !== task.id));
     }
   }
 
-  function handleUndo() {
-    if (!toast) return;
-    setTaskStatus(toast.taskId, toast.previousStatus);
-    setToast(null);
+  function handleUndo(toastId: string, taskId: string, previousStatus: OrganizerTask["status"]) {
+    setTaskStatus(taskId, previousStatus);
+    setToasts(prev => prev.filter(t => t.id !== toastId));
   }
 
   if (loading) return <Loading label="Cargando organizador..." />;
@@ -317,14 +318,18 @@ export default function OrganizerView() {
           onCancel={() => setConfirmDeleteId(null)}
         />
       )}
-      {toast && (
-        <Toast
-          message={toast.message}
-          actionLabel="Deshacer"
-          onAction={handleUndo}
-          onClose={() => setToast(null)}
-        />
-      )}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className="pointer-events-auto">
+            <Toast
+              message={t.message}
+              actionLabel="Deshacer"
+              onAction={() => handleUndo(t.id, t.taskId, t.previousStatus)}
+              onClose={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

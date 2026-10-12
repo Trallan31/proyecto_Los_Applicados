@@ -9,3 +9,8 @@ out/
 # Archivos de sistema / IDE
 .DS_Store
 .vscode/
+
+# Agentes y reglas IA
+.agents/
+GEMINI.md
+**/GEMINI.md
