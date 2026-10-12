@@ -201,8 +201,8 @@ export function AddRowForm({
       </td>
 
       {/* 7. DEADLINE (dueDate) */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none" />
+      <td className="px-1 py-0 border-r border-border h-9 cursor-pointer">
+        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none cursor-pointer" />
       </td>
 
       {/* 8. NOTAS (description) */}

@@ -138,7 +138,7 @@ export function ManageCoursesModal({
                 <button
                   onClick={handleAddCourse}
                   disabled={!newName.trim() || !newCode.trim()}
-                  className="px-3 py-1 bg-accent-blue text-white rounded text-xs font-bold hover:opacity-90 disabled:opacity-40"
+                  className="px-3 py-1 bg-accent-blue text-white rounded text-xs font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   + Ramo
                 </button>
@@ -188,32 +188,32 @@ export function ManageCoursesModal({
                     <h5 className="text-[10px] font-mono font-bold text-accent-blue uppercase">+ Añadir Horario de Clase</h5>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">TIPO</label>
-                        <select value={sessType} onChange={(e) => setSessType(e.target.value as SessionType)} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
+                        <label htmlFor="sess-type" className="block text-[10px] font-mono text-text-muted font-semibold mb-1 cursor-pointer">TIPO</label>
+                        <select id="sess-type" value={sessType} onChange={(e) => setSessType(e.target.value as SessionType)} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text cursor-pointer">
                           <option value="Cátedra">Cátedra</option>
                           <option value="Auxiliar">Auxiliar</option>
                           <option value="Laboratorio">Laboratorio</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">DÍA</label>
-                        <select value={sessDay} onChange={(e) => setSessDay(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
+                        <label htmlFor="sess-day" className="block text-[10px] font-mono text-text-muted font-semibold mb-1 cursor-pointer">DÍA</label>
+                        <select id="sess-day" value={sessDay} onChange={(e) => setSessDay(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text cursor-pointer">
                           {FULL_DAYS.map((d: string, idx: number) => (
                             <option key={d} value={idx}>{d}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">HORA INICIO</label>
-                        <select value={sessHour} onChange={(e) => setSessHour(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
+                        <label htmlFor="sess-hour" className="block text-[10px] font-mono text-text-muted font-semibold mb-1 cursor-pointer">HORA INICIO</label>
+                        <select id="sess-hour" value={sessHour} onChange={(e) => setSessHour(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text cursor-pointer">
                           {HOURS.map((h: number) => (
                             <option key={h} value={h}>{h}:00</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">DURACIÓN (HORAS)</label>
-                        <select value={sessDuration} onChange={(e) => setSessDuration(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text">
+                        <label htmlFor="sess-duration" className="block text-[10px] font-mono text-text-muted font-semibold mb-1 cursor-pointer">DURACIÓN (HORAS)</label>
+                        <select id="sess-duration" value={sessDuration} onChange={(e) => setSessDuration(Number(e.target.value))} className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text cursor-pointer">
                           <option value={1}>1 hora</option>
                           <option value={2}>2 horas</option>
                           <option value={3}>3 horas</option>

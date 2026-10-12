@@ -93,6 +93,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+button,
+[role="button"],
+select,
+summary,
+label,
+input[type="checkbox"],
+input[type="radio"],
+input[type="date"],
+input[type="time"],
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+button:disabled,
+[disabled],
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;

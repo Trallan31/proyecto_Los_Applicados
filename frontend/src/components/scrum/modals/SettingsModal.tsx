@@ -90,7 +90,7 @@ export function SettingsModal({
                       <select 
                         value={m.role} 
                         onChange={(e) => onUpdateRole(m.id, e.target.value as Member["role"])}
-                        className="bg-transparent text-xs font-mono text-text-muted focus:outline-none cursor-pointer disabled:opacity-50"
+                        className="bg-transparent text-xs font-mono text-text-muted focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isOnlyAdmin}
                         title={isOnlyAdmin ? "El proyecto debe conservar al menos un Administrador." : undefined}
                       >
@@ -99,7 +99,7 @@ export function SettingsModal({
                       </select>
                       <button 
                         onClick={() => onRemove(m.id)} 
-                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-accent-red'}`}
+                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-accent-red'} disabled:cursor-not-allowed`}
                         title={isOnlyMember ? "No puedes eliminar al único integrante del proyecto." : isOnlyAdmin ? "No puedes eliminar al único Administrador." : "Quitar miembro"}
                         disabled={isOnlyMember || isOnlyAdmin}
                       >✕</button>
