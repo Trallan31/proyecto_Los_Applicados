@@ -30,9 +30,9 @@ export function WeekScheduleView({
             date.setDate(today.getDate() + diff);
             const isToday = date.toDateString() === today.toDateString();
             return (
-              <div key={d} className={`text-center py-2 rounded-md border ${isToday ? "bg-[#4f7cff]/20 border-[#4f7cff]" : "bg-surface border-border"}`}>
-                <p className={`text-[9px] font-mono uppercase ${isToday ? "text-[#4f7cff] font-bold" : "text-text-muted"}`}>{WEEK_DAYS[i]}</p>
-                <p className={`text-[14px] font-bold ${isToday ? "text-[#4f7cff]" : "text-text"}`}>{date.getDate()}</p>
+              <div key={d} className={`text-center py-2 rounded-md border ${isToday ? "bg-accent-blue/20 border-accent-blue" : "bg-surface border-border"}`}>
+                <p className={`text-[9px] font-mono uppercase ${isToday ? "text-accent-blue font-bold" : "text-text-muted"}`}>{WEEK_DAYS[i]}</p>
+                <p className={`text-[14px] font-bold ${isToday ? "text-accent-blue" : "text-text"}`}>{date.getDate()}</p>
               </div>
             );
           })}

@@ -50,7 +50,7 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[12px] font-medium text-text cursor-pointer hover:text-[#4f7cff] transition-colors line-clamp-1">
+          <span className="text-[12px] font-medium text-text cursor-pointer hover:text-accent-blue transition-colors line-clamp-1">
             {task.title}
           </span>
         )}
@@ -76,7 +76,7 @@ export function TaskRow({
           />
         ) : (
           sprint ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-panel border border-border text-text hover:border-[#4f7cff] hover:text-[#4f7cff] transition-all cursor-pointer">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-panel border border-border text-text hover:border-accent-blue hover:text-accent-blue transition-all cursor-pointer">
               {sprint.name}
             </span>
           ) : (
@@ -192,7 +192,7 @@ export function TaskRow({
             onBlur={() => setEditingCell(null)}
           />
         ) : (
-          <span className="text-[11px] font-mono font-medium text-text cursor-pointer hover:text-[#4f7cff] transition-colors">
+          <span className="text-[11px] font-mono font-medium text-text cursor-pointer hover:text-accent-blue transition-colors">
             {task.hours ? task.hours + "h" : <span className="text-text-dim font-normal">—</span>}
           </span>
         )}
@@ -212,7 +212,7 @@ export function TaskRow({
           <div className="flex flex-col items-start gap-1 cursor-pointer">
             {task.dueDate ? (
               <>
-                <span className={`text-[11px] font-mono font-medium ${overdue ? "text-[#ff5c6a] font-semibold" : "text-text"}`}>
+                <span className={`text-[11px] font-mono font-medium ${overdue ? "text-accent-red font-semibold" : "text-text"}`}>
                   {(() => {
                     const d = parseLocalDate(task.dueDate);
                     return !isNaN(d.getTime())
@@ -249,7 +249,7 @@ export function TaskRow({
                 e.stopPropagation();
                 onDeleteTask(task.id);
               }}
-              className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-[#ff5c6a] transition-all text-xs font-bold px-1"
+              className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-accent-red transition-all text-xs font-bold px-1"
               title="Eliminar tarea"
               aria-label="Eliminar tarea"
             >

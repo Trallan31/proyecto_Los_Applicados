@@ -31,8 +31,8 @@ export function OrganizerTaskRow({
             title={isDone ? "Marcar como pendiente" : "Marcar como completada"}
             className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-200 transform active:scale-75 flex-shrink-0 ${
               isDone
-                ? "bg-[#2dd67b] border-[#2dd67b] text-[#0d0f14] shadow-sm shadow-[#2dd67b]/30 scale-100"
-                : "border-text-muted hover:border-[#4f7cff] hover:bg-[#4f7cff]/10 text-transparent"
+                ? "bg-accent-green border-accent-green text-black shadow-sm shadow-accent-green/30 scale-100"
+                : "border-text-muted hover:border-accent-blue hover:bg-accent-blue/10 text-transparent"
             }`}
           >
             <Check className={`w-3.5 h-3.5 stroke-[3] transition-all duration-200 ${isDone ? "scale-100 opacity-100" : "scale-0 opacity-0"}`} />
@@ -64,9 +64,8 @@ export function OrganizerTaskRow({
             </div>
           </div>
           </div>
-          <button onClick={onDelete} className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold px-1" title="Eliminar actividad">✕</button>
+          <button onClick={onDelete} className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold px-1" title="Eliminar actividad">✕</button>
         </div>
       </div>
-    </div>
   );
 }

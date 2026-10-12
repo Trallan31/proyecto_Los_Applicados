@@ -66,14 +66,14 @@ export function StatsModal({ project, tasks, members, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-4xl bg-surface rounded-xl shadow-2xl shadow-[#4f7cff]/10 border border-border overflow-hidden flex flex-col max-h-full">
+      <div className="w-full max-w-4xl bg-surface rounded-xl shadow-2xl shadow-accent-blue/10 border border-border overflow-hidden flex flex-col max-h-full">
         {/* Header */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between sticky top-0 bg-surface/90 backdrop-blur z-10">
           <div>
             <h2 className="text-lg font-bold text-text">Estadísticas del Proyecto</h2>
             <p className="text-[11px] font-mono text-text-muted mt-1">{project.name}</p>
           </div>
-          <button onClick={onClose} className="text-text-muted hover:text-[#ff5c6a] transition-colors p-2 rounded-full hover:bg-panel-hover" title="Cerrar">
+          <button onClick={onClose} className="text-text-muted hover:text-accent-red transition-colors p-2 rounded-full hover:bg-panel-hover" title="Cerrar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
@@ -133,9 +133,9 @@ export function StatsModal({ project, tasks, members, onClose }: {
                 <span className="text-3xl font-bold text-text">{totalTasks}</span>
                 <span className="text-[10px] font-mono text-text-muted uppercase mt-2">Tareas Totales</span>
               </div>
-              <div className="bg-[#ff5c6a]/10 rounded-xl p-4 border border-[#ff5c6a]/30 flex flex-col justify-center items-center text-center">
-                <span className="text-3xl font-bold text-[#ff5c6a]">{overdueCount}</span>
-                <span className="text-[10px] font-mono text-[#ff5c6a] uppercase mt-2">Atrasadas</span>
+              <div className="bg-accent-red/10 rounded-xl p-4 border border-accent-red/30 flex flex-col justify-center items-center text-center">
+                <span className="text-3xl font-bold text-accent-red">{overdueCount}</span>
+                <span className="text-[10px] font-mono text-accent-red uppercase mt-2">Atrasadas</span>
               </div>
             </div>
 
@@ -171,7 +171,7 @@ export function StatsModal({ project, tasks, members, onClose }: {
               <div className="w-full border border-border rounded overflow-hidden">
                 <table className="w-full text-[12px] text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#4f7cff] text-white">
+                    <tr className="bg-accent-blue text-white">
                       <th className="px-4 py-2.5 font-medium border-b border-border">Encargado</th>
                       <th className="px-4 py-2.5 font-medium border-b border-border text-right">Horas</th>
                     </tr>

@@ -15,7 +15,7 @@ export function ErrorBox({ message }: { message: string }) {
   return (
     <div className="h-full flex items-center justify-center px-6">
       <div className="max-w-md text-center space-y-2">
-        <p className="text-[13px] font-semibold text-[#ff5c6a]">No se pudieron cargar los datos</p>
+        <p className="text-[13px] font-semibold text-accent-red">No se pudieron cargar los datos</p>
         <p className="text-[12px] text-text-muted">{message}</p>
         <p className="text-[11px] font-mono text-text-muted">npm run dev --prefix backend</p>
       </div>
@@ -73,14 +73,14 @@ export function Toast({
 
   return (
     <div className={`${baseClasses} ${stateClasses}`}>
-      <div className="w-6 h-6 rounded-full bg-[#2dd67b]/20 text-[#2dd67b] flex items-center justify-center flex-shrink-0">
+      <div className="w-6 h-6 rounded-full bg-accent-green/20 text-accent-green flex items-center justify-center flex-shrink-0">
         <CheckCircle2 className="w-4 h-4" />
       </div>
       <span className="text-[13px] font-medium">{message}</span>
       {onAction && (
         <button
           onClick={handleAction}
-          className="ml-2 flex items-center gap-1 text-xs font-bold text-[#4f7cff] hover:text-[#3d6ae0] transition-colors"
+          className="ml-2 flex items-center gap-1 text-xs font-bold text-accent-blue hover:opacity-80 transition-colors"
         >
           <RotateCcw className="w-3 h-3" />
           {actionLabel}

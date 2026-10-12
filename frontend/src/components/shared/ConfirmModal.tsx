@@ -29,7 +29,7 @@ export function ConfirmModal({
           <button
             onClick={onConfirm}
             className={`flex-1 py-2 rounded-md text-sm font-bold transition-colors ${
-              variant === "danger" ? "bg-[#ff5c6a] hover:bg-[#e04b58] text-white" : "bg-[#f5c842] hover:bg-[#d4ac38] text-black"
+              variant === "danger" ? "bg-accent-red hover:opacity-90 text-white" : "bg-accent-yellow hover:opacity-90 text-black"
             }`}
           >
             {confirmLabel}

@@ -27,7 +27,7 @@ export function InviteModal({
           <button onClick={onClose} className="text-text-muted hover:text-text">✕</button>
         </div>
         
-        <input autoFocus value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-text placeholder-text-dim focus:outline-none focus:border-[#4f7cff] transition-colors mb-4" placeholder="Buscar por nombre o usuario..." />
+        <input autoFocus value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-text placeholder-text-muted focus:outline-none focus:border-accent-blue transition-colors mb-4" placeholder="Buscar por nombre o usuario..." />
 
         <div className="space-y-2 max-h-[300px] overflow-auto">
           {availableUsers.map(u => (
@@ -41,7 +41,7 @@ export function InviteModal({
                   <p className="text-xs font-mono text-text-muted">@{u.username}</p>
                 </div>
               </div>
-              <button onClick={() => onInvite(u)} className="px-3 py-1 bg-[#4f7cff]/10 text-[#4f7cff] rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#4f7cff]/20">
+              <button onClick={() => onInvite(u)} className="px-3 py-1 bg-accent-blue/10 text-accent-blue rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent-blue/20">
                 Añadir
               </button>
             </div>

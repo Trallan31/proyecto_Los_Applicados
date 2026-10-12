@@ -83,14 +83,14 @@ export function ManageCoursesModal({
                   key={c.id}
                   onClick={() => setSelectedCourseId(c.id)}
                   className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedCourse?.id === c.id ? "bg-panel border-[#4f7cff]" : "bg-background border-border hover:border-border-bright"
+                    selectedCourse?.id === c.id ? "bg-panel border-accent-blue" : "bg-background border-border hover:border-border-bright"
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
                     <div className="truncate">
                       <p className="text-xs font-bold text-text truncate">{c.name}</p>
-                      <p className="text-[10px] font-mono text-[#4f7cff] font-semibold">{c.code || c.shortName}</p>
+                      <p className="text-[10px] font-mono text-accent-blue font-semibold">{c.code || c.shortName}</p>
                     </div>
                   </div>
                   <button
@@ -98,7 +98,7 @@ export function ManageCoursesModal({
                       e.stopPropagation();
                       setConfirmDelete({ type: 'course', id: c.id });
                     }}
-                    className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold p-1 ml-2"
+                    className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold p-1 ml-2"
                     title="Eliminar ramo"
                   >
                     ✕
@@ -115,13 +115,13 @@ export function ManageCoursesModal({
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Nombre ramo..."
-                  className="bg-background border border-border rounded px-2.5 py-1 text-xs text-text placeholder-text-dim focus:outline-none focus:border-[#4f7cff]"
+                  className="bg-background border border-border rounded px-2.5 py-1 text-xs text-text placeholder-text-muted focus:outline-none focus:border-accent-blue"
                 />
                 <input
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value)}
                   placeholder="Código (ej: IIC2143)..."
-                  className="bg-background border border-border rounded px-2.5 py-1 text-xs text-text placeholder-text-dim focus:outline-none focus:border-[#4f7cff]"
+                  className="bg-background border border-border rounded px-2.5 py-1 text-xs text-text placeholder-text-muted focus:outline-none focus:border-accent-blue"
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -138,7 +138,7 @@ export function ManageCoursesModal({
                 <button
                   onClick={handleAddCourse}
                   disabled={!newName.trim() || !newCode.trim()}
-                  className="px-3 py-1 bg-[#4f7cff] text-white rounded text-xs font-bold hover:bg-[#3d6ae0] disabled:opacity-40"
+                  className="px-3 py-1 bg-accent-blue text-white rounded text-xs font-bold hover:opacity-90 disabled:opacity-40"
                 >
                   + Ramo
                 </button>
@@ -156,7 +156,7 @@ export function ManageCoursesModal({
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedCourse.color }} />
                       {selectedCourse.name}
                     </h3>
-                    <p className="text-[10px] font-mono text-[#4f7cff] font-semibold">{selectedCourse.code}</p>
+                    <p className="text-[10px] font-mono text-accent-blue font-semibold">{selectedCourse.code}</p>
                   </div>
                 </div>
 
@@ -173,7 +173,7 @@ export function ManageCoursesModal({
                             {s.startHour}:00 - {s.startHour + s.duration}:00 ({s.type})
                           </p>
                         </div>
-                        <button onClick={() => setConfirmDelete({ type: 'session', id: s.id })} className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold">
+                        <button onClick={() => setConfirmDelete({ type: 'session', id: s.id })} className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold">
                           ✕
                         </button>
                       </div>
@@ -185,7 +185,7 @@ export function ManageCoursesModal({
 
                   {/* Add Session Form */}
                   <div className="mt-4 pt-3 border-t border-border space-y-3">
-                    <h5 className="text-[10px] font-mono font-bold text-[#4f7cff] uppercase">+ Añadir Horario de Clase</h5>
+                    <h5 className="text-[10px] font-mono font-bold text-accent-blue uppercase">+ Añadir Horario de Clase</h5>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="block text-[10px] font-mono text-text-muted font-semibold mb-1">TIPO</label>
@@ -220,7 +220,7 @@ export function ManageCoursesModal({
                         </select>
                       </div>
                     </div>
-                    <button onClick={handleAddSession} className="w-full py-1.5 bg-[#2dd67b] text-black font-bold text-xs rounded hover:bg-[#25b868] transition-colors">
+                    <button onClick={handleAddSession} className="w-full py-1.5 bg-accent-green text-black font-bold text-xs rounded hover:opacity-90 transition-colors">
                       + Agregar Horario a {selectedCourse.shortName || selectedCourse.code}
                     </button>
                   </div>
@@ -235,7 +235,7 @@ export function ManageCoursesModal({
         {/* Footer: cada cambio ya quedo guardado en la API al hacerlo. */}
         <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface">
           <span className="text-[10px] font-mono text-text-muted">Los cambios se guardan al instante</span>
-          <button onClick={onClose} className="px-4 py-1.5 text-xs font-bold bg-[#4f7cff] hover:bg-[#3d6ae0] text-white rounded transition-colors">
+          <button onClick={onClose} className="px-4 py-1.5 text-xs font-bold bg-accent-blue hover:opacity-90 text-white rounded transition-colors">
             Listo
           </button>
         </div>

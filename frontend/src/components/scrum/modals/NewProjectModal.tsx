@@ -21,11 +21,11 @@ export function NewProjectModal({
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-mono text-text-muted mb-1.5 uppercase">Nombre</label>
-            <input autoFocus value={name} onChange={e => setName(e.target.value)} className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-text placeholder-text-dim focus:outline-none focus:border-[#4f7cff] transition-colors" placeholder="Ej: Sistema de Biblioteca" />
+            <input autoFocus value={name} onChange={e => setName(e.target.value)} className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-text placeholder-text-muted focus:outline-none focus:border-accent-blue transition-colors" placeholder="Ej: Sistema de Biblioteca" />
           </div>
           <div>
             <label className="block text-xs font-mono text-text-muted mb-1.5 uppercase">Ramo (Opcional)</label>
-            <input value={course} onChange={e => setCourse(e.target.value)} className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-text placeholder-text-dim focus:outline-none focus:border-[#4f7cff] transition-colors" placeholder="Ej: IIC2143" />
+            <input value={course} onChange={e => setCourse(e.target.value)} className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-text placeholder-text-muted focus:outline-none focus:border-accent-blue transition-colors" placeholder="Ej: IIC2143" />
           </div>
           <div>
             <label className="block text-xs font-mono text-text-muted mb-2 uppercase">Color</label>
@@ -39,7 +39,7 @@ export function NewProjectModal({
 
         <div className="flex gap-3 mt-8">
           <button onClick={onClose} className="flex-1 px-4 py-2 rounded-md text-sm font-medium text-text-muted hover:bg-panel-hover hover:text-text transition-colors">Cancelar</button>
-          <button onClick={() => { if (!name.trim()) return; onCreate({ name, course, color, description: "" }); }} className="flex-1 px-4 py-2 bg-[#4f7cff] text-white rounded-md text-sm font-medium hover:bg-[#3d6ae0] transition-colors">Crear Proyecto</button>
+          <button onClick={() => { if (!name.trim()) return; onCreate({ name, course, color, description: "" }); }} className="flex-1 px-4 py-2 bg-accent-blue text-white rounded-md text-sm font-medium hover:opacity-90 transition-colors">Crear Proyecto</button>
         </div>
       </div>
     </div>

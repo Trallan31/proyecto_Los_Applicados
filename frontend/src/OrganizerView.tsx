@@ -14,6 +14,8 @@ import { ConfirmModal } from "./components/shared/ConfirmModal";
 import { Loading, ErrorBox, Toast } from "./components/shared/Feedback";
 
 
+let toastCounter = 0;
+
 export default function OrganizerView() {
   const {
     courses,
@@ -57,7 +59,7 @@ export default function OrganizerView() {
     const previousStatus = task.status;
     const nextStatus = toggleTaskStatus(task.id);
     if (nextStatus === "Completada") {
-      const toastId = Math.random().toString(36).substring(2, 9);
+      const toastId = `${task.id}-${++toastCounter}`;
       setToasts(prev => [...prev, {
         id: toastId,
         message: `"${task.title}" marcada como lista`,
@@ -85,7 +87,7 @@ export default function OrganizerView() {
           <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">Mis Ramos</span>
           <button
             onClick={() => setShowManageCourses(true)}
-            className="text-[10px] font-mono text-text-muted hover:text-[#4f7cff] transition-colors"
+            className="text-[10px] font-mono text-text-muted hover:text-accent-blue transition-colors"
             title="Gestionar ramos y horarios"
           >
             ⚙️ Ramos
@@ -151,7 +153,7 @@ export default function OrganizerView() {
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4f7cff] hover:bg-[#3d6ae0] text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-[#4f7cff]/20"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue hover:opacity-90 text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-accent-blue/20"
           >
             <span className="text-base leading-none">+</span> Nueva actividad
           </button>
@@ -170,7 +172,7 @@ export default function OrganizerView() {
                 onClick={() => setTimeFilter(t.key)}
                 className={`px-3 py-2 text-[12px] font-semibold border-b-2 -mb-px transition-all ${
                   timeFilter === t.key
-                    ? "text-[#4f7cff] border-[#4f7cff]"
+                    ? "text-accent-blue border-accent-blue"
                     : "text-text-muted border-transparent hover:text-text"
                 }`}
               >
@@ -180,15 +182,15 @@ export default function OrganizerView() {
           </div>
           <div className="flex items-center gap-5 px-5 pb-2.5 pt-1">
             <StatPill label="Pendientes" value={scopedTasks.filter((t) => t.status === "Pendiente").length} color="var(--color-text-muted)" />
-            <StatPill label="En curso" value={scopedTasks.filter((t) => t.status === "En curso").length} color="#f5c842" />
-            <StatPill label="Completadas" value={doneCount} color="#2dd67b" />
+            <StatPill label="En curso" value={scopedTasks.filter((t) => t.status === "En curso").length} color="var(--color-accent-yellow)" />
+            <StatPill label="Completadas" value={doneCount} color="var(--color-accent-green)" />
             <div className="ml-auto flex items-center gap-2">
               <div className="w-24 h-1.5 bg-border rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${totalCount > 0 ? (doneCount / totalCount) * 100 : 0}%`,
-                    backgroundColor: activeCourseObj?.color ?? "#4f7cff",
+                    backgroundColor: activeCourseObj?.color ?? "var(--color-accent-blue)",
                   }}
                 />
               </div>
@@ -208,7 +210,7 @@ export default function OrganizerView() {
               key={t.key}
               onClick={() => setTab(t.key as ViewTab)}
               className={`px-3 py-2 text-[11px] font-semibold border-b-2 -mb-px transition-colors ${
-                tab === t.key ? "text-[#4f7cff] border-[#4f7cff] font-bold" : "text-text-muted border-transparent hover:text-text"
+                tab === t.key ? "text-accent-blue border-accent-blue font-bold" : "text-text-muted border-transparent hover:text-text"
               }`}
             >
               {t.label}
@@ -221,7 +223,7 @@ export default function OrganizerView() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as TaskType | "all")}
-                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-[#4f7cff]"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-accent-blue"
               >
                 <option value="all">Tipo: todos</option>
                 {TASK_TYPES.map((c) => (
@@ -231,7 +233,7 @@ export default function OrganizerView() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as OrganizerTask["status"] | "all")}
-                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-[#4f7cff]"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-accent-blue"
               >
                 <option value="all">Estado: todos</option>
                 <option value="Pendiente">Pendiente</option>

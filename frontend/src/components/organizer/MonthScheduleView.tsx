@@ -83,13 +83,13 @@ export function MonthScheduleView({
               <div
                 key={dateStr}
                 className={`bg-surface min-h-[110px] p-1.5 border-t border-border/40 flex flex-col gap-1 hover:bg-panel-hover/60 transition-colors ${
-                  isToday ? "bg-[#4f7cff]/10" : ""
+                  isToday ? "bg-accent-blue/10" : ""
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span
                     className={`text-[11px] font-mono font-bold w-5 h-5 flex items-center justify-center rounded-full ${
-                      isToday ? "bg-[#4f7cff] text-white" : "text-text-muted"
+                      isToday ? "bg-accent-blue text-white" : "text-text-muted"
                     }`}
                   >
                     {dayNum}

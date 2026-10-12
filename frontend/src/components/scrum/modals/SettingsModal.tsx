@@ -41,26 +41,26 @@ export function SettingsModal({
         <div className="flex border-b border-border bg-surface px-6 gap-2">
           <button
             onClick={() => setTab("team")}
-            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "team" ? "border-[#4f7cff] text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
+            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "team" ? "border-accent-blue text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
           >
             Equipo ({members.length})
           </button>
           <button
             onClick={() => setTab("categories")}
-            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "categories" ? "border-[#2dd67b] text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
+            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "categories" ? "border-accent-green text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
           >
             Categorías ({project.categories.length})
           </button>
           <button
             onClick={() => setTab("sprints")}
-            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "sprints" ? "border-[#9b6dff] text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
+            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "sprints" ? "border-accent-violet text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
           >
             Sprints ({sprints.length})
           </button>
           {onDeleteProject && (
             <button
               onClick={() => setTab("danger")}
-              className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "danger" ? "border-[#ff5c6a] text-[#ff5c6a]" : "border-transparent text-text-muted hover:text-[#ff5c6a]"}`}
+              className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "danger" ? "border-accent-red text-accent-red" : "border-transparent text-text-muted hover:text-accent-red"}`}
             >
               Zona de Peligro
             </button>
@@ -99,7 +99,7 @@ export function SettingsModal({
                       </select>
                       <button 
                         onClick={() => onRemove(m.id)} 
-                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-[#ff5c6a]'}`}
+                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-accent-red'}`}
                         title={isOnlyMember ? "No puedes eliminar al único integrante del proyecto." : isOnlyAdmin ? "No puedes eliminar al único Administrador." : "Quitar miembro"}
                         disabled={isOnlyMember || isOnlyAdmin}
                       >✕</button>
@@ -119,7 +119,7 @@ export function SettingsModal({
                   {onDeleteCategory && (
                     <button
                       onClick={() => setConfirmDelete({ type: 'category', id: cat })}
-                      className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold px-2 py-1"
+                      className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold px-2 py-1"
                       title="Eliminar categoría"
                     >
                       Eliminar
@@ -139,7 +139,7 @@ export function SettingsModal({
                   {onDeleteSprint && (
                     <button
                       onClick={() => setConfirmDelete({ type: 'sprint', id: s.id })}
-                      className="text-text-muted hover:text-[#ff5c6a] transition-colors text-xs font-bold px-2 py-1"
+                      className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold px-2 py-1"
                       title="Eliminar Sprint"
                     >
                       Eliminar
@@ -151,9 +151,9 @@ export function SettingsModal({
           )}
 
           {tab === "danger" && onDeleteProject && (
-            <div className="p-4 border border-[#ff5c6a]/30 bg-[#ff5c6a]/5 rounded-lg space-y-4">
+            <div className="p-4 border border-accent-red/30 bg-accent-red/5 rounded-lg space-y-4">
               <div>
-                <h4 className="text-sm font-bold text-[#ff5c6a]">Eliminar este Proyecto</h4>
+                <h4 className="text-sm font-bold text-accent-red">Eliminar este Proyecto</h4>
                 <p className="text-xs text-text-muted mt-1">Esta acción borrará el proyecto y todas sus tareas asociadas. Esta acción no se puede deshacer.</p>
               </div>
               <button
@@ -161,7 +161,7 @@ export function SettingsModal({
                   onDeleteProject();
                   onClose();
                 }}
-                className="w-full py-2 bg-[#ff5c6a] text-white text-xs font-bold rounded hover:bg-[#e04b58] transition-colors"
+                className="w-full py-2 bg-accent-red text-white text-xs font-bold rounded hover:opacity-90 transition-colors"
               >
                 Eliminar Proyecto Definitivamente
               </button>
