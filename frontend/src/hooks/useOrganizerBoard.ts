@@ -80,6 +80,10 @@ export function useOrganizerBoard() {
     void tasks.add({ ...t, userId: CURRENT_USER_ID });
   }
 
+  function updateTask(id: string, changes: Partial<Omit<OrganizerTask, "id" | "userId">>) {
+    void tasks.edit(id, changes);
+  }
+
   function addCourse(c: Omit<Course, "id" | "userId">) {
     void courses.add({ ...c, userId: CURRENT_USER_ID });
   }
@@ -92,7 +96,7 @@ export function useOrganizerBoard() {
     await Promise.all(
       tasks.items
         .filter((t) => t.courseId === courseId)
-        .map((t) => tasks.edit(t.id, { courseId: undefined, scope: "Personal" }))
+        .map((t) => tasks.edit(t.id, { courseId: null, scope: "Personal" }))
     );
     await courses.destroy(courseId);
     if (activeCourse === courseId) setActiveCourse("all");
@@ -145,6 +149,7 @@ export function useOrganizerBoard() {
     setTaskStatus,
     deleteTask,
     addTask,
+    updateTask,
     addCourse,
     deleteCourse,
     addSession,

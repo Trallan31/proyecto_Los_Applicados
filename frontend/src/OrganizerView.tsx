@@ -38,6 +38,7 @@ export default function OrganizerView() {
     setTaskStatus,
     deleteTask,
     addTask,
+    updateTask,
     addCourse,
     deleteCourse,
     addSession,
@@ -51,6 +52,7 @@ export default function OrganizerView() {
 
   const today = getToday();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<OrganizerTask | null>(null);
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; taskId: string; previousStatus: OrganizerTask["status"] }>>([]);
@@ -152,8 +154,9 @@ export default function OrganizerView() {
             </span>
           </div>
           <button
+            type="button"
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue hover:opacity-90 text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-accent-blue/20"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue hover:opacity-90 text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-accent-blue/20 cursor-pointer"
           >
             <span className="text-base leading-none">+</span> Nueva actividad
           </button>
@@ -253,6 +256,7 @@ export default function OrganizerView() {
                 task={task}
                 course={courses.find((c) => c.id === task.courseId)}
                 onToggleStatus={() => handleToggleStatus(task)}
+                onEdit={() => setEditingTask(task)}
                 onDelete={() => setConfirmDeleteId(task.id)}
               />
             ))}
@@ -308,6 +312,19 @@ export default function OrganizerView() {
           }}
         />
       )}
+      {editingTask !== null && (
+        <AddOrganizerTaskModal
+          initialTask={editingTask}
+          courses={courses}
+          defaultCourseId={editingTask.courseId}
+          onClose={() => setEditingTask(null)}
+          onEdit={(id, changes) => {
+            updateTask(id, changes);
+            setToasts((prev) => prev.filter((t) => t.taskId !== id));
+            setEditingTask(null);
+          }}
+        />
+      )}
       {confirmDeleteId && (
         <ConfirmModal
           title="Eliminar actividad"
@@ -315,6 +332,7 @@ export default function OrganizerView() {
           confirmLabel="Sí, eliminar"
           onConfirm={() => {
             deleteTask(confirmDeleteId);
+            setToasts((prev) => prev.filter((t) => t.taskId !== confirmDeleteId));
             setConfirmDeleteId(null);
           }}
           onCancel={() => setConfirmDeleteId(null)}

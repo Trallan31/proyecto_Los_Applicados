@@ -11,8 +11,8 @@ export interface OrganizerTask {
   courseId: string | null;
   type: TaskType;
   endDate: string;
-  dueTime?: string;
+  dueTime?: string | null;
   status: "Pendiente" | "En curso" | "Completada";
   priority: "Alta" | "Media" | "Baja";
-  notes?: string;
+  notes?: string | null;
 }
