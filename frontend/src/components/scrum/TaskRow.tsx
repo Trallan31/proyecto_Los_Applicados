@@ -209,10 +209,10 @@ export function TaskRow({
             className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none cursor-pointer"
           />
         ) : (
-          <div className="flex flex-col items-start gap-1 cursor-pointer">
+          <div className="flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
             {task.dueDate ? (
               <>
-                <span className={`text-[11px] font-mono font-medium ${overdue ? "text-accent-red font-semibold" : task.status === "Completada" ? "text-text-muted" : "text-text"}`}>
+                <span className={`text-[11px] font-mono font-medium shrink-0 ${overdue ? "text-accent-red font-semibold" : task.status === "Completada" ? "text-text-muted" : "text-text"}`}>
                   {(() => {
                     const d = parseLocalDate(task.dueDate);
                     return !isNaN(d.getTime())
@@ -221,7 +221,7 @@ export function TaskRow({
                   })()}
                 </span>
                 {task.status !== "Completada" && (
-                  <CountdownBadge dateStr={task.dueDate} />
+                  <CountdownBadge dateStr={task.dueDate} compact />
                 )}
               </>
             ) : (

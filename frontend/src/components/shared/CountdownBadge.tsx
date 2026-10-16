@@ -66,11 +66,11 @@ export function CountdownBadge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium border transition-colors ${currentStyle.bg} ${currentStyle.text} ${currentStyle.border} ${className}`}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium border transition-colors whitespace-nowrap shrink-0 ${currentStyle.bg} ${currentStyle.text} ${currentStyle.border} ${className}`}
       title={label}
     >
       {currentStyle.icon}
-      <span>{text}</span>
+      <span className="whitespace-nowrap">{text}</span>
     </span>
   );
 }
