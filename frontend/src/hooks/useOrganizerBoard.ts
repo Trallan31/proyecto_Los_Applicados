@@ -25,6 +25,21 @@ export function useOrganizerBoard() {
 
   const loading = courses.loading || sessions.loading || tasks.loading;
   const error = courses.error ?? sessions.error ?? tasks.error;
+  const mutationError = courses.mutationError ?? sessions.mutationError ?? tasks.mutationError;
+
+  const refetch = async () => {
+    await Promise.all([
+      courses.refetch(),
+      sessions.refetch(),
+      tasks.refetch(),
+    ]);
+  };
+
+  const clearMutationError = () => {
+    courses.clearMutationError();
+    sessions.clearMutationError();
+    tasks.clearMutationError();
+  };
 
   // Clave del dia actual: mantiene estables weekBounds/monthBounds dentro
   // del mismo dia (filteredTasks depende de su identidad) y los recalcula
@@ -165,6 +180,9 @@ export function useOrganizerBoard() {
     tasks: tasks.items,
     loading,
     error,
+    mutationError,
+    clearMutationError,
+    refetch,
     activeCourse,
     setActiveCourse,
     timeFilter,

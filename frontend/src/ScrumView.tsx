@@ -9,7 +9,7 @@ import { ConfirmModal } from "./components/shared/ConfirmModal";
 import { ProjectLinksBar } from "./components/scrum/ProjectLinksBar";
 import { ProjectLinkModal } from "./components/scrum/modals/ProjectLinkModal";
 import { useScrumBoard } from "./hooks/useScrumBoard";
-import { Loading, ErrorBox } from "./components/shared/Feedback";
+import { Loading, ErrorBox, Toast } from "./components/shared/Feedback";
 import type { ProjectLink } from "./types";
 
 export function ScrumView() {
@@ -18,6 +18,9 @@ export function ScrumView() {
     users,
     loading,
     error,
+    mutationError,
+    clearMutationError,
+    refetch,
     activeProjectId,
     project,
     projectSprints,
@@ -55,7 +58,7 @@ export function ScrumView() {
   const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
 
   if (loading) return <Loading label="Cargando proyectos..." />;
-  if (error) return <ErrorBox message={error} />;
+  if (error) return <ErrorBox message={error} onRetry={refetch} />;
 
   if (!project) {
     return (
@@ -276,6 +279,15 @@ export function ScrumView() {
             }
           }}
         />
+      )}
+      {mutationError && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Toast
+            message={`Error al guardar cambios: ${mutationError}`}
+            variant="error"
+            onClose={clearMutationError}
+          />
+        </div>
       )}
     </div>
   );

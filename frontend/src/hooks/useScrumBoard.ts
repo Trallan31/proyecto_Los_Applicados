@@ -14,6 +14,27 @@ export function useScrumBoard() {
 
   const loading = projects.loading || sprints.loading || activities.loading || users.loading;
   const error = projects.error ?? sprints.error ?? activities.error ?? users.error;
+  const mutationError =
+    projects.mutationError ??
+    sprints.mutationError ??
+    activities.mutationError ??
+    users.mutationError;
+
+  const refetch = async () => {
+    await Promise.all([
+      projects.refetch(),
+      sprints.refetch(),
+      activities.refetch(),
+      users.refetch(),
+    ]);
+  };
+
+  const clearMutationError = () => {
+    projects.clearMutationError();
+    sprints.clearMutationError();
+    activities.clearMutationError();
+    users.clearMutationError();
+  };
 
   const project = projects.items.find((p) => p.id === selectedProjectId) ?? projects.items[0];
   const activeProjectId = project?.id ?? "";
@@ -176,6 +197,9 @@ export function useScrumBoard() {
     users: users.items,
     loading,
     error,
+    mutationError,
+    clearMutationError,
+    refetch,
     project,
     activeProjectId,
     setActiveProjectId: setSelectedProjectId,

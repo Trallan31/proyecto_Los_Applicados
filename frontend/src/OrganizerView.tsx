@@ -38,6 +38,9 @@ export default function OrganizerView() {
     sortedTasks,
     loading,
     error,
+    mutationError,
+    clearMutationError,
+    refetch,
     toggleTaskStatus,
     setTaskStatus,
     deleteTask,
@@ -101,7 +104,7 @@ export default function OrganizerView() {
   }
 
   if (loading) return <Loading label="Cargando organizador..." />;
-  if (error) return <ErrorBox message={error} />;
+  if (error) return <ErrorBox message={error} onRetry={refetch} />;
 
   return (
     <div className="flex h-full overflow-hidden text-text">
@@ -438,6 +441,15 @@ export default function OrganizerView() {
         />
       )}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+        {mutationError && (
+          <div className="pointer-events-auto">
+            <Toast
+              message={`Error al guardar cambios: ${mutationError}`}
+              variant="error"
+              onClose={clearMutationError}
+            />
+          </div>
+        )}
         {toasts.map(t => (
           <div key={t.id} className="pointer-events-auto">
             <Toast
