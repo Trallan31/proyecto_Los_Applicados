@@ -6,8 +6,11 @@ import { InviteModal } from "./components/scrum/modals/InviteModal";
 import { SettingsModal } from "./components/scrum/modals/SettingsModal";
 import { StatsModal } from "./components/scrum/StatsModal";
 import { ConfirmModal } from "./components/shared/ConfirmModal";
+import { ProjectLinksBar } from "./components/scrum/ProjectLinksBar";
+import { ProjectLinkModal } from "./components/scrum/modals/ProjectLinkModal";
 import { useScrumBoard } from "./hooks/useScrumBoard";
 import { Loading, ErrorBox } from "./components/shared/Feedback";
+import type { ProjectLink } from "./types";
 
 export function ScrumView() {
   const {
@@ -33,6 +36,9 @@ export function ScrumView() {
     inviteMember,
     removeMember,
     updateMemberRole,
+    addProjectLink,
+    deleteProjectLink,
+    updateProjectLink,
   } = useScrumBoard();
 
   const [showNewRow, setShowNewRow] = useState(false);
@@ -40,6 +46,8 @@ export function ScrumView() {
   const [showSettings, setShowSettings] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [editingLink, setEditingLink] = useState<ProjectLink | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'task' | 'project'; id: string } | null>(null);
 
   const doneCount = projectTasks.filter((t) => t.status === "Completada").length;
@@ -133,6 +141,23 @@ export function ScrumView() {
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="pt-1">
+          <ProjectLinksBar
+            links={project.links || []}
+            onAddLink={() => {
+              setEditingLink(null);
+              setShowLinkModal(true);
+            }}
+            onEditLink={(link) => {
+              setEditingLink(link);
+              setShowLinkModal(true);
+            }}
+            onDeleteLink={(linkId) => {
+              deleteProjectLink(linkId);
+            }}
+          />
         </div>
       </header>
 
@@ -232,6 +257,24 @@ export function ScrumView() {
             setConfirmDelete(null);
           }}
           onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+      {showLinkModal && (
+        <ProjectLinkModal
+          key={editingLink?.id ?? "new"}
+          isOpen={showLinkModal}
+          linkToEdit={editingLink}
+          onClose={() => {
+            setShowLinkModal(false);
+            setEditingLink(null);
+          }}
+          onSave={(link) => {
+            if (editingLink) {
+              updateProjectLink(editingLink.id, link);
+            } else {
+              addProjectLink(link);
+            }
+          }}
         />
       )}
     </div>

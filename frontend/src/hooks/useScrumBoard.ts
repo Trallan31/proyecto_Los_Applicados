@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useCollection } from "./useCollection";
-import type { Project, ProjectMember, ProjectRole, Activity, User, Member, Sprint } from "../types";
+import type { Project, ProjectMember, ProjectRole, Activity, User, Member, Sprint, ProjectLink } from "../types";
 
 export function useScrumBoard() {
   const projects = useCollection<Project>("projects");
@@ -146,6 +146,31 @@ export function useScrumBoard() {
     });
   }
 
+  function addProjectLink(link: Omit<ProjectLink, "id">) {
+    if (!project) return;
+    const newLink: ProjectLink = {
+      ...link,
+      id: `link-${Date.now()}`,
+    };
+    void projects.edit(project.id, {
+      links: [...(project.links || []), newLink],
+    });
+  }
+
+  function deleteProjectLink(linkId: string) {
+    if (!project) return;
+    void projects.edit(project.id, {
+      links: (project.links || []).filter((l) => l.id !== linkId),
+    });
+  }
+
+  function updateProjectLink(linkId: string, changes: Partial<Omit<ProjectLink, "id">>) {
+    if (!project) return;
+    void projects.edit(project.id, {
+      links: (project.links || []).map((l) => (l.id === linkId ? { ...l, ...changes } : l)),
+    });
+  }
+
   return {
     projects: projects.items,
     users: users.items,
@@ -169,5 +194,8 @@ export function useScrumBoard() {
     inviteMember,
     removeMember,
     updateMemberRole,
+    addProjectLink,
+    deleteProjectLink,
+    updateProjectLink,
   };
 }

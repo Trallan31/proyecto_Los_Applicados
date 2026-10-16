@@ -1,5 +1,14 @@
 export type ProjectRole = "Admin" | "Miembro";
 
+export type ProjectLinkCategory = "repositorio" | "diseño" | "documentación" | "deploy" | "otro";
+
+export interface ProjectLink {
+  id: string;
+  title: string;
+  url: string;
+  category?: ProjectLinkCategory;
+}
+
 /** Pertenencia de un usuario a un proyecto. Va embebida en el proyecto. */
 export interface ProjectMember {
   userId: string;
@@ -15,4 +24,6 @@ export interface Project {
   course: string;
   categories: string[];
   members: ProjectMember[];
+  links?: ProjectLink[];
 }
+

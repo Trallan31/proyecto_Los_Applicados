@@ -604,6 +604,26 @@
           "userId": "user-4",
           "role": "Miembro"
         }
+      ],
+      "links": [
+        {
+          "id": "link-1",
+          "title": "Repositorio GitHub",
+          "url": "https://github.com/ejemplo/sistema-biblioteca",
+          "category": "repositorio"
+        },
+        {
+          "id": "link-2",
+          "title": "Documentación & Diagrama ER",
+          "url": "https://docs.google.com/document/d/ejemplo",
+          "category": "documentación"
+        },
+        {
+          "title": "asd",
+          "url": "https://fh",
+          "category": "otro",
+          "id": "link-1792183297100"
+        }
       ]
     },
     {
@@ -625,6 +645,20 @@
         {
           "userId": "user-5",
           "role": "Miembro"
+        }
+      ],
+      "links": [
+        {
+          "id": "link-3",
+          "title": "Figma Wireframes",
+          "url": "https://figma.com/@pedidos-app",
+          "category": "diseño"
+        },
+        {
+          "id": "link-4",
+          "title": "API Swagger",
+          "url": "https://api.pedidos.dev/docs",
+          "category": "deploy"
         }
       ]
     }
