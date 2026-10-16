@@ -8,6 +8,7 @@ import { CountdownBadge } from "../shared/CountdownBadge";
 export function OrganizerTaskRow({
   task,
   course,
+  showCourseBadge = true,
   isSelected = false,
   onSelect,
   onToggleStatus,
@@ -16,6 +17,7 @@ export function OrganizerTaskRow({
 }: {
   task: OrganizerTask;
   course?: Course;
+  showCourseBadge?: boolean;
   isSelected?: boolean;
   onSelect: () => void;
   onToggleStatus: () => void;
@@ -79,7 +81,7 @@ export function OrganizerTaskRow({
               >
                 {task.title}
               </span>
-              {course && (
+              {course && showCourseBadge && (
                 <span
                   className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
                   style={{
@@ -126,7 +128,7 @@ export function OrganizerTaskRow({
               {task.dueTime && <span>• {task.dueTime}</span>}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
             <button
               type="button"
               onClick={(e) => {
