@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Settings, ListTodo, CalendarDays, Calendar } from "lucide-react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
 import type { OrganizerTask, TaskType, CourseLink } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
@@ -110,10 +111,11 @@ export default function OrganizerView() {
           <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">Mis Ramos</span>
           <button
             onClick={() => setShowManageCourses(true)}
-            className="text-[10px] font-mono text-text-muted hover:text-accent-blue transition-colors"
+            className="inline-flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-accent-blue transition-colors cursor-pointer"
             title="Gestionar ramos y horarios"
           >
-            ⚙️ Ramos
+            <Settings className="w-3 h-3" />
+            <span>Ramos</span>
           </button>
         </div>
 
@@ -205,33 +207,42 @@ export default function OrganizerView() {
           )}
         </header>
 
-        {/* Time filter + stats */}
-        <div className="flex-shrink-0 border-b border-border bg-surface">
-          <div className="flex items-center gap-0 px-5 pt-2">
-            {([
-              { key: "todas", label: "Todas" },
-              { key: "semana", label: "Esta semana" },
-              { key: "mes", label: "Este mes" },
-            ] as { key: TimeFilter; label: string }[]).map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTimeFilter(t.key)}
-                className={`px-3 py-2 text-[12px] font-semibold border-b-2 -mb-px transition-all ${
-                  timeFilter === t.key
-                    ? "text-accent-blue border-accent-blue"
-                    : "text-text-muted border-transparent hover:text-text"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+        {/* Barra de navegación principal (Tabs + Stats compactas) */}
+        <div className="flex-shrink-0 px-5 border-b border-border bg-surface flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+          {/* Pestañas de vista a la izquierda */}
+          <div className="flex items-center gap-1">
+            {[
+              { key: "lista", label: "Lista de tareas", icon: ListTodo },
+              { key: "semana", label: "Horario semanal", icon: CalendarDays },
+              { key: "mes", label: "Horario mensual", icon: Calendar },
+            ].map((t) => {
+              const Icon = t.icon;
+              const isActive = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => handleSelectTab(t.key as ViewTab)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-semibold border-b-2 -mb-px transition-colors cursor-pointer ${
+                    isActive
+                      ? "text-accent-blue border-accent-blue font-bold"
+                      : "text-text-muted border-transparent hover:text-text"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="flex items-center gap-5 px-5 pb-2.5 pt-1">
+
+          {/* Estadísticas compactas a la derecha */}
+          <div className="flex items-center gap-4 py-1.5 ml-auto">
             <StatPill label="Pendientes" value={scopedTasks.filter((t) => t.status === "Pendiente").length} color="var(--color-text-muted)" />
             <StatPill label="En curso" value={scopedTasks.filter((t) => t.status === "En curso").length} color="var(--color-accent-yellow)" />
             <StatPill label="Completadas" value={doneCount} color="var(--color-accent-green)" />
-            <div className="ml-auto flex items-center gap-2">
-              <div className="w-24 h-1.5 bg-border rounded-full overflow-hidden">
+            <div className="flex items-center gap-2 pl-3 border-l border-border/60">
+              <div className="w-20 h-1.5 bg-border rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
@@ -245,31 +256,37 @@ export default function OrganizerView() {
           </div>
         </div>
 
-        {/* Tabs: lista / semana / mes */}
-        <div className="flex-shrink-0 px-5 flex items-center gap-2 border-b border-border bg-background">
-          {[
-            { key: "lista", label: "📋 Lista de tareas" },
-            { key: "semana", label: "📅 Horario semanal" },
-            { key: "mes", label: "🗓️ Horario mensual" },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => handleSelectTab(t.key as ViewTab)}
-              className={`px-3 py-2 text-[11px] font-semibold border-b-2 -mb-px transition-colors ${
-                tab === t.key ? "text-accent-blue border-accent-blue font-bold" : "text-text-muted border-transparent hover:text-text"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* Sub-barra ligera de filtros (solo visible en Lista de tareas) */}
+        {tab === "lista" && (
+          <div className="flex-shrink-0 px-5 py-2 border-b border-border bg-background/80 flex items-center justify-between gap-4">
+            {/* Selector de tiempo segmentado */}
+            <div className="flex items-center bg-panel p-0.5 rounded-lg border border-border/50">
+              {([
+                { key: "todas", label: "Todas" },
+                { key: "semana", label: "Esta semana" },
+                { key: "mes", label: "Este mes" },
+              ] as { key: TimeFilter; label: string }[]).map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTimeFilter(t.key)}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-all cursor-pointer ${
+                    timeFilter === t.key
+                      ? "bg-surface text-text shadow-xs font-semibold"
+                      : "text-text-muted hover:text-text"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-          {/* Filters for list tab */}
-          {tab === "lista" && (
-            <div className="ml-auto flex items-center gap-2 py-1.5">
+            {/* Selectores de Tipo y Estado */}
+            <div className="flex items-center gap-2">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as TaskType | "all")}
-                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-accent-blue"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-accent-blue cursor-pointer"
               >
                 <option value="all">Tipo: todos</option>
                 {TASK_TYPES.map((c) => (
@@ -279,7 +296,7 @@ export default function OrganizerView() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as OrganizerTask["status"] | "all")}
-                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-accent-blue"
+                className="bg-panel border border-border rounded-md px-2 py-1 text-[11px] font-mono text-text focus:outline-none focus:border-accent-blue cursor-pointer"
               >
                 <option value="all">Estado: todos</option>
                 <option value="Pendiente">Pendiente</option>
@@ -287,8 +304,8 @@ export default function OrganizerView() {
                 <option value="Completada">Completada</option>
               </select>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Tab views */}
         {tab === "lista" && (
@@ -299,6 +316,7 @@ export default function OrganizerView() {
                   key={task.id}
                   task={task}
                   course={courses.find((c) => c.id === task.courseId)}
+                  showCourseBadge={activeCourse === "all"}
                   isSelected={selectedTaskId === task.id}
                   onSelect={() => setSelectedTaskId(task.id)}
                   onToggleStatus={() => handleToggleStatus(task)}
