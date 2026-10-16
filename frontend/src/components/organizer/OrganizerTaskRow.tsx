@@ -32,6 +32,9 @@ export function OrganizerTaskRow({
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onSelect();
+    } else if (e.key === "e" || e.key === "E") {
+      e.preventDefault();
+      onEdit();
     }
   }
 
@@ -41,6 +44,10 @@ export function OrganizerTaskRow({
       tabIndex={0}
       aria-selected={isSelected}
       onClick={onSelect}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEdit();
+      }}
       onKeyDown={handleKeyDown}
       className={`group relative p-3.5 rounded-xl border transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
         isSelected
