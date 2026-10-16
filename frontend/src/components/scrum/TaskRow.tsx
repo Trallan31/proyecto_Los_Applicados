@@ -206,10 +206,10 @@ export function TaskRow({
             type="date"
             defaultValue={task.dueDate}
             onBlur={(e) => { onUpdate(task.id, "dueDate", e.target.value); setEditingCell(null); }}
-            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none cursor-pointer"
+            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none cursor-pointer text-right"
           />
         ) : (
-          <div className="flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+          <div className="flex items-center justify-end gap-1.5 cursor-pointer whitespace-nowrap">
             {task.dueDate ? (
               <>
                 <span className={`text-[11px] font-mono font-medium shrink-0 ${overdue ? "text-accent-red font-semibold" : task.status === "Completada" ? "text-text-muted" : "text-text"}`}>

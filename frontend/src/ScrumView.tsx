@@ -175,12 +175,12 @@ export function ScrumView() {
                 { key: "priority", label: "PRIORIDAD", w: "110px" },
                 { key: "status", label: "ESTADO", w: "130px" },
                 { key: "hours", label: "HORAS", w: "70px" },
-                { key: "dueDate", label: "DEADLINE", w: "175px" },
+                { key: "dueDate", label: "DEADLINE", w: "175px", align: "right" },
                 { key: "description", label: "NOTAS", w: "auto" },
               ].map((col) => (
                 <th
                   key={col.key}
-                  className="px-3 py-2.5 text-left border-r border-border font-mono font-semibold text-[10px] text-text-muted tracking-wider uppercase whitespace-nowrap bg-panel/60"
+                  className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : "text-left"} border-r border-border font-mono font-semibold text-[10px] text-text-muted tracking-wider uppercase whitespace-nowrap bg-panel/60`}
                   style={{ width: col.w, minWidth: col.w === "auto" ? 160 : col.w }}
                 >
                   {col.label}

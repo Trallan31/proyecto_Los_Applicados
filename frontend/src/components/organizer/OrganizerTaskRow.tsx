@@ -102,7 +102,7 @@ export function OrganizerTaskRow({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-shrink-0 ml-auto sm:ml-0">
           <span
             className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded"
             style={{
