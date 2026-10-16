@@ -342,7 +342,7 @@ export function MultiMemberSelect({
         <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-panel/60">
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-semibold text-text">Asignar responsables</span>
-            <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded-full bg-accent-blue/15 text-accent-blue">
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-accent-blue/15 text-accent-blue">
               {sel.length}
             </span>
           </div>
