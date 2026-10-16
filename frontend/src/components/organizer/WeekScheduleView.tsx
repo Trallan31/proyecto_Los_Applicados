@@ -237,7 +237,7 @@ export function WeekScheduleView({
                         >
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[7.5px] font-mono px-1 rounded text-text flex-shrink-0" style={{ backgroundColor: `${item.color}40` }}>
-                              {item.hasTime ? t.dueTime : "📍 Sin hora"}
+                              {item.hasTime ? t.dueTime : "Sin hora"}
                             </span>
                             <span className="text-[7.5px] font-mono text-text-muted truncate">{t.type}</span>
                           </div>

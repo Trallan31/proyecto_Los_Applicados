@@ -1,3 +1,4 @@
+import { Clock, BookOpen } from "lucide-react";
 import type { OrganizerTask, Course, CourseSession } from "../../types";
 import { CATEGORY_COLORS } from "../../constants/ui";
 import { formatLocalDate, getWeekBounds, getToday, WEEK_DAYS, type TimeFilter } from "../../utils/dateUtils";
@@ -111,11 +112,12 @@ export function MonthScheduleView({
                       return (
                         <div
                           key={`task-${t.id}`}
-                          className="px-1.5 py-0.5 rounded text-[9px] font-semibold text-text truncate border-l-2 shadow-sm"
+                          className="px-1.5 py-0.5 rounded text-[9px] font-semibold text-text truncate border-l-2 shadow-xs flex items-center gap-1.5"
                           style={{ backgroundColor: `${color}25`, borderColor: color }}
                           title={`${t.title} (Sin hora)`}
                         >
-                          📍 {t.title}
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span className="truncate">{t.title}</span>
                         </div>
                       );
                     })}
@@ -129,11 +131,13 @@ export function MonthScheduleView({
                       return (
                         <div
                           key={`task-time-${t.id}`}
-                          className="px-1.5 py-0.5 rounded text-[9px] font-semibold text-text truncate border-l-2 shadow-sm"
+                          className="px-1.5 py-0.5 rounded text-[9px] font-semibold text-text truncate border-l-2 shadow-xs flex items-center gap-1"
                           style={{ backgroundColor: `${color}35`, borderColor: color }}
                           title={`${t.title} (${t.dueTime})`}
                         >
-                          ⏰ {t.dueTime} {t.title}
+                          <Clock className="w-2.5 h-2.5 shrink-0 opacity-70" />
+                          <span className="font-mono text-[8.5px] opacity-80 shrink-0">{t.dueTime}</span>
+                          <span className="truncate">{t.title}</span>
                         </div>
                       );
                     })}
@@ -145,11 +149,13 @@ export function MonthScheduleView({
                     return (
                       <div
                         key={`session-${s.id}`}
-                        className="px-1.5 py-0.5 rounded text-[8px] font-mono text-text truncate border-l-2 opacity-80"
+                        className="px-1.5 py-0.5 rounded text-[8px] font-mono text-text truncate border-l-2 opacity-85 flex items-center gap-1"
                         style={{ backgroundColor: `${color}20`, borderColor: color }}
                         title={`${course?.name} (${s.type} ${s.startHour}:00)`}
                       >
-                        📚 {course?.code} ({s.type})
+                        <BookOpen className="w-2.5 h-2.5 shrink-0 opacity-70" />
+                        <span className="truncate font-medium">{course?.code}</span>
+                        <span className="text-[7.5px] opacity-75 shrink-0">({s.type})</span>
                       </div>
                     );
                   })}
