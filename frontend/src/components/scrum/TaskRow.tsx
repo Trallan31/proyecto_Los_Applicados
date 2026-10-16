@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Activity, Member, Sprint, Priority, Status } from "../../types";
-import { InlineText, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
+import { InlineText, InlineDate, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
 import { parseLocalDate, isOverdue } from "../../utils/dateUtils";
 import { PRIORITY_META, STATUS_META } from "../../constants/ui";
 import { CountdownBadge } from "../shared/CountdownBadge";
@@ -24,7 +24,16 @@ export function TaskRow({
   onCreateCategory?: (name: string) => void;
   onCreateSprint?: (name: string) => Promise<Sprint | null>;
 }) {
-  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get("editTaskId") || "activity-1";
+      if (task.id === targetId) {
+        return params.get("editField") || params.get("edit") || null;
+      }
+    }
+    return null;
+  });
 
   const isEditing = (field: string) => editingCell === field;
   const overdue = isOverdue(task.dueDate, task.status === "Completada");
@@ -268,16 +277,15 @@ export function TaskRow({
         role="gridcell"
         aria-label={`Editar deadline de la tarea ${task.title}`}
         className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onClick={() => handleDoubleClick("dueDate")}
         onDoubleClick={() => handleDoubleClick("dueDate")}
         onKeyDown={(e) => handleCellKeyDown(e, "dueDate")}
       >
         {isEditing("dueDate") ? (
-          <input
-            autoFocus
-            type="date"
-            defaultValue={task.dueDate}
-            onBlur={(e) => { onUpdate(task.id, "dueDate", e.target.value); setEditingCell(null); }}
-            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none cursor-pointer text-right"
+          <InlineDate
+            value={task.dueDate}
+            onCommit={(v) => { onUpdate(task.id, "dueDate", v); setEditingCell(null); }}
+            onBlur={() => setEditingCell(null)}
           />
         ) : (
           <div className="flex items-center justify-end gap-1.5 cursor-pointer whitespace-nowrap">

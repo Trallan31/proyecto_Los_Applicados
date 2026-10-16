@@ -177,7 +177,7 @@ export function ScrumView() {
                 { key: "members", label: "RESPONSABLE", w: "140px" },
                 { key: "priority", label: "PRIORIDAD", w: "110px" },
                 { key: "status", label: "ESTADO", w: "130px" },
-                { key: "hours", label: "HORAS", w: "70px" },
+                { key: "hours", label: "HORAS", w: "85px" },
                 { key: "dueDate", label: "DEADLINE", w: "175px", align: "right" },
                 { key: "description", label: "NOTAS", w: "auto" },
               ].map((col) => (
