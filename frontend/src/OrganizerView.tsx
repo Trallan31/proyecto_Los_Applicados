@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
-import type { OrganizerTask, TaskType } from "./types";
+import type { OrganizerTask, TaskType, CourseLink } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
 import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
 import { CourseTab } from "./components/organizer/CourseTab";
@@ -9,6 +9,8 @@ import { OrganizerTaskRow } from "./components/organizer/OrganizerTaskRow";
 import { OrganizerTaskDetail } from "./components/organizer/OrganizerTaskDetail";
 import { WeekScheduleView } from "./components/organizer/WeekScheduleView";
 import { MonthScheduleView } from "./components/organizer/MonthScheduleView";
+import { CourseLinksBar } from "./components/organizer/CourseLinksBar";
+import { CourseLinkModal } from "./components/organizer/modals/CourseLinkModal";
 import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesModal";
 import { AddOrganizerTaskModal } from "./components/organizer/modals/AddOrganizerTaskModal";
 import { ConfirmModal } from "./components/shared/ConfirmModal";
@@ -44,6 +46,9 @@ export default function OrganizerView() {
     deleteCourse,
     addSession,
     deleteSession,
+    addCourseLink,
+    deleteCourseLink,
+    updateCourseLink,
     allCourseStats,
     scopedTasks,
     doneCount,
@@ -56,6 +61,8 @@ export default function OrganizerView() {
   const [editingTask, setEditingTask] = useState<OrganizerTask | null>(null);
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showCourseLinkModal, setShowCourseLinkModal] = useState(false);
+  const [editingCourseLink, setEditingCourseLink] = useState<CourseLink | null>(null);
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; taskId: string; previousStatus: OrganizerTask["status"] }>>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -150,30 +157,52 @@ export default function OrganizerView() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex-shrink-0 px-5 py-3.5 border-b border-border flex items-center justify-between gap-4 bg-surface">
-          <div className="flex items-center gap-3">
-            {activeCourseObj && (
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeCourseObj.color }} />
-                <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-panel text-text border border-border">
-                  {activeCourseObj.code}
-                </span>
-              </div>
-            )}
-            <h1 className="font-display font-bold text-[16px] text-text">
-              {activeCourse === "all" ? "Mi Organizador Personal" : activeCourseObj?.name}
-            </h1>
-            <span className="text-[11px] font-mono text-text-muted hidden sm:inline">
-              {today.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
-            </span>
+        <header className="flex-shrink-0 px-5 py-3 border-b border-border bg-surface flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {activeCourseObj && (
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeCourseObj.color }} />
+                  <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-panel text-text border border-border">
+                    {activeCourseObj.code}
+                  </span>
+                </div>
+              )}
+              <h1 className="font-display font-bold text-[16px] text-text">
+                {activeCourse === "all" ? "Mi Organizador Personal" : activeCourseObj?.name}
+              </h1>
+              <span className="text-[11px] font-mono text-text-muted hidden sm:inline">
+                {today.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue hover:opacity-90 text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-accent-blue/20 cursor-pointer"
+            >
+              <span className="text-base leading-none">+</span> Nueva actividad
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue hover:opacity-90 text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-accent-blue/20 cursor-pointer"
-          >
-            <span className="text-base leading-none">+</span> Nueva actividad
-          </button>
+
+          {activeCourse !== "all" && activeCourseObj && (
+            <div className="pt-1.5 border-t border-border/50">
+              <CourseLinksBar
+                links={activeCourseObj.links || []}
+                courseColor={activeCourseObj.color}
+                onAddLink={() => {
+                  setEditingCourseLink(null);
+                  setShowCourseLinkModal(true);
+                }}
+                onEditLink={(link) => {
+                  setEditingCourseLink(link);
+                  setShowCourseLinkModal(true);
+                }}
+                onDeleteLink={(linkId) => {
+                  deleteCourseLink(activeCourseObj.id, linkId);
+                }}
+              />
+            </div>
+          )}
         </header>
 
         {/* Time filter + stats */}
@@ -369,6 +398,25 @@ export default function OrganizerView() {
             setConfirmDeleteId(null);
           }}
           onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {showCourseLinkModal && activeCourseObj && (
+        <CourseLinkModal
+          key={editingCourseLink?.id ?? "new"}
+          isOpen={showCourseLinkModal}
+          linkToEdit={editingCourseLink}
+          courseName={activeCourseObj.name}
+          onClose={() => {
+            setShowCourseLinkModal(false);
+            setEditingCourseLink(null);
+          }}
+          onSave={(link) => {
+            if (editingCourseLink) {
+              updateCourseLink(activeCourseObj.id, editingCourseLink.id, link);
+            } else {
+              addCourseLink(activeCourseObj.id, link);
+            }
+          }}
         />
       )}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">

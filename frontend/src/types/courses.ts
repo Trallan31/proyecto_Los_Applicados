@@ -1,3 +1,12 @@
+export type CourseLinkCategory = "lms" | "drive" | "video" | "web" | "otro";
+
+export interface CourseLink {
+  id: string;
+  title: string;
+  url: string;
+  category?: CourseLinkCategory;
+}
+
 export interface Course {
   id: string;
   userId: string;
@@ -5,6 +14,7 @@ export interface Course {
   code: string;       // Código del ramo (ej: "IIC2143", "MAT1630")
   shortName: string;  // Siglas/Abreviatura (ej: "CAL")
   color: string;
+  links?: CourseLink[];
 }
 
 export type SessionType = "Cátedra" | "Auxiliar" | "Laboratorio";

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useCollection } from "./useCollection";
-import type { OrganizerTask, TaskType, Course, CourseSession } from "../types";
+import type { OrganizerTask, TaskType, Course, CourseSession, CourseLink } from "../types";
 import { CURRENT_USER_ID } from "../constants/ui";
 import {
   parseLocalDate,
@@ -110,6 +110,38 @@ export function useOrganizerBoard() {
     void sessions.destroy(id);
   }
 
+  function addCourseLink(courseId: string, link: Omit<CourseLink, "id">) {
+    const course = courses.items.find((c) => c.id === courseId);
+    if (!course) return;
+    const newLink: CourseLink = {
+      ...link,
+      id: `clink-${Date.now()}`,
+    };
+    void courses.edit(course.id, {
+      links: [...(course.links || []), newLink],
+    });
+  }
+
+  function deleteCourseLink(courseId: string, linkId: string) {
+    const course = courses.items.find((c) => c.id === courseId);
+    if (!course) return;
+    void courses.edit(course.id, {
+      links: (course.links || []).filter((l) => l.id !== linkId),
+    });
+  }
+
+  function updateCourseLink(
+    courseId: string,
+    linkId: string,
+    changes: Partial<Omit<CourseLink, "id">>
+  ) {
+    const course = courses.items.find((c) => c.id === courseId);
+    if (!course) return;
+    void courses.edit(course.id, {
+      links: (course.links || []).map((l) => (l.id === linkId ? { ...l, ...changes } : l)),
+    });
+  }
+
   const allCourseStats = useMemo(
     () =>
       courses.items.map((c) => ({
@@ -154,6 +186,9 @@ export function useOrganizerBoard() {
     deleteCourse,
     addSession,
     deleteSession,
+    addCourseLink,
+    deleteCourseLink,
+    updateCourseLink,
     allCourseStats,
     scopedTasks,
     doneCount,

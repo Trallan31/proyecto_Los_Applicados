@@ -53,7 +53,21 @@
       "name": "Cálculo III",
       "code": "MAT1630",
       "shortName": "CAL",
-      "color": "#9b6dff"
+      "color": "#9b6dff",
+      "links": [
+        {
+          "id": "clink-1",
+          "title": "U-Cursos Cálculo",
+          "url": "https://www.u-cursos.cl",
+          "category": "lms"
+        },
+        {
+          "id": "clink-2",
+          "title": "Drive Apuntes & Guías",
+          "url": "https://drive.google.com/drive/folders/calculo3",
+          "category": "drive"
+        }
+      ]
     },
     {
       "id": "course-2",
@@ -69,7 +83,21 @@
       "name": "Bases de Datos",
       "code": "IIC2413",
       "shortName": "BD",
-      "color": "#f5c842"
+      "color": "#f5c842",
+      "links": [
+        {
+          "id": "clink-3",
+          "title": "Web del Ramo",
+          "url": "https://basesdedatos.ing.uc.cl",
+          "category": "web"
+        },
+        {
+          "id": "clink-4",
+          "title": "Zoom Cátedra",
+          "url": "https://zoom.us/j/ejemplo-bd",
+          "category": "video"
+        }
+      ]
     },
     {
       "id": "course-4",
@@ -404,25 +432,12 @@
       "notes": "Descomposición sin pérdida y preservación de dependencias funcionales"
     },
     {
-      "id": "1wQYfEzSKB0",
-      "userId": "user-1",
-      "title": "Entrega Hito 2: Prototipo funcional y Backlog de Sprint",
-      "type": "Tarea",
-      "scope": "Ramo",
-      "status": "En curso",
-      "endDate": "2026-10-12",
-      "courseId": "course-4",
-      "priority": "Alta",
-      "dueTime": "23:59",
-      "notes": "Revisar issues cerrados en GitHub y cobertura mínima de tests del 70%"
-    },
-    {
       "id": "faDn_HYDVE4",
       "userId": "user-1",
       "title": "Lectura Hennessy & Patterson: Jerarquía de memoria y cachés",
       "type": "Lectura",
       "scope": "Ramo",
-      "status": "Pendiente",
+      "status": "Completada",
       "endDate": "2026-10-16",
       "courseId": "course-5",
       "priority": "Baja",
@@ -623,6 +638,12 @@
           "url": "https://fh",
           "category": "otro",
           "id": "link-1792183297100"
+        },
+        {
+          "title": "xd",
+          "url": "https://a",
+          "category": "deploy",
+          "id": "link-1792184046999"
         }
       ]
     },
