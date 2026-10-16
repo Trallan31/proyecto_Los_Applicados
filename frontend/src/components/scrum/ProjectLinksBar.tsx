@@ -47,13 +47,13 @@ export function ProjectLinksBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted mr-1">
-        Links:
+      <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted/70 mr-0.5 select-none">
+        Links
       </span>
       {links.map((link) => (
         <div
           key={link.id}
-          className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full border border-border bg-panel hover:bg-panel-hover hover:border-border-bright transition-all group max-w-xs"
+          className="inline-flex items-center gap-1.5 pl-2.5 pr-2.5 group-hover:pr-1.5 group-focus-within:pr-1.5 py-1 rounded-full border border-border bg-panel hover:bg-panel-hover hover:border-border-bright transition-all group max-w-xs"
         >
           <a
             href={link.url}
@@ -65,7 +65,7 @@ export function ProjectLinksBar({
             {getCategoryIcon(link.category)}
             <span className="truncate max-w-[160px] font-medium">{link.title}</span>
           </a>
-          <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity ml-1 pl-1 border-l border-border">
+          <div className="hidden group-hover:flex group-focus-within:flex items-center gap-0.5 ml-1 pl-1 border-l border-border">
             <button
               type="button"
               onClick={(e) => {
