@@ -37,12 +37,29 @@ export function TaskRow({
     setEditingCell(field);
   };
 
+  const handleCellKeyDown = (e: React.KeyboardEvent, field: string) => {
+    if (editingCell) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setEditingCell(field);
+    }
+  };
+
+  const cellFocusClasses = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-inset";
+
   return (
     <tr className="border-b border-border hover:bg-panel-hover transition-colors group">
 
 
       {/* TAREA */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("title")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar título de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onDoubleClick={() => handleDoubleClick("title")}
+        onKeyDown={(e) => handleCellKeyDown(e, "title")}
+      >
         {isEditing("title") ? (
           <InlineText
             value={task.title}
@@ -57,7 +74,15 @@ export function TaskRow({
       </td>
 
       {/* SPRINT */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("sprintId")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar sprint de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onClick={() => handleDoubleClick("sprintId")}
+        onDoubleClick={() => handleDoubleClick("sprintId")}
+        onKeyDown={(e) => handleCellKeyDown(e, "sprintId")}
+      >
         {isEditing("sprintId") ? (
           <InlineSelectWithCreate
             value={task.sprintId}
@@ -86,7 +111,15 @@ export function TaskRow({
       </td>
 
       {/* CATEGORÍA */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("category")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar categoría de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onClick={() => handleDoubleClick("category")}
+        onDoubleClick={() => handleDoubleClick("category")}
+        onKeyDown={(e) => handleCellKeyDown(e, "category")}
+      >
         {isEditing("category") ? (
           <InlineSelectWithCreate
             value={task.category || ""}
@@ -112,7 +145,15 @@ export function TaskRow({
       </td>
 
       {/* RESPONSABLE */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("members")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar responsables de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onClick={() => handleDoubleClick("members")}
+        onDoubleClick={() => handleDoubleClick("members")}
+        onKeyDown={(e) => handleCellKeyDown(e, "members")}
+      >
         {isEditing("members") ? (
           <MultiMemberSelect
             value={task.members}
@@ -145,7 +186,15 @@ export function TaskRow({
       </td>
 
       {/* PRIORIDAD */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("priority")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar prioridad de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onClick={() => handleDoubleClick("priority")}
+        onDoubleClick={() => handleDoubleClick("priority")}
+        onKeyDown={(e) => handleCellKeyDown(e, "priority")}
+      >
         {isEditing("priority") ? (
           <InlineSelect
             value={task.priority}
@@ -164,7 +213,15 @@ export function TaskRow({
       </td>
 
       {/* ESTADO */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("status")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar estado de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onClick={() => handleDoubleClick("status")}
+        onDoubleClick={() => handleDoubleClick("status")}
+        onKeyDown={(e) => handleCellKeyDown(e, "status")}
+      >
         {isEditing("status") ? (
           <InlineSelect
             value={task.status}
@@ -184,7 +241,14 @@ export function TaskRow({
       </td>
 
       {/* HORAS */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("hours")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar horas de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onDoubleClick={() => handleDoubleClick("hours")}
+        onKeyDown={(e) => handleCellKeyDown(e, "hours")}
+      >
         {isEditing("hours") ? (
           <InlineText
             value={String(task.hours || 0)}
@@ -199,7 +263,14 @@ export function TaskRow({
       </td>
 
       {/* DEADLINE */}
-      <td className="px-3 py-2 border-r border-border group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("dueDate")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar deadline de la tarea ${task.title}`}
+        className={`px-3 py-2 border-r border-border group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onDoubleClick={() => handleDoubleClick("dueDate")}
+        onKeyDown={(e) => handleCellKeyDown(e, "dueDate")}
+      >
         {isEditing("dueDate") ? (
           <input
             autoFocus
@@ -232,7 +303,14 @@ export function TaskRow({
       </td>
 
       {/* NOTAS Y BORRAR */}
-      <td className="px-3 py-2 group/cell relative cursor-pointer" onDoubleClick={() => handleDoubleClick("description")}>
+      <td
+        tabIndex={0}
+        role="gridcell"
+        aria-label={`Editar notas de la tarea ${task.title}`}
+        className={`px-3 py-2 group/cell relative cursor-pointer ${cellFocusClasses}`}
+        onDoubleClick={() => handleDoubleClick("description")}
+        onKeyDown={(e) => handleCellKeyDown(e, "description")}
+      >
         <div className="flex items-center justify-between gap-2">
           {isEditing("description") ? (
             <InlineText
