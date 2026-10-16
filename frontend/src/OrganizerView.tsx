@@ -6,6 +6,7 @@ import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
 import { CourseTab } from "./components/organizer/CourseTab";
 import { StatPill } from "./components/organizer/StatPill";
 import { OrganizerTaskRow } from "./components/organizer/OrganizerTaskRow";
+import { OrganizerTaskDetail } from "./components/organizer/OrganizerTaskDetail";
 import { WeekScheduleView } from "./components/organizer/WeekScheduleView";
 import { MonthScheduleView } from "./components/organizer/MonthScheduleView";
 import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesModal";
@@ -56,6 +57,19 @@ export default function OrganizerView() {
   const [showManageCourses, setShowManageCourses] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; taskId: string; previousStatus: OrganizerTask["status"] }>>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const selectedTask = scopedTasks.find((t) => t.id === selectedTaskId) ?? null;
+
+  function handleSelectCourse(courseId: string | "all") {
+    setActiveCourse(courseId);
+    setSelectedTaskId(null);
+  }
+
+  function handleSelectTab(nextTab: ViewTab) {
+    setTab(nextTab);
+    setSelectedTaskId(null);
+  }
 
   function handleToggleStatus(task: OrganizerTask) {
     const previousStatus = task.status;
@@ -103,7 +117,7 @@ export default function OrganizerView() {
             code="TODOS"
             label="Todos los ramos"
             count={allCourseStats.reduce((acc, stat) => acc + stat.pending, 0)}
-            onClick={() => setActiveCourse("all")}
+            onClick={() => handleSelectCourse("all")}
           />
           {courses.map((c) => {
             const stat = allCourseStats.find((s) => s.id === c.id);
@@ -116,7 +130,7 @@ export default function OrganizerView() {
                 code={c.code}
                 label={c.name}
                 count={pendingCount}
-                onClick={() => setActiveCourse(c.id)}
+                onClick={() => handleSelectCourse(c.id)}
               />
             );
           })}
@@ -211,7 +225,7 @@ export default function OrganizerView() {
           ].map((t) => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key as ViewTab)}
+              onClick={() => handleSelectTab(t.key as ViewTab)}
               className={`px-3 py-2 text-[11px] font-semibold border-b-2 -mb-px transition-colors ${
                 tab === t.key ? "text-accent-blue border-accent-blue font-bold" : "text-text-muted border-transparent hover:text-text"
               }`}
@@ -249,21 +263,37 @@ export default function OrganizerView() {
 
         {/* Tab views */}
         {tab === "lista" && (
-          <div className="flex-1 overflow-y-auto scrollbar-hide p-5 space-y-2">
-            {sortedTasks.map((task) => (
-              <OrganizerTaskRow
-                key={task.id}
-                task={task}
-                course={courses.find((c) => c.id === task.courseId)}
-                onToggleStatus={() => handleToggleStatus(task)}
-                onEdit={() => setEditingTask(task)}
-                onDelete={() => setConfirmDeleteId(task.id)}
+          <div className="flex-1 flex overflow-hidden relative">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-5 space-y-2 min-w-0">
+              {sortedTasks.map((task) => (
+                <OrganizerTaskRow
+                  key={task.id}
+                  task={task}
+                  course={courses.find((c) => c.id === task.courseId)}
+                  isSelected={selectedTaskId === task.id}
+                  onSelect={() => setSelectedTaskId(task.id)}
+                  onToggleStatus={() => handleToggleStatus(task)}
+                  onEdit={() => setEditingTask(task)}
+                  onDelete={() => setConfirmDeleteId(task.id)}
+                />
+              ))}
+              {sortedTasks.length === 0 && (
+                <div className="text-center py-16 text-text-muted text-xs font-mono">
+                  No hay actividades para mostrar
+                </div>
+              )}
+            </div>
+            {selectedTask && (
+              <OrganizerTaskDetail
+                task={selectedTask}
+                course={courses.find((c) => c.id === selectedTask.courseId)}
+                isModalOpen={editingTask !== null || confirmDeleteId !== null}
+                onClose={() => setSelectedTaskId(null)}
+                onToggleStatus={() => handleToggleStatus(selectedTask)}
+                onStatusChange={(newStatus) => setTaskStatus(selectedTask.id, newStatus)}
+                onEdit={() => setEditingTask(selectedTask)}
+                onDelete={() => setConfirmDeleteId(selectedTask.id)}
               />
-            ))}
-            {sortedTasks.length === 0 && (
-              <div className="text-center py-16 text-text-muted text-xs font-mono">
-                No hay actividades para mostrar
-              </div>
             )}
           </div>
         )}
@@ -332,6 +362,9 @@ export default function OrganizerView() {
           confirmLabel="Sí, eliminar"
           onConfirm={() => {
             deleteTask(confirmDeleteId);
+            if (confirmDeleteId === selectedTaskId) {
+              setSelectedTaskId(null);
+            }
             setToasts((prev) => prev.filter((t) => t.taskId !== confirmDeleteId));
             setConfirmDeleteId(null);
           }}
