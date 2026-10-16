@@ -265,21 +265,21 @@ export function OrganizerTaskDetail({
             </div>
 
             {/* Entrega con CountdownBadge */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-text-muted">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-text-muted flex-shrink-0">
                 <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="font-mono uppercase tracking-wider text-[10px]">
                   Entrega
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-text font-medium">
+              <div className="flex items-center justify-end gap-2 ml-auto text-right">
+                <CountdownBadge dateStr={task.endDate} isDone={isDone} compact />
+                <span className="font-mono text-text font-medium text-right">
                   {formattedDate}
                   {task.dueTime && (
                     <span className="text-text-muted"> • {task.dueTime}</span>
                   )}
                 </span>
-                <CountdownBadge dateStr={task.endDate} isDone={isDone} compact />
               </div>
             </div>
           </div>
