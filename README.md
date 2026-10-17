@@ -2,85 +2,341 @@
 
 Applicate es una plataforma web orientada a estudiantes (especialmente de computación y carreras exigentes) diseñada para ayudarles a gestionar proyectos en equipo mediante metodologías ágiles (Scrum) y organizar eficientemente su horario académico personal.
 
-## Estructura del Repositorio
+## Tecnologías
 
-- `/frontend`: aplicación web en **React**, **TypeScript** y **Vite**, con **Tailwind CSS** para los estilos.
-- `/backend`: la API REST. Hoy la sirve **json-server** a partir de `db.json`; ver *Cómo migrar a Mongoose* más abajo.
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS y React Router.
+- **Backend:** Node.js, TypeScript y Express.
+- **Base de datos:** MongoDB, utilizando Mongoose.
+- **MongoDB puede ejecutarse localmente o en Docker.**
 
-## Funcionalidades Principales
+Mongoose es una biblioteca del backend instalada mediante npm; lo que se ejecuta en Docker es MongoDB.
 
-### 1. Organizador Personal
-- **Horario Semanal y Mensual**: visualización de clases y sesiones de estudio (bloques de 08:00 a 22:00, de lunes a domingo).
-- **Gestión de Tareas**: listado con control de progreso, prioridad, estado (Pendiente, En curso, Completada) y fecha de entrega.
-- **Categorización por Ramos**: color y código únicos por ramo para identificarlos de un vistazo.
+## Estructura del repositorio
 
-### 2. Proyectos de Equipo (Scrum Board)
-- **Tablero Interactivo**: varios proyectos en simultáneo, editable celda por celda.
-- **Sprints**: agrupan las tareas de un proyecto. Cada sprint tiene nombre; todavía no tiene duración ni objetivos.
-- **Estadísticas**: métricas y gráficos que reparten las horas de cada tarea grupal proporcionalmente entre sus responsables.
+```text
+frontend/
+  src/                Componentes, vistas, rutas y cliente HTTP
+  vite.config.ts      Configuración de Vite y proxy de la API
 
-## Requisitos Previos
+backend/
+  src/
+    controllers/      Lógica de las operaciones CRUD
+    middleware/       Manejo centralizado de errores
+    models/           Esquemas y modelos de Mongoose
+    routes/           Rutas de la API
+    app.ts            Configuración de Express
+    index.ts          Conexión a MongoDB e inicio del servidor
+  .env.example        Plantilla de variables de entorno
+  db.json             Datos antiguos; ya no es la base de datos activa
+```
 
-- [Node.js](https://nodejs.org/) (versión 18 o superior)
-- `npm` (incluido con Node.js)
+## Funcionalidades
 
-## Instalación y Uso (Entorno de Desarrollo)
+### Organizador personal
 
-La aplicación son **dos procesos**: la API y el frontend. Hay que levantar los dos.
+- Horario semanal y mensual.
+- Gestión de tareas con estado, prioridad y fecha de entrega.
+- Organización por ramos.
+- Enlaces asociados a cada ramo.
 
-1. Instala las dependencias de ambos:
-   ```bash
-   npm install --prefix backend && npm install --prefix frontend
-   ```
-2. En una terminal, levanta la API (queda en `http://localhost:3001`):
-   ```bash
-   npm run dev --prefix backend
-   ```
-3. En otra terminal, levanta el frontend (queda en `http://localhost:5173`):
-   ```bash
-   npm run dev --prefix frontend
-   ```
-4. Abre `http://localhost:5173`.
+### Proyectos de equipo
 
-Si el frontend muestra *"No se pudieron cargar los datos"*, es que la API no está corriendo: revisa el paso 2.
+- Tablero de actividades.
+- Organización por proyectos, categorías y sprints.
+- Miembros y responsables.
+- Estadísticas de horas.
+- Enlaces asociados a cada proyecto.
 
-## La API
+## Requisitos previos
 
-`backend/db.json` es la base de datos: un archivo JSON con siete colecciones planas. json-server lo expone como una API REST completa y **escribe los cambios de vuelta al archivo**, así que los datos sobreviven a un reinicio.
+- **Node.js 22.12 o superior**
+- **npm**, incluido con Node.js.
+- Una de estas alternativas:
+  - **Docker Desktop**, para ejecutar MongoDB en un contenedor.
+  - **MongoDB Community Server**, instalado y ejecutándose en el PC.
+
+Todos los comandos siguientes se ejecutan desde la raíz del repositorio y son compatibles con PowerShell.
+
+## Instalación inicial
+
+### 1. Instalar dependencias
+
+```powershell
+npm install --prefix backend
+npm install --prefix frontend
+```
+
+### 2. Configurar las variables de entorno
+
+Si todavía no existe `backend/.env`, copia la plantilla:
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+```
+
+No ejecutes ese comando sobre un `.env` que ya configuraste, para evitar sobrescribirlo.
+
+### 3. Preparar MongoDB
+
+Elige una de las siguientes alternativas.
+
+#### Alternativa A: MongoDB en Docker
+
+Abre Docker Desktop y espera a que esté funcionando.
+
+**Solo la primera vez**, si no tienes un contenedor de MongoDB que quieras reutilizar:
+
+```powershell
+docker run -d --name applicate-mongo -p 127.0.0.1:27017:27017 -v applicate-mongo-data:/data/db mongo:8
+```
+
+Este comando:
+
+- Crea e inicia el contenedor `applicate-mongo`.
+- Publica MongoDB en `127.0.0.1:27017`.
+- Guarda los datos en el volumen `applicate-mongo-data`.
+- Permite conexiones desde el PC, sin publicar el puerto en todas sus interfaces.
+
+Este contenedor no configura autenticación y está pensado únicamente para desarrollo local.
+
+**En los siguientes usos**, inicia el contenedor existente:
+
+```powershell
+docker start applicate-mongo
+```
+
+Comprueba su estado:
+
+```powershell
+docker ps
+```
+
+Si no aparece, revisa también los contenedores detenidos:
+
+```powershell
+docker ps -a
+```
+
+Si ya tienes un contenedor con otro nombre, utiliza ese nombre en lugar de `applicate-mongo`. No es necesario crear otro.
+
+La URI configurada funciona cuando MongoDB publica el puerto 27017 en el PC.
+
+#### Alternativa B: MongoDB instalado en el PC
+
+Inicia el servicio de MongoDB de tu sistema.
+
+Si escucha en el puerto predeterminado y no requiere autenticación:
+
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017/mibase
+```
+
+No necesitas Docker en esta alternativa.
+
+MongoDB creará la base de datos al guardar el primer documento.
+
+### Importar los datos iniciales
+
+Con MongoDB funcionando, ejecuta desde la raíz del repositorio:
+
+```powershell
+npm run seed --prefix backend
+```
+
+El script `backend/src/seed.ts` lee `backend/db.json` e importa usuarios, ramos, sesiones, tareas, proyectos, sprints y actividades a la base indicada por `MONGODB_URI` en `backend/.env`.
+
+No necesita que Express ni el frontend estén ejecutándose.
+
+El importador:
+
+- Convierte los identificadores de las seis entidades a ObjectId y actualiza sus referencias.
+- Conserva los identificadores antiguos de usuarios y enlaces.
+- Valida los documentos antes de comenzar las escrituras.
+- No elimina ni sobrescribe documentos existentes.
+- Genera identificadores reproducibles para evitar duplicados al repetir la importación del mismo archivo.
+
+Este paso se realiza inicialmente, no cada vez que se inicia la aplicación.
+
+**Importante:** no sincroniza cambios posteriores de `db.json`. Si un documento ya fue importado, se omite aunque su contenido en el archivo haya cambiado.
+
+La importación no utiliza una transacción. Si se interrumpe durante las escrituras, puedes ejecutarla nuevamente para importar los documentos restantes.
+
+## Ejecutar la aplicación
+
+La aplicación necesita tres componentes activos:
+
+| Componente | Dirección predeterminada |
+|---|---|
+| MongoDB | `127.0.0.1:27017` |
+| Backend Express | `http://localhost:3001` |
+| Frontend Vite | `http://localhost:5173` |
+
+Si MongoDB está instalado directamente en el PC, inicia su servicio.
+
+### Iniciar el backend
+
+En una terminal:
+
+```powershell
+npm run dev --prefix backend
+```
+
+Deberías ver:
+
+```text
+Conexión con MongoDB establecida.
+API disponible en http://localhost:3001/api
+```
+
+El servidor espera a conectarse a MongoDB antes de empezar a escuchar solicitudes.
+
+### Iniciar el frontend
+
+En otra terminal:
+
+```powershell
+npm run dev --prefix frontend
+```
+
+Abre la dirección indicada por Vite, normalmente:
+
+```text
+http://localhost:5173
+```
+
+### Acceder a las vistas
+
+Las rutas principales son:
+
+| Ruta | Vista |
+|---|---|
+| `/login` | Acceso |
+| `/organizador` | Organizador personal |
+| `/scrum` | Proyectos de equipo |
+
+Sin sesión, el frontend redirige a `/login`.
+
+Mientras no esté implementada la autenticación real, puedes utilizar la sesión de prueba disponible en desarrollo o abrir:
+
+```text
+http://localhost:5173/organizador?demo=1
+```
+
+La sesión de prueba no autentica las solicitudes del backend y no sustituye la protección mediante JWT.
+
+## Comunicación entre frontend y backend
+
+El cliente HTTP del frontend utiliza `/api` como URL base.
+
+En desarrollo, Vite reenvía estas solicitudes a Express:
+
+```text
+Frontend: /api/courses
+Backend:  http://localhost:3001/api/courses
+```
+
+## API REST
+
+URL base:
+
+```text
+http://localhost:3001/api
+```
+
+### Recursos implementados
 
 | Recurso | Contenido |
 |---|---|
-| `/users` | Usuarios del sistema |
-| `/courses` | Ramos del organizador personal |
-| `/sessions` | Bloques de horario de cada ramo |
-| `/tasks` | Tareas del organizador personal |
-| `/projects` | Proyectos de equipo (incluyen sus categorías y miembros) |
-| `/sprints` | Sprints, cada uno con su `projectId` |
-| `/activities` | Tareas de los proyectos de equipo |
+| `/api/courses` | Ramos del organizador |
+| `/api/sessions` | Bloques de horario |
+| `/api/tasks` | Tareas del organizador |
+| `/api/projects` | Proyectos de equipo |
+| `/api/sprints` | Sprints de cada proyecto |
+| `/api/activities` | Actividades de los proyectos |
 
-El frontend siempre llama a `/api/<recurso>`. En desarrollo Vite redirige `/api` al puerto 3001 y le quita el prefijo, porque json-server sirve en la raíz (ver `frontend/vite.config.ts`).
+Cada recurso dispone de estas operaciones:
 
-Para volver a los datos originales basta con restaurar el archivo:
-```bash
-git checkout backend/db.json
+| Método | Ruta | Operación |
+|---|---|---|
+| GET | `/api/<recurso>` | Listar |
+| GET | `/api/<recurso>/:id` | Obtener por ID |
+| POST | `/api/<recurso>` | Crear |
+| PATCH | `/api/<recurso>/:id` | Actualizar parcialmente |
+| DELETE | `/api/<recurso>/:id` | Eliminar |
+
+MongoDB genera los identificadores. Las respuestas los exponen mediante la propiedad `id`.
+
+### Respuestas y errores
+
+- **200:** consulta o actualización exitosa.
+- **201:** recurso creado.
+- **204:** eliminación exitosa, sin contenido.
+- **400:** datos o identificador inválidos.
+- **404:** recurso o ruta inexistentes.
+- **413:** cuerpo de la solicitud demasiado grande.
+- **500:** error interno.
+
+Los errores se devuelven como JSON:
+
+```json
+{
+  "error": "Descripción del problema."
+}
 ```
 
-## Cómo migrar a Mongoose
+## Persistencia de datos
 
-La estructura ya está preparada para el cambio:
+La fuente de datos activa es MongoDB.
 
-1. Las siete colecciones de `db.json` son las siete colecciones de Mongo. Los `projectId`, `courseId`, `sprintId` y `userId` son las futuras referencias.
-2. Escribe el servidor Express en `backend/`, monta el router en `/api` y expón las mismas rutas y verbos (`GET`, `POST`, `PATCH`, `DELETE`).
-3. Borra el `rewrite` del proxy en `frontend/vite.config.ts`.
+- `backend/db.json` contiene los datos iniciales que puede importar `backend/src/seed.ts`.
+- MongoDB es la fuente de datos activa; la aplicación no consulta `db.json`.
+- Modificar `db.json` no actualiza automáticamente MongoDB. El seed solo agrega documentos cuyos identificadores de importación todavía no existen.
+- Reiniciar Express no elimina los datos.
+- El contenedor de ejemplo utiliza un volumen para conservarlos.
+- Los IDs antiguos, como `course-1`, no equivalen a los ObjectId generados por MongoDB.
 
-El frontend no cambia: todas las llamadas pasan por `frontend/src/api/client.ts`.
+## Comandos disponibles
 
-## Comandos Disponibles
+### Backend
 
-En `/backend`:
-- `npm run dev`: levanta json-server en el puerto 3001.
+```powershell
+npm run dev --prefix backend
+```
 
-En `/frontend`:
-- `npm run dev`: levanta el entorno local con Hot Module Replacement (HMR).
-- `npm run build`: compila con TypeScript y genera los estáticos de producción en `dist`.
-- `npm run lint`: ejecuta ESLint.
+Inicia Express en desarrollo con reinicio automático.
+
+```powershell
+npm run build --prefix backend
+```
+
+Compila TypeScript y genera `backend/dist`.
+
+```powershell
+npm start --prefix backend
+```
+
+Ejecuta el backend compilado. Requiere haber ejecutado el build y tener MongoDB disponible.
+
+```powershell
+npm run seed --prefix backend
+```
+
+Importa los datos iniciales de `backend/db.json` a MongoDB. Requiere MongoDB disponible y `backend/.env` configurado. No elimina ni sobrescribe documentos existentes.
+
+### Frontend
+
+```powershell
+npm run dev --prefix frontend
+```
+
+Inicia Vite en desarrollo.
+
+```powershell
+npm run build --prefix frontend
+```
+
+Comprueba TypeScript y genera los archivos de producción en `frontend/dist`.
+
+```powershell
+npm run lint --prefix frontend
+```
