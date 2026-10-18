@@ -21,7 +21,7 @@ function navigationClassName({ isActive }: { isActive: boolean }) {
 
 function AppLayout() {
   const { theme, toggleTheme } = useTheme()
-  const { user, endDemoSession } = useAuth()
+  const { user, logout } = useAuth()
 
   return (
     <div className="w-full h-full bg-background text-text flex flex-col min-h-screen">
@@ -80,15 +80,13 @@ function AppLayout() {
             </span>
           </div>
 
-          {import.meta.env.DEV && (
-            <button
-              type="button"
-              onClick={endDemoSession}
-              className="text-xs text-text-muted hover:text-text cursor-pointer"
-            >
-              Salir de prueba
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="text-xs text-text-muted hover:text-text cursor-pointer"
+          >
+            Cerrar sesión
+          </button>
         </div>
       </header>
 

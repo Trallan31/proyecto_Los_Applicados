@@ -89,7 +89,7 @@ function mongoId(
 
 async function createPlan<T>(
   name: string,
-  model: Model<T>,
+  model: Model<T, any, any, any, any>,
   rows: Row[]
 ): Promise<ImportPlan> {
   const documents = rows.map((row) => new model(row));
@@ -265,4 +265,3 @@ seed()
   .finally(async () => {
     await mongoose.disconnect();
   });
-

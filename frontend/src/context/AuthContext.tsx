@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import * as api from '../api/client'
 
 interface AuthUser {
   id: string
@@ -9,67 +10,36 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null
-  startDemoSession: () => void
-  endDemoSession: () => void
+  loading: boolean
+  login: (username: string, password: string) => Promise<void>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('demo_user')
-      if (stored) {
-        try {
-          return JSON.parse(stored) as AuthUser
-        } catch {
-          // Si el JSON falla, continuamos
-        }
-      }
-      if (
-        import.meta.env.DEV &&
-        (new URLSearchParams(window.location.search).get('demo') === '1' ||
-          new URLSearchParams(window.location.search).get('demo') === 'true')
-      ) {
-        return {
-          id: 'demo',
-          username: 'demo',
-          name: 'Usuario de prueba',
-        }
-      }
-    }
-    return null
-  })
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const startDemoSession = () => {
-    // Esta simulación solo está disponible en desarrollo.
-    if (!import.meta.env.DEV) return
+  useEffect(() => {
+    api.restoreSession()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false))
+  }, [])
 
-    const demoUser: AuthUser = {
-      id: 'demo',
-      username: 'demo',
-      name: 'Usuario de prueba',
-    }
-    try {
-      localStorage.setItem('demo_user', JSON.stringify(demoUser))
-    } catch {
-      // localStorage no disponible
-    }
-    setUser(demoUser)
+  const login = async (username: string, password: string) => {
+    setUser(await api.login(username, password))
   }
 
-  const endDemoSession = () => {
-    try {
-      localStorage.removeItem('demo_user')
-    } catch {
-      // localStorage no disponible
-    }
+  const logout = async () => {
+    await api.logout()
     setUser(null)
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, startDemoSession, endDemoSession }}
+      value={{ user, loading, login, logout }}
     >
       {children}
     </AuthContext.Provider>
