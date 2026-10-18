@@ -7,8 +7,10 @@ import Sprint from "../models/sprint";
 import Task from "../models/task";
 import { createCrudRouter } from "./crud";
 import usersRouter from "./users";
+import { withUser } from "../middleware/auth";
 
 const router = Router();
+router.use(withUser);
 router.use("/users", usersRouter);
 
 router.use(

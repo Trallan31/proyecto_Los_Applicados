@@ -1,9 +1,14 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
-  const { user, startDemoSession } = useAuth()
+  const { user, login } = useAuth()
   const [searchParams] = useSearchParams()
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
   const next = searchParams.get('next')
 
@@ -15,6 +20,16 @@ export default function LoginPage() {
 
   if (user) {
     return <Navigate to={destination} replace />
+  }
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError('')
+    try {
+      await login(username, password)
+    } catch {
+      setError('Usuario o contraseña incorrectos.')
+    }
   }
 
   return (
@@ -29,28 +44,36 @@ export default function LoginPage() {
           Proyectos de Equipo.
         </p>
 
-        {import.meta.env.DEV ? (
-          <>
-            <p className="text-sm text-text-muted mb-4">
-              Modo de desarrollo: este acceso simula una sesión para
-              probar las rutas. El login real se implementará en la
-              tarea de autenticación.
-            </p>
-
-            <button
-              type="button"
-              onClick={startDemoSession}
-              className="w-full rounded-lg bg-accent-blue px-4 py-3 font-semibold text-white cursor-pointer hover:opacity-90 transition-opacity"
-            >
-              Entrar con sesión de prueba
-            </button>
-          </>
-        ) : (
-          <p className="text-sm text-text-muted">
-            El inicio de sesión estará disponible cuando se conecte
-            el backend de autenticación.
-          </p>
-        )}
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+        <form onSubmit={submit} className="space-y-4">
+          <label className="block text-sm">
+            Usuario o correo
+            <input
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2"
+              autoComplete="username"
+              required
+            />
+          </label>
+          <label className="block text-sm">
+            Contraseña
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2"
+              autoComplete="current-password"
+              required
+            />
+          </label>
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-accent-blue px-4 py-3 font-semibold text-white cursor-pointer hover:opacity-90 transition-opacity"
+          >
+            Iniciar sesión
+          </button>
+        </form>
       </section>
     </main>
   )

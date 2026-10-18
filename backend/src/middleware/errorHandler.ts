@@ -3,6 +3,10 @@ import type {
   RequestHandler,
 } from "express";
 import mongoose from "mongoose";
+import {
+  JsonWebTokenError,
+  TokenExpiredError,
+} from "jsonwebtoken";
 import { HttpError } from "../errors";
 
 export const unknownEndpoint: RequestHandler = (
@@ -27,6 +31,15 @@ export const errorHandler: ErrorRequestHandler = (
   if (error instanceof HttpError) {
     response.status(error.status).json({
       error: error.message,
+    });
+    return;
+  }
+  if (
+    error instanceof JsonWebTokenError ||
+    error instanceof TokenExpiredError
+  ) {
+    response.status(401).json({
+      error: "La sesión no es válida.",
     });
     return;
   }

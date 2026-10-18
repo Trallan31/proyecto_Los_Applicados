@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import mongoose, { Types } from "mongoose";
-import type { Model } from "mongoose";
 import Activity from "./models/activity";
 import Course from "./models/course";
 import Project from "./models/project";
@@ -30,6 +29,17 @@ interface ImportPlan {
   name: string;
   total: number;
   write: () => Promise<number>;
+}
+
+interface SeedDocument {
+  _id: unknown;
+  validate(): Promise<void>;
+  save(): Promise<unknown>;
+}
+
+interface SeedModel {
+  new (row: Row): SeedDocument;
+  findById(id: unknown): PromiseLike<SeedDocument | null>;
 }
 
 function isRecord(value: unknown): value is Row {
@@ -87,9 +97,9 @@ function mongoId(
     .slice(0, 24);
 }
 
-async function createPlan<T>(
+async function createPlan(
   name: string,
-  model: Model<T>,
+  model: SeedModel,
   rows: Row[]
 ): Promise<ImportPlan> {
   const documents = rows.map((row) => new model(row));
@@ -265,4 +275,3 @@ seed()
   .finally(async () => {
     await mongoose.disconnect();
   });
-

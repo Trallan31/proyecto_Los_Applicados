@@ -161,6 +161,22 @@ Este paso se realiza inicialmente, no cada vez que se inicia la aplicación.
 
 La importación no utiliza una transacción. Si se interrumpe durante las escrituras, puedes ejecutarla nuevamente para importar los documentos restantes.
 
+### Crear un usuario de prueba
+
+El registro público todavía no está implementado. Para crear un usuario
+local con la contraseña almacenada como hash, ejecuta:
+
+```powershell
+Set-Location .\backend
+npm run create-user -- demo-user DemoPass123 "Demo User" demo-user@example.local
+```
+usuario seria: demo-user
+pw: DemoPass123
+Nombre en la app: "Demo User"
+Correo: demo-user@example.local
+El comando crea el usuario directamente en MongoDB y no expone una ruta
+pública de registro.
+
 ## Ejecutar la aplicación
 
 La aplicación necesita tres componentes activos:
@@ -214,15 +230,24 @@ Las rutas principales son:
 | `/organizador` | Organizador personal |
 | `/scrum` | Proyectos de equipo |
 
-Sin sesión, el frontend redirige a `/login`.
+Sin sesión, el frontend redirige a `/login`. El backend también rechaza con
+`401` las rutas de datos si no existe una sesión válida.
 
-Mientras no esté implementada la autenticación real, puedes utilizar la sesión de prueba disponible en desarrollo o abrir:
+El login guarda el JWT en una cookie `httpOnly`; el frontend no puede leerlo.
+El token CSRF se entrega en el header `X-CSRF-Token` y se conserva en
+`localStorage` para reenviarlo en las peticiones autenticadas. El frontend
+guarda allí únicamente información pública del usuario y el token CSRF, nunca
+el JWT.
 
-```text
-http://localhost:5173/organizador?demo=1
-```
+Las rutas disponibles para la sesión son:
 
-La sesión de prueba no autentica las solicitudes del backend y no sustituye la protección mediante JWT.
+| Método | Ruta | Operación |
+|---|---|---|
+| POST | `/api/auth/login` | Iniciar sesión |
+| GET | `/api/auth/me` | Restaurar y validar la sesión |
+| POST | `/api/auth/logout` | Cerrar sesión |
+
+El registro público se implementará posteriormente.
 
 ## Comunicación entre frontend y backend
 

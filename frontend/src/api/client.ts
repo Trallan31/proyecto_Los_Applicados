@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { User } from "../types/users";
 
 /**
  * Cliente HTTP unico de la aplicacion.
@@ -8,7 +9,56 @@ import axios from "axios";
  * pase a Express + Mongoose basta con montarlo en /api y este archivo no
  * cambia: las rutas y los verbos son los mismos.
  */
-const http = axios.create({ baseURL: "/api" });
+const http = axios.create({
+  baseURL: "/api",
+  withCredentials: true,
+});
+
+http.interceptors.request.use((config) => {
+  const csrfToken = localStorage.getItem("csrfToken");
+  if (csrfToken) {
+    config.headers.set("X-CSRF-Token", csrfToken);
+  }
+  return config;
+});
+
+export async function login(username: string, password: string) {
+  const { data, headers } = await http.post<User>("/auth/login", {
+    username,
+    password,
+  });
+  const csrfToken = headers["x-csrf-token"];
+  if (typeof csrfToken !== "string") {
+    throw new Error("El servidor no entregó un token CSRF.");
+  }
+  localStorage.setItem("csrfToken", csrfToken);
+  localStorage.setItem("auth_user", JSON.stringify(data));
+  return data;
+}
+
+export async function restoreSession(): Promise<User | null> {
+  try {
+    const { data } = await http.get<User>("/auth/me");
+    localStorage.setItem("auth_user", JSON.stringify(data));
+    return data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      clearStoredSession();
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function logout(): Promise<void> {
+  await http.post("/auth/logout");
+  clearStoredSession();
+}
+
+function clearStoredSession(): void {
+  localStorage.removeItem("csrfToken");
+  localStorage.removeItem("auth_user");
+}
 
 /** GET /<recurso> */
 export async function list<T>(resource: string): Promise<T[]> {
