@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { AxiosResponse } from "axios";
 import type { User } from "../types/users";
 
 /**
@@ -22,11 +23,29 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
+export interface RegisterData {
+  username: string;
+  name: string;
+  lastName: string;
+  mail: string;
+  password: string;
+}
+
 export async function login(username: string, password: string) {
-  const { data, headers } = await http.post<User>("/auth/login", {
-    username,
-    password,
-  });
+  return storeSession(
+    await http.post<User>("/auth/login", { username, password })
+  );
+}
+
+export async function register(data: RegisterData) {
+  return storeSession(await http.post<User>("/auth/register", data));
+}
+
+/** Guarda el token CSRF y el usuario que devuelve /auth/login o /auth/register. */
+function storeSession({
+  data,
+  headers,
+}: AxiosResponse<User>): User {
   const csrfToken = headers["x-csrf-token"];
   if (typeof csrfToken !== "string") {
     throw new Error("El servidor no entregó un token CSRF.");
@@ -86,7 +105,13 @@ export async function remove(resource: string, id: string): Promise<void> {
 /** Mensaje legible para mostrar en pantalla cuando la API falla. */
 export function describeError(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    if (error.response) return `El servidor respondio ${error.response.status}.`;
+    if (error.response) {
+      // El backend responde { error: "<mensaje>" } en los casos previstos.
+      const message = (error.response.data as { error?: unknown } | undefined)
+        ?.error;
+      if (typeof message === "string" && message) return message;
+      return `El servidor respondio ${error.response.status}.`;
+    }
     return "No se pudo contactar la API. Revisa que json-server este corriendo en el puerto 3001.";
   }
   return "Ocurrio un error inesperado.";
