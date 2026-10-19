@@ -15,4 +15,12 @@ export interface OrganizerTask {
   status: "Pendiente" | "En curso" | "Completada";
   priority: "Alta" | "Media" | "Baja";
   notes?: string | null;
+  /**
+   * Actividad de Scrum que origina esta tarea. Solo lo traen las tareas
+   * derivadas, que no existen en /tasks: se arman en memoria a partir de
+   * /activities. Ver utils/scrumSync.ts.
+   */
+  scrumActivityId?: string;
+  /** Proyecto de equipo al que pertenece la actividad derivada. */
+  projectId?: string;
 }

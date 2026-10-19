@@ -1,13 +1,15 @@
 import type React from "react";
-import type { OrganizerTask, Course } from "../../types";
+import type { OrganizerTask, Course, Project } from "../../types";
 import { CATEGORY_COLORS, PRIORITY_META } from "../../constants/ui";
 import { parseLocalDate } from "../../utils/dateUtils";
-import { Check, Pencil, Trash2 } from "lucide-react";
+import { isScrumTask } from "../../utils/scrumSync";
+import { Check, Pencil, Trash2, Users } from "lucide-react";
 import { CountdownBadge } from "../shared/CountdownBadge";
 
 export function OrganizerTaskRow({
   task,
   course,
+  project,
   showCourseBadge = true,
   isSelected = false,
   onSelect,
@@ -17,6 +19,7 @@ export function OrganizerTaskRow({
 }: {
   task: OrganizerTask;
   course?: Course;
+  project?: Project;
   showCourseBadge?: boolean;
   isSelected?: boolean;
   onSelect: () => void;
@@ -26,13 +29,15 @@ export function OrganizerTaskRow({
 }) {
   const isDone = task.status === "Completada";
   const due = parseLocalDate(task.endDate);
+  // Las tareas que vienen del tablero se editan y se borran alla.
+  const fromScrum = isScrumTask(task);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.target !== e.currentTarget) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onSelect();
-    } else if (e.key === "e" || e.key === "E") {
+    } else if ((e.key === "e" || e.key === "E") && !fromScrum) {
       e.preventDefault();
       onEdit();
     }
@@ -46,7 +51,7 @@ export function OrganizerTaskRow({
       onClick={onSelect}
       onDoubleClick={(e) => {
         e.stopPropagation();
-        onEdit();
+        if (!fromScrum) onEdit();
       }}
       onKeyDown={handleKeyDown}
       className={`group relative p-3.5 rounded-xl border transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
@@ -88,6 +93,24 @@ export function OrganizerTaskRow({
               >
                 {task.title}
               </span>
+              {fromScrum && (
+                <span
+                  className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0 inline-flex items-center gap-1"
+                  style={{
+                    backgroundColor: `${project?.color ?? "#9b6dff"}20`,
+                    color: project?.color ?? "#9b6dff",
+                    border: `1px solid ${project?.color ?? "#9b6dff"}40`,
+                  }}
+                  title={
+                    project
+                      ? `Asignada en el proyecto ${project.name}`
+                      : "Asignada en un proyecto de equipo"
+                  }
+                >
+                  <Users className="w-2.5 h-2.5" />
+                  {project?.name ?? "Equipo"}
+                </span>
+              )}
               {course && showCourseBadge && (
                 <span
                   className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
@@ -136,30 +159,38 @@ export function OrganizerTaskRow({
             </div>
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              title="Editar actividad"
-              aria-label="Editar actividad"
-              className="text-text-muted hover:text-accent-blue transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              title="Eliminar actividad"
-              aria-label="Eliminar actividad"
-              className="text-text-muted hover:text-accent-red transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-red"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            {fromScrum ? (
+              <span className="text-[9px] font-mono text-text-muted px-1.5 whitespace-nowrap">
+                Se edita en el tablero
+              </span>
+            ) : (
+              <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                title="Editar actividad"
+                aria-label="Editar actividad"
+                className="text-text-muted hover:text-accent-blue transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                title="Eliminar actividad"
+                aria-label="Eliminar actividad"
+                className="text-text-muted hover:text-accent-red transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-red"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+              </>
+            )}
           </div>
         </div>
       </div>
