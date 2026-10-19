@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import type { OrganizerTask, Course } from "../../types";
+import type { OrganizerTask, Course, Project } from "../../types";
 import { CATEGORY_COLORS, PRIORITY_META, STATUS_META } from "../../constants/ui";
 import { parseLocalDate } from "../../utils/dateUtils";
+import { isScrumTask } from "../../utils/scrumSync";
 import { CountdownBadge } from "../shared/CountdownBadge";
 import {
   BookOpen,
@@ -14,12 +15,14 @@ import {
   Tag,
   Trash2,
   User,
+  Users,
   X,
 } from "lucide-react";
 
 export interface OrganizerTaskDetailProps {
   task: OrganizerTask;
   course?: Course;
+  project?: Project;
   isModalOpen?: boolean;
   onClose: () => void;
   onToggleStatus: () => void;
@@ -37,6 +40,7 @@ const AVAILABLE_STATUSES: Array<OrganizerTask["status"]> = [
 export function OrganizerTaskDetail({
   task,
   course,
+  project,
   isModalOpen = false,
   onClose,
   onToggleStatus,
@@ -56,6 +60,8 @@ export function OrganizerTaskDetail({
   }, [onClose, isModalOpen]);
 
   const isDone = task.status === "Completada";
+  // Las tareas que vienen del tablero solo aceptan cambios de estado.
+  const fromScrum = isScrumTask(task);
   const dueDate = parseLocalDate(task.endDate);
   const formattedDate = !isNaN(dueDate.getTime())
     ? dueDate.toLocaleDateString("es-CL", {
@@ -170,16 +176,36 @@ export function OrganizerTaskDetail({
             {/* Ramo */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-text-muted">
-                {course ? (
+                {fromScrum ? (
+                  <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                ) : course ? (
                   <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
                 ) : (
                   <User className="w-3.5 h-3.5 flex-shrink-0" />
                 )}
                 <span className="font-mono uppercase tracking-wider text-[10px]">
-                  Ramo
+                  {fromScrum ? "Proyecto" : "Ramo"}
                 </span>
               </div>
-              {course ? (
+              {fromScrum ? (
+                <div
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-medium max-w-[210px] truncate"
+                  style={{
+                    backgroundColor: `${project?.color ?? "#9b6dff"}15`,
+                    color: project?.color ?? "#9b6dff",
+                    border: `1px solid ${project?.color ?? "#9b6dff"}35`,
+                  }}
+                  title="Actividad asignada en un proyecto de equipo"
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: project?.color ?? "#9b6dff" }}
+                  />
+                  <span className="truncate">
+                    {project?.name ?? "Proyecto de equipo"}
+                  </span>
+                </div>
+              ) : course ? (
                 <div
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-medium max-w-[210px] truncate"
                   style={{
@@ -304,6 +330,13 @@ export function OrganizerTaskDetail({
 
         {/* Footer de acciones */}
         <div className="px-4 py-2.5 border-t border-border/50 bg-surface flex items-center justify-between gap-2.5 flex-shrink-0">
+          {fromScrum ? (
+            <p className="text-[10.5px] text-text-muted font-mono leading-snug">
+              Asignada en un proyecto de equipo. Podés cambiarle el estado
+              acá; el resto se edita en el tablero.
+            </p>
+          ) : (
+            <>
           <button
             type="button"
             onClick={onDelete}
@@ -320,6 +353,8 @@ export function OrganizerTaskDetail({
             <Pencil className="w-3.5 h-3.5" />
             <span>Editar</span>
           </button>
+            </>
+          )}
         </div>
       </aside>
     </>

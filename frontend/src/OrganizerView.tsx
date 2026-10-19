@@ -23,6 +23,7 @@ let toastCounter = 0;
 export default function OrganizerView() {
   const {
     courses,
+    projects,
     sessions,
     activeCourse,
     setActiveCourse,
@@ -319,6 +320,7 @@ export default function OrganizerView() {
                   key={task.id}
                   task={task}
                   course={courses.find((c) => c.id === task.courseId)}
+                  project={projects.find((p) => p.id === task.projectId)}
                   showCourseBadge={activeCourse === "all"}
                   isSelected={selectedTaskId === task.id}
                   onSelect={() => setSelectedTaskId(task.id)}
@@ -337,6 +339,7 @@ export default function OrganizerView() {
               <OrganizerTaskDetail
                 task={selectedTask}
                 course={courses.find((c) => c.id === selectedTask.courseId)}
+                project={projects.find((p) => p.id === selectedTask.projectId)}
                 isModalOpen={editingTask !== null || confirmDeleteId !== null}
                 onClose={() => setSelectedTaskId(null)}
                 onToggleStatus={() => handleToggleStatus(selectedTask)}

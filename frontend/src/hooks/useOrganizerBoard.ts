@@ -1,7 +1,17 @@
 import { useState, useMemo } from "react";
 import { useCollection } from "./useCollection";
-import type { OrganizerTask, TaskType, Course, CourseSession, CourseLink } from "../types";
+import type {
+  Activity,
+  OrganizerTask,
+  TaskType,
+  Course,
+  CourseSession,
+  CourseLink,
+  Project,
+} from "../types";
 import { CURRENT_USER_ID } from "../constants/ui";
+import { useAuth } from "../context/AuthContext";
+import { activityIdOf, assignedActivitiesAsTasks } from "../utils/scrumSync";
 import {
   parseLocalDate,
   formatLocalDate,
@@ -16,6 +26,21 @@ export function useOrganizerBoard() {
   const courses = useCollection<Course>("courses");
   const sessions = useCollection<CourseSession>("sessions");
   const tasks = useCollection<OrganizerTask>("tasks");
+  const activities = useCollection<Activity>("activities");
+  const projects = useCollection<Project>("projects");
+
+  const { user } = useAuth();
+  const userId = user?.id ?? CURRENT_USER_ID;
+
+  /**
+   * Las actividades de Scrum asignadas al usuario se muestran junto a sus
+   * tareas propias. Son derivadas: viven solo en memoria y la fuente de
+   * verdad sigue siendo /activities.
+   */
+  const allTasks = useMemo(
+    () => [...tasks.items, ...assignedActivitiesAsTasks(activities.items, userId)],
+    [tasks.items, activities.items, userId]
+  );
 
   const [activeCourse, setActiveCourse] = useState<string | "all">("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("todas");
@@ -23,15 +48,23 @@ export function useOrganizerBoard() {
   const [statusFilter, setStatusFilter] = useState<OrganizerTask["status"] | "all">("all");
   const [tab, setTab] = useState<ViewTab>("lista");
 
-  const loading = courses.loading || sessions.loading || tasks.loading;
-  const error = courses.error ?? sessions.error ?? tasks.error;
-  const mutationError = courses.mutationError ?? sessions.mutationError ?? tasks.mutationError;
+  const loading =
+    courses.loading || sessions.loading || tasks.loading || activities.loading;
+  const error =
+    courses.error ?? sessions.error ?? tasks.error ?? activities.error;
+  const mutationError =
+    courses.mutationError ??
+    sessions.mutationError ??
+    tasks.mutationError ??
+    activities.mutationError;
 
   const refetch = async () => {
     await Promise.all([
       courses.refetch(),
       sessions.refetch(),
       tasks.refetch(),
+      activities.refetch(),
+      projects.refetch(),
     ]);
   };
 
@@ -39,6 +72,7 @@ export function useOrganizerBoard() {
     courses.clearMutationError();
     sessions.clearMutationError();
     tasks.clearMutationError();
+    activities.clearMutationError();
   };
 
   // Clave del dia actual: mantiene estables weekBounds/monthBounds dentro
@@ -50,7 +84,7 @@ export function useOrganizerBoard() {
 
   const filteredTasks = useMemo(
     () =>
-      tasks.items.filter((t) => {
+      allTasks.filter((t) => {
         if (activeCourse !== "all" && t.courseId !== activeCourse) return false;
         if (typeFilter !== "all" && t.type !== typeFilter) return false;
         if (statusFilter !== "all" && t.status !== statusFilter) return false;
@@ -61,7 +95,7 @@ export function useOrganizerBoard() {
         }
         return true;
       }),
-    [tasks.items, activeCourse, typeFilter, statusFilter, timeFilter, weekBounds, monthBounds]
+    [allTasks, activeCourse, typeFilter, statusFilter, timeFilter, weekBounds, monthBounds]
   );
 
   const sortedTasks = useMemo(
@@ -75,19 +109,30 @@ export function useOrganizerBoard() {
   );
 
   function toggleTaskStatus(id: string): OrganizerTask["status"] | undefined {
-    const task = tasks.items.find((t) => t.id === id);
+    const task = allTasks.find((t) => t.id === id);
     if (!task) return undefined;
     const next: OrganizerTask["status"] =
       task.status === "Completada" ? "Pendiente" : "Completada";
-    void tasks.edit(id, { status: next });
+    setTaskStatus(id, next);
     return next;
   }
 
+  /**
+   * En una tarea derivada el estado se escribe en la actividad, que es lo
+   * que ve todo el equipo en el tablero.
+   */
   function setTaskStatus(id: string, status: OrganizerTask["status"]) {
+    const activityId = activityIdOf(id);
+    if (activityId !== null) {
+      void activities.edit(activityId, { status });
+      return;
+    }
     void tasks.edit(id, { status });
   }
 
+  /** Las derivadas no se borran desde aca: se borran en el tablero. */
   function deleteTask(id: string) {
+    if (activityIdOf(id) !== null) return;
     void tasks.destroy(id);
   }
 
@@ -95,7 +140,9 @@ export function useOrganizerBoard() {
     void tasks.add({ ...t, userId: CURRENT_USER_ID });
   }
 
+  /** Las derivadas no se editan desde aca: se editan en el tablero. */
   function updateTask(id: string, changes: Partial<Omit<OrganizerTask, "id" | "userId">>) {
+    if (activityIdOf(id) !== null) return;
     void tasks.edit(id, changes);
   }
 
@@ -169,7 +216,7 @@ export function useOrganizerBoard() {
   );
 
   const scopedTasks =
-    activeCourse === "all" ? tasks.items : tasks.items.filter((t) => t.courseId === activeCourse);
+    activeCourse === "all" ? allTasks : allTasks.filter((t) => t.courseId === activeCourse);
   const doneCount = scopedTasks.filter((t) => t.status === "Completada").length;
   const totalCount = scopedTasks.length;
   const activeCourseObj = courses.items.find((c) => c.id === activeCourse);
@@ -177,7 +224,8 @@ export function useOrganizerBoard() {
   return {
     courses: courses.items,
     sessions: sessions.items,
-    tasks: tasks.items,
+    tasks: allTasks,
+    projects: projects.items,
     loading,
     error,
     mutationError,
