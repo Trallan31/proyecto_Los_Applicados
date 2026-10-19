@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
@@ -74,6 +74,16 @@ export default function LoginPage() {
             Iniciar sesión
           </button>
         </form>
+
+        <p className="mt-6 text-sm text-text-muted">
+          ¿No tienes cuenta?{' '}
+          <Link
+            to="/registro"
+            className="text-accent-blue font-semibold hover:underline"
+          >
+            Crear una
+          </Link>
+        </p>
       </section>
     </main>
   )

@@ -6,6 +6,7 @@ import { useTheme } from './context/ThemeContext'
 import { useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import './index.css'
 
 function navigationClassName({ isActive }: { isActive: boolean }) {
@@ -101,6 +102,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/registro" element={<RegisterPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
