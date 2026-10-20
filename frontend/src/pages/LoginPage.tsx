@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { describeError } from "../api/client";
 
 export default function LoginPage() {
   const { user, login } = useAuth()
@@ -27,8 +28,8 @@ export default function LoginPage() {
     setError('')
     try {
       await login(username, password)
-    } catch {
-      setError('Usuario o contraseña incorrectos.')
+    } catch (error: unknown) {
+      setError(describeError(error));
     }
   }
 

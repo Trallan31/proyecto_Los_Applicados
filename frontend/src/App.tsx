@@ -7,6 +7,8 @@ import { useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import { useState } from "react";
+import { describeError } from "./api/client";
 import './index.css'
 
 function navigationClassName({ isActive }: { isActive: boolean }) {
@@ -23,6 +25,20 @@ function navigationClassName({ isActive }: { isActive: boolean }) {
 function AppLayout() {
   const { theme, toggleTheme } = useTheme()
   const { user, logout } = useAuth()
+  const [logoutError, setLogoutError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout(): Promise<void> {
+    setLogoutError("");
+    setLoggingOut(true);
+    try {
+      await logout();
+    } catch (error: unknown) {
+      setLogoutError(describeError(error));
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <div className="w-full h-full bg-background text-text flex flex-col min-h-screen">
@@ -83,13 +99,22 @@ function AppLayout() {
 
           <button
             type="button"
-            onClick={() => void logout()}
+            onClick={() => void handleLogout()}
+            disabled={loggingOut}
             className="text-xs text-text-muted hover:text-text cursor-pointer"
           >
             Cerrar sesión
           </button>
         </div>
       </header>
+      {logoutError && (
+        <p
+          role="alert"
+          className="px-6 py-3 text-sm text-red-500"
+        >
+          {logoutError}
+        </p>
+      )}
 
       <main className="flex-1 overflow-hidden">
         <Outlet />

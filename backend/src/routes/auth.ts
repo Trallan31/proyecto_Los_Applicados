@@ -13,7 +13,8 @@ const router = Router();
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite: "strict" as const,
+  path: "/",
 };
 
 // Paleta usada para el avatar de los usuarios nuevos.
@@ -56,14 +57,50 @@ function requiredField(value: unknown, label: string): string {
   return value.trim();
 }
 
+function readAuthBody(body: unknown): Record<string, unknown> {
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    Array.isArray(body)
+  ) {
+    throw new HttpError(400, "El cuerpo debe ser un objeto JSON.");
+  }
+
+  return body as Record<string, unknown>;
+}
+
+function registrationPassword(value: unknown): string {
+  if (
+    typeof value !== "string" ||
+    !value.trim() ||
+    value.length < 8
+  ) {
+    throw new HttpError(
+      400,
+      "La contraseña debe tener al menos 8 caracteres y no puede contener solo espacios."
+    );
+  }
+
+  // bcrypt solo considera los primeros 72 bytes.
+  if (Buffer.byteLength(value, "utf8") > 72) {
+    throw new HttpError(
+      400,
+      "La contraseña no puede superar los 72 bytes."
+    );
+  }
+
+  // No recortar ni modificar la contraseña.
+  return value;
+}
+
 router.post("/register", async (request, response, next) => {
   try {
-    const body = request.body as Record<string, unknown>;
+    const body = readAuthBody(request.body);
     const username = requiredField(body.username, "El usuario");
     const name = requiredField(body.name, "El nombre");
     const lastName = requiredField(body.lastName, "El apellido");
     const mail = requiredField(body.mail, "El correo").toLowerCase();
-    const password = requiredField(body.password, "La contraseña");
+    const password = registrationPassword(body.password);
 
     if (!/^[a-zA-Z0-9._-]{3,20}$/.test(username)) {
       throw new HttpError(
@@ -114,10 +151,7 @@ router.post("/register", async (request, response, next) => {
 
 router.post("/login", async (request, response, next) => {
   try {
-    const { username, password } = request.body as {
-      username?: unknown;
-      password?: unknown;
-    };
+    const { username, password } = readAuthBody(request.body);
 
     if (
       typeof username !== "string" ||
@@ -155,7 +189,7 @@ router.get("/me", withUser, async (request, response, next) => {
   }
 });
 
-router.post("/logout", (_request, response) => {
+router.post("/logout", withUser, (_request, response) => {
   response.clearCookie("token", cookieOptions);
   response.status(204).end();
 });
