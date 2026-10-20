@@ -28,8 +28,9 @@ export function activityIdOf(taskId: string): string | null {
 }
 
 /**
- * El tablero maneja cinco estados y el Organizador tres. "En revision" se ve
- * como trabajo en curso y "Cancelada" como pendiente, que es lo mas cercano.
+ * El tablero maneja cinco estados y el Organizador tres. "En revisión" se ve
+ * como trabajo en curso; las actividades "Cancelada" se excluyen directamente
+ * del Organizador en `assignedActivitiesAsTasks`.
  */
 function toTaskStatus(status: Status): OrganizerTask["status"] {
   if (status === "Completada") return "Completada";
@@ -68,6 +69,9 @@ export function assignedActivitiesAsTasks(
 ): OrganizerTask[] {
   if (!userId) return [];
   return activities
-    .filter((activity) => activity.members.includes(userId))
+    .filter(
+      (activity) =>
+        activity.members.includes(userId) && activity.status !== "Cancelada"
+    )
     .map((activity) => activityToTask(activity, userId));
 }
