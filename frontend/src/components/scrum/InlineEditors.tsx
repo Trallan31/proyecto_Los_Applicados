@@ -298,6 +298,19 @@ export function MultiMemberSelect({
   onBlur: () => void;
 }) {
   const [sel, setSel] = useState<string[]>(value || []);
+  const [openUpwards, setOpenUpwards] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const parentRect = containerRef.current.parentElement?.getBoundingClientRect();
+      const rect = parentRect ?? containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 280) {
+        setOpenUpwards(true);
+      }
+    }
+  }, []);
 
   const toggleMember = (id: string) => {
     setSel((prev) =>
@@ -334,7 +347,10 @@ export function MultiMemberSelect({
 
       {/* Popover estructurado y profesional */}
       <div
-        className="absolute top-full left-0 mt-1 z-50 bg-surface border border-border-bright rounded-lg shadow-2xl overflow-hidden flex flex-col text-text"
+        ref={containerRef}
+        className={`absolute left-0 z-50 bg-surface border border-border-bright rounded-lg shadow-2xl overflow-hidden flex flex-col text-text ${
+          openUpwards ? "bottom-full mb-1" : "top-full mt-1"
+        }`}
         style={{ minWidth: 260, maxWidth: 320 }}
         onClick={(e) => e.stopPropagation()}
       >

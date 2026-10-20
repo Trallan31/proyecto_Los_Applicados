@@ -90,9 +90,9 @@ export function ScrumView() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden text-text">
+    <div className="flex-1 flex flex-col min-h-0 bg-surface overflow-hidden text-text">
       {/* Header */}
-      <header className="px-6 py-4 flex flex-col gap-4 border-b border-border bg-surface">
+      <header className="px-6 py-4 flex flex-col gap-4 border-b border-border bg-surface shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex gap-2">
@@ -179,7 +179,7 @@ export function ScrumView() {
       </header>
 
       {/* Spreadsheet */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-surface">
         <table className="w-full border-collapse text-[12px]" style={{ minWidth: 1100 }}>
           <thead className="sticky top-0 z-10">
             <tr className="bg-surface border-b border-border">

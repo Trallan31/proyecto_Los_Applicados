@@ -41,8 +41,8 @@ function AppLayout() {
   }
 
   return (
-    <div className="w-full h-full bg-background text-text flex flex-col min-h-screen">
-      <header className="h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-50">
+    <div className="w-full h-screen bg-background text-text flex flex-col overflow-hidden">
+      <header className="h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-50 shrink-0">
         <div className="flex items-center gap-3 w-1/3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet flex items-center justify-center shadow-lg shadow-accent-blue/20">
             <span className="font-bold text-white text-xs">APP</span>
@@ -116,7 +116,7 @@ function AppLayout() {
         </p>
       )}
 
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <Outlet />
       </main>
     </div>
