@@ -1,64 +1,106 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import * as api from '../api/client'
-
-interface AuthUser {
-  id: string
-  username: string
-  name: string
-}
+import type { User } from "../types/users";
+import * as api from "../api/client";
 
 interface AuthContextType {
-  user: AuthUser | null
-  loading: boolean
-  login: (username: string, password: string) => Promise<void>
-  register: (data: api.RegisterData) => Promise<void>
-  logout: () => Promise<void>
+  user: User | null;
+  loading: boolean;
+  login: (
+    username: string,
+    password: string
+  ) => Promise<void>;
+  register: (data: api.RegisterData) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<
+  AuthContextType | undefined
+>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [loading, setLoading] = useState(true)
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.restoreSession()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false))
-  }, [])
+    let active = true;
+    const unsubscribe = api.onSessionExpired(() => {
+      if (active) {
+        setUser(null);
+      }
+    });
 
-  const login = async (username: string, password: string) => {
-    setUser(await api.login(username, password))
+    async function restore() {
+      try {
+        const restoredUser = await api.restoreSession();
+        if (active) {
+          setUser(restoredUser);
+        }
+      } catch {
+        // Si no se pudo verificar la sesión, no damos acceso.
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    void restore();
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
+  async function login(
+    username: string,
+    password: string
+  ): Promise<void> {
+    const authenticatedUser = await api.login(
+      username,
+      password
+    );
+    setUser(authenticatedUser);
   }
-
-  const register = async (data: api.RegisterData) => {
-    setUser(await api.register(data))
+  async function register(
+    data: api.RegisterData
+  ): Promise<void> {
+    const authenticatedUser = await api.register(data);
+    setUser(authenticatedUser);
   }
-
-  const logout = async () => {
-    await api.logout()
-    setUser(null)
+  async function logout(): Promise<void> {
+    await api.logout();
+    setUser(null);
   }
-
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout }}
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 // Mismo patrón que el hook useTheme del proyecto.
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext)
-
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth debe usarse dentro de AuthProvider')
+    throw new Error(
+      "useAuth debe usarse dentro de AuthProvider"
+    );
   }
-
-  return context
+  return context;
 }

@@ -23,6 +23,38 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
+export function onSessionExpired(
+  callback: () => void
+): () => void {
+  const interceptorId = http.interceptors.response.use(
+    (response) => response,
+    (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        const url = error.config?.url;
+
+        // Credenciales incorrectas no equivalen a una sesión vencida.
+        const isPublicAuthRequest =
+          url === "/auth/login" ||
+          url === "/auth/register";
+
+        if (
+          error.response?.status === 401 &&
+          !isPublicAuthRequest
+        ) {
+          clearStoredSession();
+          callback();
+        }
+      }
+
+      return Promise.reject(error);
+    }
+  );
+
+  return () => {
+    http.interceptors.response.eject(interceptorId);
+  };
+}
+
 export interface RegisterData {
   username: string;
   name: string;
@@ -70,7 +102,19 @@ export async function restoreSession(): Promise<User | null> {
 }
 
 export async function logout(): Promise<void> {
-  await http.post("/auth/logout");
+  try {
+    await http.post("/auth/logout");
+  } catch (error: unknown) {
+    const sessionAlreadyInvalid =
+      axios.isAxiosError(error) &&
+      error.response?.status === 401;
+
+    // Si la sesión ya venció, igualmente podemos salir localmente.
+    // Un fallo de red u otro error sí debe informarse.
+    if (!sessionAlreadyInvalid) {
+      throw error;
+    }
+  }
   clearStoredSession();
 }
 
@@ -106,13 +150,22 @@ export async function remove(resource: string, id: string): Promise<void> {
 export function describeError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     if (error.response) {
-      // El backend responde { error: "<mensaje>" } en los casos previstos.
-      const message = (error.response.data as { error?: unknown } | undefined)
-        ?.error;
-      if (typeof message === "string" && message) return message;
-      return `El servidor respondio ${error.response.status}.`;
+      const body: unknown = error.response.data;
+      if (
+        typeof body === "object" &&
+        body !== null &&
+        "error" in body &&
+        typeof body.error === "string" &&
+        body.error
+      ) {
+        return body.error;
+      }
+      return `El servidor respondió ${error.response.status}.`;
     }
-    return "No se pudo contactar la API. Revisa que json-server este corriendo en el puerto 3001.";
+    return "No se pudo contactar con el backend. Revisa que Express esté funcionando.";
   }
-  return "Ocurrio un error inesperado.";
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Ocurrió un error inesperado.";
 }
