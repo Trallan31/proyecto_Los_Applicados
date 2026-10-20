@@ -60,7 +60,7 @@ export default function RegisterPage() {
           <img
             src="/logo.png"
             alt="Applicate Logo"
-            className="w-10 h-10 rounded-xl shadow-md shadow-accent-blue/20 object-cover"
+            className="w-11 h-11 rounded-xl shadow-md shadow-accent-blue/20 object-cover"
           />
           <div>
             <span className="text-xl font-bold tracking-tight text-text block leading-tight">

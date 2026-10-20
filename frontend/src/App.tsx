@@ -47,7 +47,7 @@ function AppLayout() {
           <img
             src="/logo.png"
             alt="Applicate Logo"
-            className="w-8 h-8 rounded-lg shadow-md shadow-accent-blue/20 object-cover"
+            className="w-9 h-9 rounded-lg shadow-md shadow-accent-blue/20 object-cover"
           />
 
           <h1 className="text-lg font-bold tracking-tight text-text">
