@@ -1,48 +1,66 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import { HttpError } from "../errors";
+import {
+  accessFilter,
+  beforeDelete,
+  prepareWrite,
+  removeRelated,
+} from "./access";
+import type { Resource } from "./access";
+
+type Data = Record<string, unknown>;
 
 export interface CrudDocument {
-  set(body: Record<string, unknown>): unknown;
+  set(body: Data): unknown;
   save(): Promise<unknown>;
+  toObject(): Data;
 }
 
 export interface CrudModel<D extends CrudDocument> {
-  new (body: Record<string, unknown>): D;
+  new (body: Data): D;
+  find(filter: Data): PromiseLike<D[]>;
+  findOne(filter: Data): PromiseLike<D | null>;
+  findOneAndDelete(filter: Data): PromiseLike<D | null>;
+}
 
-  find(
-    filter: Record<string, unknown>
-  ): PromiseLike<D[]>;
-
-  findById(
-    id: unknown
-  ): PromiseLike<D | null>;
-
-  findByIdAndDelete(
-    id: unknown
-  ): PromiseLike<D | null>;
+function authenticatedUser(request: Request): string {
+  if (!request.userId) {
+    throw new HttpError(
+      401,
+      "Falta una sesión válida."
+    );
+  }
+  return request.userId;
 }
 
 function readBody(
   body: unknown,
   allowedFields: readonly string[]
-): Record<string, unknown> {
+): Data {
   if (
     typeof body !== "object" ||
     body === null ||
     Array.isArray(body)
   ) {
-    throw new HttpError(400, "El cuerpo debe ser un objeto JSON.");
+    throw new HttpError(
+      400,
+      "El cuerpo debe ser un objeto JSON."
+    );
   }
-
-  const data = body as Record<string, unknown>;
+  const data = body as Data;
   const fields = Object.keys(data);
-
   if (fields.length === 0) {
-    throw new HttpError(400, "Debes enviar al menos un campo.");
+    throw new HttpError(
+      400,
+      "Debes enviar al menos un campo."
+    );
   }
   for (const field of fields) {
     if (!allowedFields.includes(field)) {
-      throw new HttpError(400, `Campo no permitido: ${field}.`);
+      throw new HttpError(
+        400,
+        `Campo no permitido: ${field}.`
+      );
     }
   }
   return data;
@@ -50,22 +68,52 @@ function readBody(
 
 export function createCrudController<D extends CrudDocument>(
   model: CrudModel<D>,
-  allowedFields: readonly string[]
+  allowedFields: readonly string[],
+  resource: Resource
 ) {
-  const list: RequestHandler = async (_request, response, next) => {
+  async function resourceFilter(
+    request: Request
+  ): Promise<Data> {
+    const filter = await accessFilter(
+      resource,
+      authenticatedUser(request)
+    );
+    return {
+      ...filter,
+      _id: request.params.id,
+    };
+  }
+
+  const list: RequestHandler = async (
+    request,
+    response,
+    next
+  ) => {
     try {
-      const documents = await model.find({});
-      response.json(documents);
+      const filter = await accessFilter(
+        resource,
+        authenticatedUser(request)
+      );
+      response.json(await model.find(filter));
     } catch (error: unknown) {
       next(error);
     }
   };
 
-  const getById: RequestHandler = async (request, response, next) => {
+  const getById: RequestHandler = async (
+    request,
+    response,
+    next
+  ) => {
     try {
-      const document = await model.findById(request.params.id);
+      const document = await model.findOne(
+        await resourceFilter(request)
+      );
       if (!document) {
-        throw new HttpError(404, "Recurso no encontrado.");
+        throw new HttpError(
+          404,
+          "Recurso no encontrado o sin acceso."
+        );
       }
       response.json(document);
     } catch (error: unknown) {
@@ -73,10 +121,22 @@ export function createCrudController<D extends CrudDocument>(
     }
   };
 
-  const create: RequestHandler = async (request, response, next) => {
+  const create: RequestHandler = async (
+    request,
+    response,
+    next
+  ) => {
     try {
-      const body = readBody(request.body, allowedFields);
-      const document = new model(body);
+      const body = readBody(
+        request.body,
+        allowedFields
+      );
+      const data = await prepareWrite(
+        resource,
+        authenticatedUser(request),
+        body
+      );
+      const document = new model(data);
       await document.save();
       response.status(201).json(document);
     } catch (error: unknown) {
@@ -84,14 +144,32 @@ export function createCrudController<D extends CrudDocument>(
     }
   };
 
-  const update: RequestHandler = async (request, response, next) => {
+  const update: RequestHandler = async (
+    request,
+    response,
+    next
+  ) => {
     try {
-      const body = readBody(request.body, allowedFields);
-      const document = await model.findById(request.params.id);
+      const body = readBody(
+        request.body,
+        allowedFields
+      );
+      const document = await model.findOne(
+        await resourceFilter(request)
+      );
       if (!document) {
-        throw new HttpError(404, "Recurso no encontrado.");
+        throw new HttpError(
+          404,
+          "Recurso no encontrado o sin acceso."
+        );
       }
-      document.set(body);
+      const changes = await prepareWrite(
+        resource,
+        authenticatedUser(request),
+        body,
+        document.toObject()
+      );
+      document.set(changes);
       await document.save();
       response.json(document);
     } catch (error: unknown) {
@@ -99,18 +177,44 @@ export function createCrudController<D extends CrudDocument>(
     }
   };
 
-  const remove: RequestHandler = async (request, response, next) => {
+  const remove: RequestHandler = async (
+    request,
+    response,
+    next
+  ) => {
     try {
-      const document = await model.findByIdAndDelete(
-        request.params.id
-      );
+      const filter = await resourceFilter(request);
+      const document = await model.findOne(filter);
       if (!document) {
-        throw new HttpError(404, "Recurso no encontrado.");
+        throw new HttpError(
+          404,
+          "Recurso no encontrado o sin acceso."
+        );
+      }
+      const current = document.toObject();
+      await beforeDelete(
+        resource,
+        authenticatedUser(request),
+        current
+      );
+      await removeRelated(resource, current._id);
+      const deleted = await model.findOneAndDelete(filter);
+      if (!deleted) {
+        throw new HttpError(
+          404,
+          "Recurso no encontrado o sin acceso."
+        );
       }
       response.status(204).end();
     } catch (error: unknown) {
       next(error);
     }
   };
-  return { list, getById, create, update, remove };
+  return {
+    list,
+    getById,
+    create,
+    update,
+    remove,
+  };
 }

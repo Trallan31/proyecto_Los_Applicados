@@ -9,7 +9,6 @@ import type {
   CourseLink,
   Project,
 } from "../types";
-import { CURRENT_USER_ID } from "../constants/ui";
 import { useAuth } from "../context/AuthContext";
 import { activityIdOf, assignedActivitiesAsTasks } from "../utils/scrumSync";
 import {
@@ -30,7 +29,7 @@ export function useOrganizerBoard() {
   const projects = useCollection<Project>("projects");
 
   const { user } = useAuth();
-  const userId = user?.id ?? CURRENT_USER_ID;
+  const userId = user?.id ?? "";
 
   /**
    * Las actividades de Scrum asignadas al usuario se muestran junto a sus
@@ -49,14 +48,17 @@ export function useOrganizerBoard() {
   const [tab, setTab] = useState<ViewTab>("lista");
 
   const loading =
-    courses.loading || sessions.loading || tasks.loading || activities.loading;
+    courses.loading || sessions.loading || tasks.loading || activities.loading || projects.loading;
+  
   const error =
-    courses.error ?? sessions.error ?? tasks.error ?? activities.error;
+    courses.error ?? sessions.error ?? tasks.error ?? activities.error ?? projects.error;
+  
   const mutationError =
     courses.mutationError ??
     sessions.mutationError ??
     tasks.mutationError ??
-    activities.mutationError;
+    activities.mutationError ?? 
+    projects.mutationError;
 
   const refetch = async () => {
     await Promise.all([
@@ -73,6 +75,7 @@ export function useOrganizerBoard() {
     sessions.clearMutationError();
     tasks.clearMutationError();
     activities.clearMutationError();
+    projects.clearMutationError();
   };
 
   // Clave del dia actual: mantiene estables weekBounds/monthBounds dentro
@@ -136,8 +139,12 @@ export function useOrganizerBoard() {
     void tasks.destroy(id);
   }
 
-  function addTask(t: Omit<OrganizerTask, "id" | "userId">) {
-    void tasks.add({ ...t, userId: CURRENT_USER_ID });
+  function addTask(task: Omit<OrganizerTask, "id" | "userId">) {
+    if (!user) return;
+    void tasks.add({
+      ...task,
+      userId: user.id,
+    });
   }
 
   /** Las derivadas no se editan desde aca: se editan en el tablero. */
@@ -146,22 +153,26 @@ export function useOrganizerBoard() {
     void tasks.edit(id, changes);
   }
 
-  function addCourse(c: Omit<Course, "id" | "userId">) {
-    void courses.add({ ...c, userId: CURRENT_USER_ID });
+  function addCourse(course: Omit<Course, "id" | "userId">) {
+    if (!user) return;
+    void courses.add({
+      ...course,
+      userId: user.id,
+    });
   }
 
   /** Borra el ramo y, en cascada, sus sesiones. Las tareas quedan personales. */
   async function deleteCourse(courseId: string) {
-    await Promise.all(
-      sessions.items.filter((s) => s.courseId === courseId).map((s) => sessions.destroy(s.id))
-    );
-    await Promise.all(
-      tasks.items
-        .filter((t) => t.courseId === courseId)
-        .map((t) => tasks.edit(t.id, { courseId: null, scope: "Personal" }))
-    );
-    await courses.destroy(courseId);
-    if (activeCourse === courseId) setActiveCourse("all");
+    const deleted = await courses.destroy(courseId);
+    if (!deleted) return;
+    if (activeCourse === courseId) {
+      setActiveCourse("all");
+    }
+    await Promise.all([
+      courses.refetch(),
+      sessions.refetch(),
+      tasks.refetch(),
+    ]);
   }
 
   function addSession(s: Omit<CourseSession, "id">) {
