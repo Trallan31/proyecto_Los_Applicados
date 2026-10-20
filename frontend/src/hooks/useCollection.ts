@@ -10,8 +10,8 @@ export interface Collection<T> {
   clearMutationError: () => void;
   refetch: () => Promise<void>;
   add: (body: Omit<T, "id">) => Promise<T | null>;
-  edit: (id: string, changes: Partial<Omit<T, "id">>) => Promise<void>;
-  destroy: (id: string) => Promise<void>;
+  edit: (id: string, changes: Partial<Omit<T, "id">>) => Promise<boolean>;
+  destroy: (id: string) => Promise<boolean>;
 }
 
 /**
@@ -83,26 +83,30 @@ export function useCollection<T extends { id: string }>(resource: string): Colle
   );
 
   const edit = useCallback(
-    async (id: string, changes: Partial<Omit<T, "id">>): Promise<void> => {
+    async (id: string, changes: Partial<Omit<T, "id">>): Promise<boolean> => {
       try {
         const updated = await update<T>(resource, id, changes);
-        setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+        setItems((previous) => previous.map((item) => item.id === id ? updated : item));
         setMutationError(null);
-      } catch (e) {
-        setMutationError(describeError(e));
+        return true;
+      } catch (error: unknown) {
+        setMutationError(describeError(error));
+        return false;
       }
     },
     [resource]
   );
 
   const destroy = useCallback(
-    async (id: string): Promise<void> => {
+    async (id: string): Promise<boolean> => {
       try {
         await remove(resource, id);
-        setItems((prev) => prev.filter((item) => item.id !== id));
+        setItems((previous) => previous.filter((item) => item.id !== id));
         setMutationError(null);
-      } catch (e) {
-        setMutationError(describeError(e));
+        return true;
+      } catch (error: unknown) {
+        setMutationError(describeError(error));
+        return false;
       }
     },
     [resource]

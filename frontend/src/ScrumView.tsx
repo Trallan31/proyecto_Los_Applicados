@@ -63,6 +63,20 @@ export function ScrumView() {
   if (!project) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-text bg-background">
+        {mutationError && (
+          <div className="mb-4" role="alert">
+            <p className="text-sm text-red-500">
+              {mutationError}
+            </p>
+            <button
+              type="button"
+              onClick={clearMutationError}
+              className="mt-2 text-sm underline cursor-pointer"
+            >
+              Cerrar aviso
+            </button>
+          </div>
+        )}
         <p className="text-text-muted mb-4">No hay proyectos actualmente.</p>
         <button
           onClick={() => setShowNewProject(true)}
@@ -70,7 +84,7 @@ export function ScrumView() {
         >
           + Crear Proyecto
         </button>
-        {showNewProject && <NewProjectModal onCreate={(proj) => { void createProject(proj); setShowNewProject(false); }} onClose={() => setShowNewProject(false)} />}
+        {showNewProject && (<NewProjectModal onCreate={(projectData) => {void createProject(projectData).then((created) => {if (created) {setShowNewProject(false);}});}} onClose={() => setShowNewProject(false)}/>)}
       </div>
     );
   }

@@ -68,13 +68,34 @@ npm install --prefix frontend
 
 ### 2. Configurar las variables de entorno
 
-Si todavía no existe `backend/.env`, copia la plantilla:
+El repositorio incluye `backend/.env.example` con los nombres de las variables,
+sin secretos. Si todavía no existe `backend/.env`, copia la plantilla:
 
 ```powershell
 Copy-Item backend/.env.example backend/.env
 ```
 
-No ejecutes ese comando sobre un `.env` que ya configuraste, para evitar sobrescribirlo.
+**No ejecutes la copia si ya tienes un `.env` configurado**, para evitar
+sobrescribirlo. Abre `backend/.env` y completa sus valores:
+
+| Variable | Configuración |
+|---|---|
+| `PORT` | Puerto de Express; por defecto, `3001`. |
+| `MONGODB_URI` | URI de tu MongoDB. Para el ejemplo local: `mongodb://127.0.0.1:27017/mibase`. |
+| `JWT_SECRET` | Secreto aleatorio privado para firmar los JWT. |
+| `SEED_DEMO_USER_ID` | Conserva `user-1` para usar `mgonzalez` con los datos de presentación. |
+| `SEED_DEMO_PASSWORD` | Contraseña local de la cuenta de presentación: al menos 8 caracteres y como máximo 72 bytes UTF-8. |
+
+Para generar un secreto JWT, ejecuta este comando y copia el resultado en
+`JWT_SECRET` dentro de `backend/.env`:
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
+```
+
+`backend/.env` está ignorado por Git. No publiques sus valores en el README,
+en `.env.example` ni en `db.json`. La plantilla mantiene vacíos los valores
+sensibles; cada instalación configura los suyos.
 
 ### 3. Preparar MongoDB
 
@@ -137,7 +158,7 @@ MongoDB creará la base de datos al guardar el primer documento.
 
 ### Importar los datos iniciales
 
-Con MongoDB funcionando, ejecuta desde la raíz del repositorio:
+Con MongoDB funcionando y `backend/.env` creado con el paso de configuración inicial, importa los datos desde la raíz del repositorio:
 
 ```powershell
 npm run seed --prefix backend
@@ -152,30 +173,32 @@ El importador:
 - Convierte los identificadores de las seis entidades a ObjectId y actualiza sus referencias.
 - Conserva los identificadores antiguos de usuarios y enlaces.
 - Valida los documentos antes de comenzar las escrituras.
-- No elimina ni sobrescribe documentos existentes.
+- No elimina datos ni sobrescribe documentos existentes, excepto el hash de la cuenta de presentación explicado a continuación.
 - Genera identificadores reproducibles para evitar duplicados al repetir la importación del mismo archivo.
+- Prepara el usuario seleccionado por `SEED_DEMO_USER_ID` con la contraseña de prueba hasheada; al repetir el seed actualiza el hash de esa cuenta con el valor actual de `SEED_DEMO_PASSWORD`.
 
 Este paso se realiza inicialmente, no cada vez que se inicia la aplicación.
 
-**Importante:** no sincroniza cambios posteriores de `db.json`. Si un documento ya fue importado, se omite aunque su contenido en el archivo haya cambiado.
+**Importante:** no sincroniza cambios posteriores de `db.json`. Si un documento ya fue importado, se omite aunque su contenido en el archivo haya cambiado. La única excepción es el hash del usuario de presentación.
 
 La importación no utiliza una transacción. Si se interrumpe durante las escrituras, puedes ejecutarla nuevamente para importar los documentos restantes.
 
-### Crear un usuario de prueba
+### Usuario para la presentación
 
-El registro público todavía no está implementado. Para crear un usuario
-local con la contraseña almacenada como hash, ejecuta:
+Después de configurar manualmente `backend/.env` y ejecutar
+`npm run seed --prefix backend`, puedes entrar con esta cuenta:
 
-```powershell
-Set-Location .\backend
-npm run create-user -- demo-user DemoPass123 "Demo User" demo-user@example.local
-```
-usuario seria: demo-user
-pw: DemoPass123
-Nombre en la app: "Demo User"
-Correo: demo-user@example.local
-El comando crea el usuario directamente en MongoDB y no expone una ruta
-pública de registro.
+| Usuario | Contraseña |
+|---|---|
+| `mgonzalez` | El valor que configuraste en `SEED_DEMO_PASSWORD` en tu `.env` local. |
+
+`SEED_DEMO_PASSWORD` es la contraseña de inicio de sesión de la cuenta semilla,
+no una contraseña adicional. El seed guarda su hash en MongoDB, no el texto
+plano. Esta cuenta sirve únicamente para desarrollo y presentaciones locales.
+El seed de presentación se bloquea cuando `NODE_ENV=production`.
+
+Si tu `.env` ya estaba configurado, puedes conservarlo: no es necesario cambiar
+el secreto JWT ni la contraseña para retirar la configuración automática.
 
 ## Ejecutar la aplicación
 
@@ -247,7 +270,7 @@ Las rutas disponibles para la sesión son:
 | GET | `/api/auth/me` | Restaurar y validar la sesión |
 | POST | `/api/auth/logout` | Cerrar sesión |
 
-El registro público se implementará posteriormente.
+El registro público está disponible en `/registro`.
 
 ## Comunicación entre frontend y backend
 

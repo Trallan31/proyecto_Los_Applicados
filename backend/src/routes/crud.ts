@@ -4,15 +4,19 @@ import type {
   CrudDocument,
   CrudModel,
 } from "../controllers/crud";
+import type { Resource } from "../controllers/access";
 
 export function createCrudRouter<D extends CrudDocument>(
   model: CrudModel<D>,
-  allowedFields: readonly string[]
+  allowedFields: readonly string[],
+  resource: Resource
 ) {
   const router = Router();
+
   const controller = createCrudController(
     model,
-    allowedFields
+    allowedFields,
+    resource
   );
 
   router.get("/", controller.list);

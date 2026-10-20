@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
 import { useCollection } from "./useCollection";
 import type { Project, ProjectMember, ProjectRole, Activity, User, Member, Sprint, ProjectLink } from "../types";
+import { useAuth } from "../context/AuthContext";
 
 export function useScrumBoard() {
+  const { user } = useAuth();
   const projects = useCollection<Project>("projects");
   const sprints = useCollection<Sprint>("sprints");
   const activities = useCollection<Activity>("activities");
@@ -81,13 +83,18 @@ export function useScrumBoard() {
   /** Borra la categoria del proyecto y la quita de las tareas que la usaban. */
   async function deleteCategory(categoryName: string) {
     if (!project) return;
-    await projects.edit(project.id, {
-      categories: project.categories.filter((c) => c !== categoryName),
+    const updated = await projects.edit(project.id, {
+      categories: project.categories.filter(
+        (category) => category !== categoryName
+      ),
     });
+    if (!updated) return;
     await Promise.all(
       projectTasks
-        .filter((t) => t.category === categoryName)
-        .map((t) => activities.edit(t.id, { category: "" }))
+        .filter((task) => task.category === categoryName)
+        .map((task) =>
+          activities.edit(task.id, { category: "" })
+        )
     );
   }
 
@@ -98,37 +105,45 @@ export function useScrumBoard() {
 
   /** Borra el sprint y deja sin sprint a las tareas que lo tenian. */
   async function deleteSprint(sprintId: string) {
-    await sprints.destroy(sprintId);
-    await Promise.all(
-      projectTasks
-        .filter((t) => t.sprintId === sprintId)
-        .map((t) => activities.edit(t.id, { sprintId: "" }))
-    );
+    const deleted = await sprints.destroy(sprintId);
+    if (!deleted) return;
+    await Promise.all([
+      sprints.refetch(),
+      activities.refetch(),
+    ]);
   }
 
   /** Borra el proyecto con sus sprints y tareas, para no dejar huerfanos. */
   async function deleteProject(projectId: string) {
-    await Promise.all(
-      activities.items.filter((a) => a.projectId === projectId).map((a) => activities.destroy(a.id))
-    );
-    await Promise.all(
-      sprints.items.filter((s) => s.projectId === projectId).map((s) => sprints.destroy(s.id))
-    );
-    await projects.destroy(projectId);
-    if (selectedProjectId === projectId) setSelectedProjectId("");
+    const deleted = await projects.destroy(projectId);
+    if (!deleted) return;
+    if (selectedProjectId === projectId) {
+      setSelectedProjectId("");
+    }
+    await refetch();
   }
 
-  async function createProject(proj: Omit<Project, "id" | "categories" | "members">) {
-    const creator = users.items[0];
-    if (!creator) return;
+  async function createProject(projectData: Omit<Project, "id" | "categories" | "members">): Promise<boolean> {
+    if (!user) return false;
     const created = await projects.add({
-      ...proj,
+      ...projectData,
       categories: ["General"],
-      members: [{ userId: creator.id, role: "Admin" }],
+      members: [
+        {
+          userId: user.id,
+          role: "Admin",
+        },
+      ],
     });
-    if (!created) return;
-    await sprints.add({ projectId: created.id, name: "Sprint 1" });
+    if (!created) return false;
     setSelectedProjectId(created.id);
+    // Si falla crear el sprint, el proyecto sigue disponible
+    // y el error queda visible en mutationError.
+    await sprints.add({
+      projectId: created.id,
+      name: "Sprint 1",
+    });
+    return true;
   }
 
   function inviteMember(user: User) {
@@ -138,20 +153,28 @@ export function useScrumBoard() {
   }
 
   /** No se puede dejar el proyecto sin miembros ni sin ningun Admin. */
-  function removeMember(memberId: string) {
+  async function removeMember(memberId: string) {
     if (!project) return;
-    const target = project.members.find((m) => m.userId === memberId);
+    const target = project.members.find((member) => member.userId === memberId);
     if (!target || project.members.length <= 1) return;
-    const adminCount = project.members.filter((m) => m.role === "Admin").length;
+    const adminCount = project.members.filter((member) => member.role === "Admin").length;
     if (target.role === "Admin" && adminCount <= 1) return;
-
-    void projects.edit(project.id, {
-      members: project.members.filter((m) => m.userId !== memberId),
+    const updated = await projects.edit(project.id, {
+      members: project.members.filter(
+        (member) => member.userId !== memberId
+      ),
     });
-    void Promise.all(
+    if (!updated) return;
+    await Promise.all(
       projectTasks
-        .filter((t) => t.members.includes(memberId))
-        .map((t) => activities.edit(t.id, { members: t.members.filter((id) => id !== memberId) }))
+        .filter((task) => task.members.includes(memberId))
+        .map((task) =>
+          activities.edit(task.id, {
+            members: task.members.filter(
+              (id) => id !== memberId
+            ),
+          })
+        )
     );
   }
 

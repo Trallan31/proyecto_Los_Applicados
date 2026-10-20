@@ -1,4 +1,5 @@
 import "dotenv/config";
+import bcrypt from "bcrypt";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -131,6 +132,22 @@ async function seed(): Promise<void> {
   if (!mongodbUri) {
     throw new Error("Falta MONGODB_URI en backend/.env.");
   }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "El seed de presentación no se puede ejecutar en producción."
+    );
+  }
+  const demoUserId = process.env.SEED_DEMO_USER_ID ?? "user-1";
+  const demoPassword = process.env.SEED_DEMO_PASSWORD;
+  if (
+    !demoPassword ||
+    demoPassword.length < 8 ||
+    Buffer.byteLength(demoPassword, "utf8") > 72
+  ) {
+    throw new Error(
+      "Configura SEED_DEMO_PASSWORD en backend/.env (8 a 72 bytes) antes de importar los datos."
+    );
+  }
   // npm run seed --prefix backend ejecuta el script desde backend/.
   const file = await readFile(
     resolve(process.cwd(), "db.json"),
@@ -159,6 +176,16 @@ async function seed(): Promise<void> {
     }
     ids.set(collection, mapping);
   }
+
+  const demoUserExists = source
+    .get("users")
+    ?.some((user) => user.id === demoUserId);
+  if (!demoUserExists) {
+    throw new Error(
+      `SEED_DEMO_USER_ID=${demoUserId} no existe en la colección users de db.json.`
+    );
+  }
+  const demoPasswordHash = await bcrypt.hash(demoPassword, 12);
 
   function reference(
     collection: CollectionName,
@@ -191,6 +218,12 @@ async function seed(): Promise<void> {
             ? mappedId
             : new Types.ObjectId(mappedId),
       };
+      if (
+        collection === "users" &&
+        readId(row) === demoUserId
+      ) {
+        document.passwordHash = demoPasswordHash;
+      }
       if (collection === "courses" || collection === "tasks") {
         document.userId = reference("users", row.userId);
       }
@@ -256,6 +289,17 @@ async function seed(): Promise<void> {
   );
   for (const plan of plans) {
     const inserted = await plan.write();
+    if (plan.name === "users") {
+      const result = await User.updateOne(
+        { _id: demoUserId },
+        { $set: { passwordHash: demoPasswordHash } }
+      );
+      if (result.matchedCount !== 1) {
+        throw new Error(
+          `No se pudo preparar el usuario de presentación ${demoUserId}.`
+        );
+      }
+    }
     console.log(
       `${plan.name}: ${inserted} insertados, ` +
       `${plan.total - inserted} ya existentes.`

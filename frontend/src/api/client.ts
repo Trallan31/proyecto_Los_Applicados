@@ -3,12 +3,11 @@ import type { AxiosResponse } from "axios";
 import type { User } from "../types/users";
 
 /**
- * Cliente HTTP unico de la aplicacion.
+ * Cliente HTTP de Express.
  *
- * Todas las rutas cuelgan de /api. En desarrollo Vite redirige /api al
- * json-server del puerto 3001 (ver vite.config.ts). El dia que el backend
- * pase a Express + Mongoose basta con montarlo en /api y este archivo no
- * cambia: las rutas y los verbos son los mismos.
+ * Usa /api como URL base.
+ * En desarrollo, Vite redirige las solicitudes al backend.
+ * MongoDB es la fuente de datos persistente.
  */
 const http = axios.create({
   baseURL: "/api",
