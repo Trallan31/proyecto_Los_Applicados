@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight, ArrowUpRight } from "lucide-react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
 import type { OrganizerTask, TaskType, CourseLink } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
@@ -67,6 +68,7 @@ export default function OrganizerView() {
     activeProjectObj,
   } = useOrganizerBoard();
 
+  const navigate = useNavigate();
   const today = getToday();
   const [coursesExpanded, setCoursesExpanded] = useState(true);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
@@ -171,7 +173,7 @@ export default function OrganizerView() {
 
               <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
                 {coursesPendingCount > 0 && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-background text-text-muted border border-border">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-background text-text-muted border border-border">
                     {coursesPendingCount}
                   </span>
                 )}
@@ -254,7 +256,7 @@ export default function OrganizerView() {
 
               <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
                 {projectsPendingCount > 0 && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-background text-text-muted border border-border">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-background text-text-muted border border-border">
                     {projectsPendingCount}
                   </span>
                 )}
@@ -275,6 +277,9 @@ export default function OrganizerView() {
                       label={p.name}
                       count={pendingCount}
                       indent
+                      onAction={() => navigate(`/scrum?project=${p.id}`)}
+                      actionTitle={`Ir al tablero de ${p.name}`}
+                      actionIcon={ArrowUpRight}
                       onClick={() => handleSelectCourse(`project:${p.id}`)}
                     />
                   );
@@ -326,9 +331,9 @@ export default function OrganizerView() {
                 {activeCourse === "all"
                   ? "Mi Organizador Personal"
                   : activeCourse === "all-courses"
-                  ? "Todos los ramos"
+                  ? "Mis ramos"
                   : activeCourse === "all-projects"
-                  ? "Todos los proyectos"
+                  ? "Mis proyectos"
                   : activeCourseObj
                   ? activeCourseObj.name
                   : activeProjectObj
@@ -339,13 +344,26 @@ export default function OrganizerView() {
                 {today.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue hover:opacity-90 text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-accent-blue/20 cursor-pointer"
-            >
-              <span className="text-base leading-none">+</span> Nueva actividad
-            </button>
+            <div className="flex items-center gap-2">
+              {activeProjectObj && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/scrum?project=${activeProjectObj.id}`)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-panel hover:bg-surface text-text text-[12px] font-medium transition-colors cursor-pointer shadow-xs"
+                  title={`Ir al tablero de ${activeProjectObj.name}`}
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span>Ir al tablero</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue hover:opacity-90 text-white text-[12px] font-medium rounded-md transition-colors flex-shrink-0 shadow-lg shadow-accent-blue/20 cursor-pointer"
+              >
+                <span className="text-base leading-none">+</span> Nueva actividad
+              </button>
+            </div>
           </div>
 
           {activeCourseObj && (

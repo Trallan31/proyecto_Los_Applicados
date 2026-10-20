@@ -2,7 +2,7 @@
 
 
 import type { ComponentType, CSSProperties } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ArrowUpRight } from "lucide-react";
 
 export interface CourseTabProps {
   active: boolean;
@@ -16,6 +16,9 @@ export interface CourseTabProps {
   onToggleExpand?: () => void;
   icon?: ComponentType<{ className?: string; style?: CSSProperties }>;
   indent?: boolean;
+  onAction?: () => void;
+  actionTitle?: string;
+  actionIcon?: ComponentType<{ className?: string }>;
 }
 
 export function CourseTab({
@@ -30,6 +33,9 @@ export function CourseTab({
   onToggleExpand,
   icon: Icon,
   indent = false,
+  onAction,
+  actionTitle,
+  actionIcon: ActionIcon,
 }: CourseTabProps) {
   return (
     <div
@@ -44,6 +50,7 @@ export function CourseTab({
       <button
         type="button"
         onClick={onClick}
+        title={code ? `${label} (${code})` : label}
         className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer focus-visible:outline-none"
       >
         {Icon ? (
@@ -65,6 +72,24 @@ export function CourseTab({
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-background text-text-muted border border-border">
             {count}
           </span>
+        )}
+        {onAction && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction();
+            }}
+            className="p-1 rounded opacity-70 hover:opacity-100 hover:bg-background text-text-muted hover:text-accent-blue transition-all cursor-pointer"
+            title={actionTitle}
+            aria-label={actionTitle}
+          >
+            {ActionIcon ? (
+              <ActionIcon className="w-3.5 h-3.5" />
+            ) : (
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            )}
+          </button>
         )}
         {collapsible && (
           <button
@@ -88,4 +113,5 @@ export function CourseTab({
     </div>
   );
 }
+
 

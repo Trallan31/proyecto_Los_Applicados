@@ -1,18 +1,22 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useCollection } from "./useCollection";
 import type { Project, ProjectMember, ProjectRole, Activity, User, Member, Sprint, ProjectLink } from "../types";
 import { useAuth } from "../context/AuthContext";
 
 export function useScrumBoard() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const urlProjectId = searchParams.get("project") ?? "";
+
   const projects = useCollection<Project>("projects");
   const sprints = useCollection<Sprint>("sprints");
   const activities = useCollection<Activity>("activities");
   const users = useCollection<User>("users");
 
   // Que proyecto se esta mirando es estado de la interfaz, no un dato: no
-  // viaja a la API. Si todavia no hay seleccion, se muestra el primero.
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  // viaja a la API. Se inicializa con el query param ?project= si viene en la URL.
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(urlProjectId);
 
   const loading = projects.loading || sprints.loading || activities.loading || users.loading;
   const error = projects.error ?? sprints.error ?? activities.error ?? users.error;
@@ -38,7 +42,9 @@ export function useScrumBoard() {
     users.clearMutationError();
   };
 
-  const project = projects.items.find((p) => p.id === selectedProjectId) ?? projects.items[0];
+  const currentProjectId = selectedProjectId || urlProjectId;
+  const project =
+    projects.items.find((p) => p.id === currentProjectId) ?? projects.items[0];
   const activeProjectId = project?.id ?? "";
 
   const projectSprints = useMemo(
