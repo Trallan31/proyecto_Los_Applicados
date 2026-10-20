@@ -44,9 +44,11 @@ function AppLayout() {
     <div className="w-full h-screen bg-background text-text flex flex-col overflow-hidden">
       <header className="h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-50 shrink-0">
         <div className="flex items-center gap-3 w-1/3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet flex items-center justify-center shadow-lg shadow-accent-blue/20">
-            <span className="font-bold text-white text-xs">APP</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="Applicate Logo"
+            className="w-8 h-8 rounded-lg shadow-md shadow-accent-blue/20 object-cover"
+          />
 
           <h1 className="text-lg font-bold tracking-tight text-text">
             Applicate

@@ -36,6 +36,20 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-background text-text flex items-center justify-center px-6">
       <section className="w-full max-w-md bg-surface border border-border rounded-2xl p-8 shadow-lg">
+        <div className="flex items-center gap-3 mb-6">
+          <img
+            src="/logo.png"
+            alt="Applicate Logo"
+            className="w-10 h-10 rounded-xl shadow-md shadow-accent-blue/20 object-cover"
+          />
+          <div>
+            <span className="text-xl font-bold tracking-tight text-text block leading-tight">
+              Applicate
+            </span>
+            <span className="text-xs text-text-muted">Gestión de proyectos y horario</span>
+          </div>
+        </div>
+
         <h1 className="text-2xl font-bold mb-3">
           Iniciar sesión
         </h1>
