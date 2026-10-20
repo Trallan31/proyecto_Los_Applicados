@@ -22,6 +22,7 @@ export function createCrudRouter<D extends CrudDocument>(
   router.get("/", controller.list);
   router.get("/:id", controller.getById);
   router.post("/", controller.create);
+  router.put("/:id", controller.update);
   router.patch("/:id", controller.update);
   router.delete("/:id", controller.remove);
 
