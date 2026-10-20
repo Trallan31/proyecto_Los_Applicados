@@ -85,10 +85,25 @@ export function useOrganizerBoard() {
   const weekBounds = useMemo(() => getWeekBounds(parseLocalDate(todayKey)), [todayKey]);
   const monthBounds = useMemo(() => getMonthBounds(parseLocalDate(todayKey)), [todayKey]);
 
+  function matchesActiveCourse(t: OrganizerTask, filter: string): boolean {
+    if (filter === "all") return true;
+    if (filter === "all-courses") {
+      return t.courseId !== null || t.scope === "Ramo";
+    }
+    if (filter === "all-projects") {
+      return Boolean(t.projectId) || t.scope === "Proyecto Universitario";
+    }
+    if (filter.startsWith("project:")) {
+      const pId = filter.slice("project:".length);
+      return t.projectId === pId;
+    }
+    return t.courseId === filter;
+  }
+
   const filteredTasks = useMemo(
     () =>
       allTasks.filter((t) => {
-        if (activeCourse !== "all" && t.courseId !== activeCourse) return false;
+        if (!matchesActiveCourse(t, activeCourse)) return false;
         if (typeFilter !== "all" && t.type !== typeFilter) return false;
         if (statusFilter !== "all" && t.status !== statusFilter) return false;
         if (timeFilter !== "todas") {
@@ -215,28 +230,78 @@ export function useOrganizerBoard() {
     });
   }
 
+  const userProjects = useMemo(() => {
+    if (!userId) return projects.items;
+    return projects.items.filter(
+      (p) => !p.members || p.members.length === 0 || p.members.some((m) => m.userId === userId)
+    );
+  }, [projects.items, userId]);
+
   const allCourseStats = useMemo(
     () =>
       courses.items.map((c) => ({
         ...c,
-        total: tasks.items.filter((t) => t.courseId === c.id).length,
-        done: tasks.items.filter((t) => t.courseId === c.id && t.status === "Completada").length,
-        pending: tasks.items.filter((t) => t.courseId === c.id && t.status !== "Completada").length,
+        total: allTasks.filter((t) => t.courseId === c.id).length,
+        done: allTasks.filter((t) => t.courseId === c.id && t.status === "Completada").length,
+        pending: allTasks.filter((t) => t.courseId === c.id && t.status !== "Completada").length,
       })),
-    [courses.items, tasks.items]
+    [courses.items, allTasks]
   );
 
-  const scopedTasks =
-    activeCourse === "all" ? allTasks : allTasks.filter((t) => t.courseId === activeCourse);
+  const allProjectStats = useMemo(
+    () =>
+      userProjects.map((p) => ({
+        ...p,
+        total: allTasks.filter((t) => t.projectId === p.id).length,
+        done: allTasks.filter((t) => t.projectId === p.id && t.status === "Completada").length,
+        pending: allTasks.filter((t) => t.projectId === p.id && t.status !== "Completada").length,
+      })),
+    [userProjects, allTasks]
+  );
+
+  const coursesPendingCount = useMemo(
+    () =>
+      allTasks.filter(
+        (t) => (t.courseId !== null || t.scope === "Ramo") && t.status !== "Completada"
+      ).length,
+    [allTasks]
+  );
+
+  const projectsPendingCount = useMemo(
+    () =>
+      allTasks.filter(
+        (t) =>
+          (Boolean(t.projectId) || t.scope === "Proyecto Universitario") &&
+          t.status !== "Completada"
+      ).length,
+    [allTasks]
+  );
+
+  const allPendingCount = useMemo(
+    () => allTasks.filter((t) => t.status !== "Completada").length,
+    [allTasks]
+  );
+
+  const scopedTasks = useMemo(
+    () => allTasks.filter((t) => matchesActiveCourse(t, activeCourse)),
+    [allTasks, activeCourse]
+  );
   const doneCount = scopedTasks.filter((t) => t.status === "Completada").length;
   const totalCount = scopedTasks.length;
   const activeCourseObj = courses.items.find((c) => c.id === activeCourse);
+  const activeProjectId = activeCourse.startsWith("project:")
+    ? activeCourse.slice("project:".length)
+    : null;
+  const activeProjectObj = activeProjectId
+    ? projects.items.find((p) => p.id === activeProjectId)
+    : undefined;
 
   return {
     courses: courses.items,
     sessions: sessions.items,
     tasks: allTasks,
     projects: projects.items,
+    userProjects,
     loading,
     error,
     mutationError,
@@ -267,9 +332,14 @@ export function useOrganizerBoard() {
     deleteCourseLink,
     updateCourseLink,
     allCourseStats,
+    allProjectStats,
+    coursesPendingCount,
+    projectsPendingCount,
+    allPendingCount,
     scopedTasks,
     doneCount,
     totalCount,
     activeCourseObj,
+    activeProjectObj,
   };
 }

@@ -1,21 +1,28 @@
-import type { OrganizerTask, Course, CourseSession } from "../../types";
+import type { OrganizerTask, Course, CourseSession, Project } from "../../types";
 import { CATEGORY_COLORS } from "../../constants/ui";
 import { FULL_DAYS, WEEK_DAYS, HOURS, formatLocalDate, getToday, type DayScheduleItem } from "../../utils/dateUtils";
 
 export function WeekScheduleView({
   courses,
+  projects = [],
   sessions,
   tasks,
   activeCourse,
 }: {
   courses: Course[];
+  projects?: Project[];
   sessions: CourseSession[];
   tasks: OrganizerTask[];
   activeCourse: string | "all";
 }) {
   const today = getToday();
   const CELL_HEIGHT = 56;
-  const visibleSessions = activeCourse === "all" ? sessions : sessions.filter((s) => s.courseId === activeCourse);
+  const visibleSessions =
+    activeCourse === "all" || activeCourse === "all-courses"
+      ? sessions
+      : activeCourse === "all-projects" || activeCourse.startsWith("project:")
+      ? []
+      : sessions.filter((s) => s.courseId === activeCourse);
 
   return (
     <div className="flex-1 overflow-auto scrollbar-hide p-4">
@@ -89,7 +96,8 @@ export function WeekScheduleView({
 
               dayTasks.forEach((t) => {
                 const course = courses.find((c) => c.id === t.courseId);
-                const color = course?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
+                const project = projects.find((p) => p.id === t.projectId);
+                const color = course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
                 let startHour = 8;
                 let hasTime = false;
                 if (t.dueTime) {

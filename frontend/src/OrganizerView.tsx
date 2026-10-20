@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, ListTodo, CalendarDays, Calendar } from "lucide-react";
+import { Settings, ListTodo, CalendarDays, Calendar, Layers } from "lucide-react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
 import type { OrganizerTask, TaskType, CourseLink } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
@@ -24,6 +24,7 @@ export default function OrganizerView() {
   const {
     courses,
     projects,
+    userProjects,
     sessions,
     activeCourse,
     setActiveCourse,
@@ -55,13 +56,20 @@ export default function OrganizerView() {
     deleteCourseLink,
     updateCourseLink,
     allCourseStats,
+    allProjectStats,
+    coursesPendingCount,
+    projectsPendingCount,
+    allPendingCount,
     scopedTasks,
     doneCount,
     totalCount,
     activeCourseObj,
+    activeProjectObj,
   } = useOrganizerBoard();
 
   const today = getToday();
+  const [coursesExpanded, setCoursesExpanded] = useState(true);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState<OrganizerTask | null>(null);
   const [showManageCourses, setShowManageCourses] = useState(false);
@@ -110,43 +118,128 @@ export default function OrganizerView() {
   return (
     <div className="flex h-full overflow-hidden text-text">
       {/* Course sidebar */}
-      <div className="w-56 flex-shrink-0 border-r border-border bg-surface flex flex-col">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">Mis Ramos</span>
-          <button
-            onClick={() => setShowManageCourses(true)}
-            className="inline-flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-accent-blue transition-colors cursor-pointer"
-            title="Gestionar ramos y horarios"
-          >
-            <Settings className="w-3 h-3" />
-            <span>Ramos</span>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto scrollbar-hide p-2 space-y-1">
+      <div className="w-60 flex-shrink-0 border-r border-border bg-surface flex flex-col">
+        {/* Vista general at the top */}
+        <div className="p-2 border-b border-border">
           <CourseTab
             active={activeCourse === "all"}
             color="#4f7cff"
-            code="TODOS"
-            label="Todos los ramos"
-            count={allCourseStats.reduce((acc, stat) => acc + stat.pending, 0)}
+            code="TODO"
+            label="Vista general"
+            count={allPendingCount}
+            icon={Layers}
             onClick={() => handleSelectCourse("all")}
           />
-          {courses.map((c) => {
-            const stat = allCourseStats.find((s) => s.id === c.id);
-            const pendingCount = stat ? stat.pending : 0;
-            return (
+        </div>
+
+        {/* Scrollable sections */}
+        <div className="flex-1 overflow-y-auto scrollbar-hide p-2 space-y-3">
+          {/* Section: Mis Ramos */}
+          <div>
+            <div className="px-2 py-1 flex items-center justify-between mb-0.5">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">
+                Mis Ramos
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowManageCourses(true)}
+                className="inline-flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-accent-blue transition-colors cursor-pointer"
+                title="Gestionar ramos y horarios"
+              >
+                <Settings className="w-3 h-3" />
+                <span>Ramos</span>
+              </button>
+            </div>
+
+            <div className="space-y-1">
               <CourseTab
-                key={c.id}
-                active={activeCourse === c.id}
-                color={c.color}
-                code={c.code}
-                label={c.name}
-                count={pendingCount}
-                onClick={() => handleSelectCourse(c.id)}
+                active={activeCourse === "all-courses"}
+                color="#4f7cff"
+                code="RAMOS"
+                label="Todos los ramos"
+                count={coursesPendingCount}
+                collapsible
+                isExpanded={coursesExpanded}
+                onToggleExpand={() => setCoursesExpanded((prev) => !prev)}
+                onClick={() => handleSelectCourse("all-courses")}
               />
-            );
-          })}
+
+              {coursesExpanded && (
+                <div className="space-y-1 pt-0.5">
+                  {courses.map((c) => {
+                    const stat = allCourseStats.find((s) => s.id === c.id);
+                    const pendingCount = stat ? stat.pending : 0;
+                    return (
+                      <CourseTab
+                        key={c.id}
+                        active={activeCourse === c.id}
+                        color={c.color}
+                        code={c.code}
+                        label={c.name}
+                        count={pendingCount}
+                        indent
+                        onClick={() => handleSelectCourse(c.id)}
+                      />
+                    );
+                  })}
+                  {courses.length === 0 && (
+                    <p className="px-3 py-1.5 text-[11px] font-mono text-text-muted">
+                      Sin ramos registrados
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section: Mis Proyectos */}
+          <div>
+            <div className="px-2 py-1 flex items-center justify-between mb-0.5">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">
+                Mis Proyectos
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              <CourseTab
+                active={activeCourse === "all-projects"}
+                color="#8b5cf6"
+                code="PROYECTOS"
+                label="Todos los proyectos"
+                count={projectsPendingCount}
+                collapsible
+                isExpanded={projectsExpanded}
+                onToggleExpand={() => setProjectsExpanded((prev) => !prev)}
+                onClick={() => handleSelectCourse("all-projects")}
+              />
+
+              {projectsExpanded && (
+                <div className="space-y-1 pt-0.5">
+                  {userProjects.map((p) => {
+                    const stat = allProjectStats.find((s) => s.id === p.id);
+                    const pendingCount = stat ? stat.pending : 0;
+                    return (
+                      <CourseTab
+                        key={p.id}
+                        active={activeCourse === `project:${p.id}`}
+                        color={p.color}
+                        code={p.course || "EQUIPO"}
+                        label={p.name}
+                        count={pendingCount}
+                        indent
+                        onClick={() => handleSelectCourse(`project:${p.id}`)}
+                      />
+                    );
+                  })}
+                  {userProjects.length === 0 && (
+                    <p className="px-3 py-1.5 text-[11px] font-mono text-text-muted">
+                      Sin proyectos asignados
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Mini legend */}
@@ -174,8 +267,26 @@ export default function OrganizerView() {
                   </span>
                 </div>
               )}
+              {activeProjectObj && (
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeProjectObj.color }} />
+                  <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-panel text-text border border-border">
+                    {activeProjectObj.course || "PROYECTO"}
+                  </span>
+                </div>
+              )}
               <h1 className="font-display font-bold text-[16px] text-text">
-                {activeCourse === "all" ? "Mi Organizador Personal" : activeCourseObj?.name}
+                {activeCourse === "all"
+                  ? "Mi Organizador Personal"
+                  : activeCourse === "all-courses"
+                  ? "Todos los ramos"
+                  : activeCourse === "all-projects"
+                  ? "Todos los proyectos"
+                  : activeCourseObj
+                  ? activeCourseObj.name
+                  : activeProjectObj
+                  ? activeProjectObj.name
+                  : "Mi Organizador Personal"}
               </h1>
               <span className="text-[11px] font-mono text-text-muted hidden sm:inline">
                 {today.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
@@ -190,7 +301,7 @@ export default function OrganizerView() {
             </button>
           </div>
 
-          {activeCourse !== "all" && activeCourseObj && (
+          {activeCourseObj && (
             <div className="pt-1.5 border-t border-border/50">
               <CourseLinksBar
                 links={activeCourseObj.links || []}
@@ -251,7 +362,7 @@ export default function OrganizerView() {
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${totalCount > 0 ? (doneCount / totalCount) * 100 : 0}%`,
-                    backgroundColor: activeCourseObj?.color ?? "var(--color-accent-blue)",
+                    backgroundColor: activeCourseObj?.color ?? activeProjectObj?.color ?? "var(--color-accent-blue)",
                   }}
                 />
               </div>
@@ -321,7 +432,7 @@ export default function OrganizerView() {
                   task={task}
                   course={courses.find((c) => c.id === task.courseId)}
                   project={projects.find((p) => p.id === task.projectId)}
-                  showCourseBadge={activeCourse === "all"}
+                  showCourseBadge={activeCourse === "all" || activeCourse === "all-courses" || activeCourse === "all-projects"}
                   isSelected={selectedTaskId === task.id}
                   onSelect={() => setSelectedTaskId(task.id)}
                   onToggleStatus={() => handleToggleStatus(task)}
@@ -354,6 +465,7 @@ export default function OrganizerView() {
         {tab === "semana" && (
           <WeekScheduleView
             courses={courses}
+            projects={projects}
             sessions={sessions}
             tasks={filteredTasks}
             activeCourse={activeCourse}
@@ -363,6 +475,7 @@ export default function OrganizerView() {
         {tab === "mes" && (
           <MonthScheduleView
             courses={courses}
+            projects={projects}
             sessions={sessions}
             tasks={filteredTasks}
             activeCourse={activeCourse}
@@ -387,7 +500,14 @@ export default function OrganizerView() {
       {showAddModal && (
         <AddOrganizerTaskModal
           courses={courses}
-          defaultCourseId={activeCourse === "all" ? (courses[0]?.id ?? null) : activeCourse}
+          defaultCourseId={
+            activeCourse === "all" ||
+            activeCourse === "all-courses" ||
+            activeCourse === "all-projects" ||
+            activeCourse.startsWith("project:")
+              ? (courses[0]?.id ?? null)
+              : activeCourse
+          }
           onClose={() => setShowAddModal(false)}
           onAdd={(t) => {
             addTask(t);

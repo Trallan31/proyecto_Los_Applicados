@@ -1,16 +1,18 @@
 import { Clock, BookOpen } from "lucide-react";
-import type { OrganizerTask, Course, CourseSession } from "../../types";
+import type { OrganizerTask, Course, CourseSession, Project } from "../../types";
 import { CATEGORY_COLORS } from "../../constants/ui";
 import { formatLocalDate, getWeekBounds, getToday, WEEK_DAYS, type TimeFilter } from "../../utils/dateUtils";
 
 export function MonthScheduleView({
   courses,
+  projects = [],
   sessions,
   tasks,
   activeCourse,
   timeFilter,
 }: {
   courses: Course[];
+  projects?: Project[];
   sessions: CourseSession[];
   tasks: OrganizerTask[];
   activeCourse: string | "all";
@@ -38,7 +40,12 @@ export function MonthScheduleView({
     calendarCells.push(new Date(year, month, d));
   }
 
-  const visibleSessions = activeCourse === "all" ? sessions : sessions.filter((s) => s.courseId === activeCourse);
+  const visibleSessions =
+    activeCourse === "all" || activeCourse === "all-courses"
+      ? sessions
+      : activeCourse === "all-projects" || activeCourse.startsWith("project:")
+      ? []
+      : sessions.filter((s) => s.courseId === activeCourse);
 
   return (
     <div className="flex-1 overflow-auto scrollbar-hide p-4">
@@ -108,7 +115,8 @@ export function MonthScheduleView({
                     .filter((t) => !t.dueTime)
                     .map((t) => {
                       const course = courses.find((c) => c.id === t.courseId);
-                      const color = course?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
+                      const project = projects.find((p) => p.id === t.projectId);
+                      const color = course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
                       return (
                         <div
                           key={`task-${t.id}`}
@@ -127,7 +135,8 @@ export function MonthScheduleView({
                     .filter((t) => t.dueTime)
                     .map((t) => {
                       const course = courses.find((c) => c.id === t.courseId);
-                      const color = course?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
+                      const project = projects.find((p) => p.id === t.projectId);
+                      const color = course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
                       return (
                         <div
                           key={`task-time-${t.id}`}
