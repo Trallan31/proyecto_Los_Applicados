@@ -33,9 +33,11 @@ userSchema.set("toJSON", {
   virtuals: true,
   versionKey: false,
   transform: (_document, returnedObject) => {
-    (returnedObject as unknown as Record<string, unknown>)._id =
-      undefined;
-    delete returnedObject.passwordHash;
+    const target = returnedObject as unknown as Record<string, unknown>;
+    delete target._id;
+    delete target.__v;
+    delete target.passwordHash;
+    return target;
   },
 });
 
