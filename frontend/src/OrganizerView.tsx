@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, ListTodo, CalendarDays, Calendar, Layers } from "lucide-react";
+import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
 import type { OrganizerTask, TaskType, CourseLink } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
@@ -124,7 +124,7 @@ export default function OrganizerView() {
           <CourseTab
             active={activeCourse === "all"}
             color="#4f7cff"
-            code="TODO"
+            code="Todas las tareas"
             label="Vista general"
             count={allPendingCount}
             icon={Layers}
@@ -136,109 +136,156 @@ export default function OrganizerView() {
         <div className="flex-1 overflow-y-auto scrollbar-hide p-2 space-y-3">
           {/* Section: Mis Ramos */}
           <div>
-            <div className="px-2 py-1 flex items-center justify-between mb-0.5">
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">
-                Mis Ramos
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowManageCourses(true)}
-                className="inline-flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-accent-blue transition-colors cursor-pointer"
-                title="Gestionar ramos y horarios"
-              >
-                <Settings className="w-3 h-3" />
-                <span>Ramos</span>
-              </button>
-            </div>
-
-            <div className="space-y-1">
-              <CourseTab
-                active={activeCourse === "all-courses"}
-                color="#4f7cff"
-                code="RAMOS"
-                label="Todos los ramos"
-                count={coursesPendingCount}
-                collapsible
-                isExpanded={coursesExpanded}
-                onToggleExpand={() => setCoursesExpanded((prev) => !prev)}
-                onClick={() => handleSelectCourse("all-courses")}
-              />
-
-              {coursesExpanded && (
-                <div className="space-y-1 pt-0.5">
-                  {courses.map((c) => {
-                    const stat = allCourseStats.find((s) => s.id === c.id);
-                    const pendingCount = stat ? stat.pending : 0;
-                    return (
-                      <CourseTab
-                        key={c.id}
-                        active={activeCourse === c.id}
-                        color={c.color}
-                        code={c.code}
-                        label={c.name}
-                        count={pendingCount}
-                        indent
-                        onClick={() => handleSelectCourse(c.id)}
-                      />
-                    );
-                  })}
-                  {courses.length === 0 && (
-                    <p className="px-3 py-1.5 text-[11px] font-mono text-text-muted">
-                      Sin ramos registrados
-                    </p>
+            <div
+              className={`rounded-lg px-2.5 py-1.5 flex items-center justify-between transition-all ${
+                activeCourse === "all-courses"
+                  ? "bg-panel text-text shadow-sm"
+                  : "text-text-muted hover:text-text hover:bg-panel/50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCoursesExpanded((prev) => !prev);
+                  }}
+                  className="p-0.5 rounded hover:bg-surface text-text-muted hover:text-text transition-colors cursor-pointer"
+                  title={coursesExpanded ? "Colapsar ramos" : "Expandir ramos"}
+                  aria-label={coursesExpanded ? "Colapsar ramos" : "Expandir ramos"}
+                >
+                  {coursesExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
                   )}
-                </div>
-              )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectCourse("all-courses")}
+                  className="text-[11px] font-mono font-semibold uppercase tracking-wider cursor-pointer flex-1 text-left truncate focus-visible:outline-none"
+                >
+                  Mis Ramos
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
+                {coursesPendingCount > 0 && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-background text-text-muted border border-border">
+                    {coursesPendingCount}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowManageCourses(true);
+                  }}
+                  className="p-1 rounded hover:bg-surface text-text-muted hover:text-accent-blue transition-colors cursor-pointer"
+                  title="Gestionar ramos y horarios"
+                  aria-label="Gestionar ramos y horarios"
+                >
+                  <Settings className="w-3 h-3" />
+                </button>
+              </div>
             </div>
+
+            {coursesExpanded && (
+              <div className="space-y-1 pt-1">
+                {courses.map((c) => {
+                  const stat = allCourseStats.find((s) => s.id === c.id);
+                  const pendingCount = stat ? stat.pending : 0;
+                  return (
+                    <CourseTab
+                      key={c.id}
+                      active={activeCourse === c.id}
+                      color={c.color}
+                      code={c.code}
+                      label={c.name}
+                      count={pendingCount}
+                      indent
+                      onClick={() => handleSelectCourse(c.id)}
+                    />
+                  );
+                })}
+                {courses.length === 0 && (
+                  <p className="px-3 py-1.5 text-[11px] font-mono text-text-muted">
+                    Sin ramos registrados
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Section: Mis Proyectos */}
           <div>
-            <div className="px-2 py-1 flex items-center justify-between mb-0.5">
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-widest text-text-muted">
-                Mis Proyectos
-              </span>
-            </div>
-
-            <div className="space-y-1">
-              <CourseTab
-                active={activeCourse === "all-projects"}
-                color="#8b5cf6"
-                code="PROYECTOS"
-                label="Todos los proyectos"
-                count={projectsPendingCount}
-                collapsible
-                isExpanded={projectsExpanded}
-                onToggleExpand={() => setProjectsExpanded((prev) => !prev)}
-                onClick={() => handleSelectCourse("all-projects")}
-              />
-
-              {projectsExpanded && (
-                <div className="space-y-1 pt-0.5">
-                  {userProjects.map((p) => {
-                    const stat = allProjectStats.find((s) => s.id === p.id);
-                    const pendingCount = stat ? stat.pending : 0;
-                    return (
-                      <CourseTab
-                        key={p.id}
-                        active={activeCourse === `project:${p.id}`}
-                        color={p.color}
-                        code={p.course || "EQUIPO"}
-                        label={p.name}
-                        count={pendingCount}
-                        indent
-                        onClick={() => handleSelectCourse(`project:${p.id}`)}
-                      />
-                    );
-                  })}
-                  {userProjects.length === 0 && (
-                    <p className="px-3 py-1.5 text-[11px] font-mono text-text-muted">
-                      Sin proyectos asignados
-                    </p>
+            <div
+              className={`rounded-lg px-2.5 py-1.5 flex items-center justify-between transition-all ${
+                activeCourse === "all-projects"
+                  ? "bg-panel text-text shadow-sm"
+                  : "text-text-muted hover:text-text hover:bg-panel/50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProjectsExpanded((prev) => !prev);
+                  }}
+                  className="p-0.5 rounded hover:bg-surface text-text-muted hover:text-text transition-colors cursor-pointer"
+                  title={projectsExpanded ? "Colapsar proyectos" : "Expandir proyectos"}
+                  aria-label={projectsExpanded ? "Colapsar proyectos" : "Expandir proyectos"}
+                >
+                  {projectsExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
                   )}
-                </div>
-              )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectCourse("all-projects")}
+                  className="text-[11px] font-mono font-semibold uppercase tracking-wider cursor-pointer flex-1 text-left truncate focus-visible:outline-none"
+                >
+                  Mis Proyectos
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
+                {projectsPendingCount > 0 && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-background text-text-muted border border-border">
+                    {projectsPendingCount}
+                  </span>
+                )}
+              </div>
             </div>
+
+            {projectsExpanded && (
+              <div className="space-y-1 pt-1">
+                {userProjects.map((p) => {
+                  const stat = allProjectStats.find((s) => s.id === p.id);
+                  const pendingCount = stat ? stat.pending : 0;
+                  return (
+                    <CourseTab
+                      key={p.id}
+                      active={activeCourse === `project:${p.id}`}
+                      color={p.color}
+                      code={p.course || "EQUIPO"}
+                      label={p.name}
+                      count={pendingCount}
+                      indent
+                      onClick={() => handleSelectCourse(`project:${p.id}`)}
+                    />
+                  );
+                })}
+                {userProjects.length === 0 && (
+                  <p className="px-3 py-1.5 text-[11px] font-mono text-text-muted">
+                    Sin proyectos asignados
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
