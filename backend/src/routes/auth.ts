@@ -189,7 +189,7 @@ router.get("/me", withUser, async (request, response, next) => {
   }
 });
 
-router.post("/logout", withUser, (_request, response) => {
+router.post("/logout", (_request, response) => {
   response.clearCookie("token", cookieOptions);
   response.status(204).end();
 });
