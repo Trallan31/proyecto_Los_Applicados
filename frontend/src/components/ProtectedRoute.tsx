@@ -10,7 +10,9 @@ export default function ProtectedRoute() {
   }
 
   if (!user) {
-    const next = encodeURIComponent(location.pathname)
+    const next = encodeURIComponent(
+      `${location.pathname}${location.search}${location.hash}`
+    )
 
     return <Navigate to={`/login?next=${next}`} replace />
   }

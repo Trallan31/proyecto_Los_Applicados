@@ -1,5 +1,6 @@
 import { GraduationCap, Folder, Video, Globe, ExternalLink, Pencil, Trash2, Plus } from "lucide-react";
 import type { CourseLink, CourseLinkCategory } from "../../types";
+import { sanitizeHttpUrl } from "../../utils/urlUtils";
 
 interface CourseLinksBarProps {
   links: CourseLink[];
@@ -53,49 +54,62 @@ export function CourseLinksBar({
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: courseColor }} />
         Enlaces
       </span>
-      {links.map((link) => (
-        <div
-          key={link.id}
-          className="inline-flex items-center gap-1.5 pl-2.5 pr-2.5 group-hover:pr-1.5 group-focus-within:pr-1.5 py-1 rounded-full border border-border bg-panel hover:bg-panel-hover hover:border-border-bright transition-all group max-w-xs"
-        >
-          <a
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-text hover:text-accent-blue transition-colors truncate"
-            title={`${link.title} — ${link.url}`}
+      {links.map((link) => {
+        const safeUrl = sanitizeHttpUrl(link.url);
+        return (
+          <div
+            key={link.id}
+            className="inline-flex items-center gap-1.5 pl-2.5 pr-2.5 group-hover:pr-1.5 group-focus-within:pr-1.5 py-1 rounded-full border border-border bg-panel hover:bg-panel-hover hover:border-border-bright transition-all group max-w-xs"
           >
-            {getCategoryIcon(link.category)}
-            <span className="truncate max-w-[150px] font-medium">{link.title}</span>
-          </a>
-          <div className="hidden group-hover:flex group-focus-within:flex items-center gap-0.5 ml-1 pl-1 border-l border-border">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditLink(link);
-              }}
-              className="p-0.5 text-text-muted hover:text-accent-blue transition-colors rounded cursor-pointer"
-              title="Editar enlace"
-              aria-label={`Editar ${link.title}`}
-            >
-              <Pencil className="w-3 h-3" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteLink(link.id);
-              }}
-              className="p-0.5 text-text-muted hover:text-accent-red transition-colors rounded cursor-pointer"
-              title="Eliminar enlace"
-              aria-label={`Eliminar ${link.title}`}
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
+            {safeUrl ? (
+              <a
+                href={safeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-text hover:text-accent-blue transition-colors truncate"
+                title={`${link.title} — ${safeUrl}`}
+              >
+                {getCategoryIcon(link.category)}
+                <span className="truncate max-w-[150px] font-medium">{link.title}</span>
+              </a>
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 text-xs text-text-muted opacity-75 cursor-not-allowed truncate"
+                title={`${link.title} — Enlace no válido`}
+              >
+                {getCategoryIcon(link.category)}
+                <span className="truncate max-w-[150px] font-medium">{link.title}</span>
+              </span>
+            )}
+            <div className="hidden group-hover:flex group-focus-within:flex items-center gap-0.5 ml-1 pl-1 border-l border-border">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditLink(link);
+                }}
+                className="p-0.5 text-text-muted hover:text-accent-blue transition-colors rounded cursor-pointer"
+                title="Editar enlace"
+                aria-label={`Editar ${link.title}`}
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteLink(link.id);
+                }}
+                className="p-0.5 text-text-muted hover:text-accent-red transition-colors rounded cursor-pointer"
+                title="Eliminar enlace"
+                aria-label={`Eliminar ${link.title}`}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <button
         type="button"

@@ -10,10 +10,30 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
+function readStoredTheme(): Theme | null {
+  try {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'light' || saved === 'dark') {
+      return saved
+    }
+  } catch {
+    // Ignoramos errores si localStorage está bloqueado o no disponible.
+  }
+  return null
+}
+
+function writeStoredTheme(theme: Theme): void {
+  try {
+    localStorage.setItem('theme', theme)
+  } catch {
+    // Ignoramos errores si localStorage está bloqueado o no disponible.
+  }
+}
+
 function getInitialTheme(): Theme {
   if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('theme') as Theme | null
-    if (saved === 'light' || saved === 'dark') {
+    const saved = readStoredTheme()
+    if (saved) {
       return saved
     }
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -30,7 +50,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
 
   useEffect(() => {
-    localStorage.setItem('theme', theme)
+    writeStoredTheme(theme)
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
     } else {

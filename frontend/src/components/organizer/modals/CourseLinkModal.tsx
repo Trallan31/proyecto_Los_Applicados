@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { CourseLink, CourseLinkCategory } from "../../../types";
+import { normalizeHttpUrlInput } from "../../../utils/urlUtils";
 
 interface CourseLinkModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export function CourseLinkModal({
   const [title, setTitle] = useState(linkToEdit?.title ?? "");
   const [url, setUrl] = useState(linkToEdit?.url ?? "");
   const [category, setCategory] = useState<CourseLinkCategory>(linkToEdit?.category ?? "otro");
+  const [urlError, setUrlError] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,17 +46,17 @@ export function CourseLinkModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedTitle = title.trim();
-    let trimmedUrl = url.trim();
+    if (!trimmedTitle) return;
 
-    if (!trimmedTitle || !trimmedUrl) return;
-
-    if (!/^https?:\/\//i.test(trimmedUrl)) {
-      trimmedUrl = `https://${trimmedUrl}`;
+    const normalized = normalizeHttpUrlInput(url);
+    if (!normalized.ok) {
+      setUrlError(normalized.error);
+      return;
     }
 
     onSave({
       title: trimmedTitle,
-      url: trimmedUrl,
+      url: normalized.url,
       category,
     });
     onClose();
@@ -122,13 +124,24 @@ export function CourseLinkModal({
               type="text"
               required
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (urlError) setUrlError("");
+              }}
+              aria-invalid={Boolean(urlError)}
+              aria-describedby={urlError ? "course-link-url-error" : undefined}
               placeholder="https://u-cursos.cl/..."
               className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-text placeholder-text-muted focus:outline-none focus:border-accent-blue transition-colors font-mono text-xs"
             />
-            <p className="text-[11px] text-text-muted mt-1">
-              Si omites el protocolo, se agregará <code>https://</code> automáticamente.
-            </p>
+            {urlError ? (
+              <p id="course-link-url-error" role="alert" className="text-xs text-accent-red mt-1">
+                {urlError}
+              </p>
+            ) : (
+              <p className="text-[11px] text-text-muted mt-1">
+                Si omites el protocolo, se agregará <code>https://</code> automáticamente.
+              </p>
+            )}
           </div>
 
           <div>

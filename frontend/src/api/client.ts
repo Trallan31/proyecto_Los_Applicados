@@ -14,8 +14,34 @@ const http = axios.create({
   withCredentials: true,
 });
 
+const CSRF_TOKEN_KEY = "csrfToken";
+
+function getStoredCsrfToken(): string | null {
+  try {
+    return localStorage.getItem(CSRF_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredCsrfToken(token: string): void {
+  try {
+    localStorage.setItem(CSRF_TOKEN_KEY, token);
+  } catch {
+    // Ignoramos errores de almacenamiento en entornos restringidos.
+  }
+}
+
+function removeStoredCsrfToken(): void {
+  try {
+    localStorage.removeItem(CSRF_TOKEN_KEY);
+  } catch {
+    // Ignoramos errores de almacenamiento en entornos restringidos.
+  }
+}
+
 http.interceptors.request.use((config) => {
-  const csrfToken = localStorage.getItem("csrfToken");
+  const csrfToken = getStoredCsrfToken();
   if (csrfToken) {
     config.headers.set("X-CSRF-Token", csrfToken);
   }
@@ -72,7 +98,7 @@ export async function register(data: RegisterData) {
   return storeSession(await http.post<User>("/auth/register", data));
 }
 
-/** Guarda el token CSRF y el usuario que devuelve /auth/login o /auth/register. */
+/** Guarda el token CSRF que devuelve /auth/login o /auth/register. */
 function storeSession({
   data,
   headers,
@@ -81,15 +107,13 @@ function storeSession({
   if (typeof csrfToken !== "string") {
     throw new Error("El servidor no entregó un token CSRF.");
   }
-  localStorage.setItem("csrfToken", csrfToken);
-  localStorage.setItem("auth_user", JSON.stringify(data));
+  setStoredCsrfToken(csrfToken);
   return data;
 }
 
 export async function restoreSession(): Promise<User | null> {
   try {
     const { data } = await http.get<User>("/auth/me");
-    localStorage.setItem("auth_user", JSON.stringify(data));
     return data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -118,8 +142,7 @@ export async function logout(): Promise<void> {
 }
 
 function clearStoredSession(): void {
-  localStorage.removeItem("csrfToken");
-  localStorage.removeItem("auth_user");
+  removeStoredCsrfToken();
 }
 
 /** GET /<recurso> */
@@ -136,13 +159,13 @@ export async function create<T>(resource: string, body: unknown): Promise<T> {
 
 /** PATCH /<recurso>/<id>. Envia solo los campos que cambian. */
 export async function update<T>(resource: string, id: string, changes: unknown): Promise<T> {
-  const { data } = await http.patch<T>(`/${resource}/${id}`, changes);
+  const { data } = await http.patch<T>(`/${resource}/${encodeURIComponent(id)}`, changes);
   return data;
 }
 
 /** DELETE /<recurso>/<id> */
 export async function remove(resource: string, id: string): Promise<void> {
-  await http.delete(`/${resource}/${id}`);
+  await http.delete(`/${resource}/${encodeURIComponent(id)}`);
 }
 
 /** Mensaje legible para mostrar en pantalla cuando la API falla. */

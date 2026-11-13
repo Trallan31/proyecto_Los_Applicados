@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { describeError } from '../api/client'
+import { buildAuthRouteWithNext, sanitizeNextRoute } from '../utils/navigation'
 
 const inputClassName =
   'mt-1 w-full rounded-lg border border-border bg-background px-3 py-2'
 
 export default function RegisterPage() {
   const { user, register } = useAuth()
+  const [searchParams] = useSearchParams()
   const [form, setForm] = useState({
     name: '',
     lastName: '',
@@ -20,8 +22,11 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const rawNext = searchParams.get('next')
+  const destination = sanitizeNextRoute(rawNext)
+
   if (user) {
-    return <Navigate to="/organizador" replace />
+    return <Navigate to={destination} replace />
   }
 
   const setField = (field: keyof typeof form) => (
@@ -34,18 +39,35 @@ export default function RegisterPage() {
     event.preventDefault()
     setError('')
 
-    if (form.password !== confirmation) {
+    const trimmedForm = {
+      name: form.name.trim(),
+      lastName: form.lastName.trim(),
+      username: form.username.trim(),
+      mail: form.mail.trim(),
+      password: form.password,
+    }
+
+    if (
+      !trimmedForm.name ||
+      !trimmedForm.lastName ||
+      !trimmedForm.username ||
+      !trimmedForm.mail
+    ) {
+      setError('Completa todos los campos requeridos sin dejar solo espacios.')
+      return
+    }
+    if (trimmedForm.password !== confirmation) {
       setError('Las contraseñas no coinciden.')
       return
     }
-    if (form.password.length < 8) {
+    if (trimmedForm.password.length < 8) {
       setError('La contraseña debe tener al menos 8 caracteres.')
       return
     }
 
     setSaving(true)
     try {
-      await register(form)
+      await register(trimmedForm)
     } catch (registerError: unknown) {
       setError(describeError(registerError))
     } finally {
@@ -54,9 +76,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-text flex items-center justify-center px-6 py-10">
-      <section className="w-full max-w-md bg-surface border border-border rounded-2xl p-8 shadow-lg">
-        <div className="flex items-center gap-3 mb-6">
+    <main className="min-h-screen bg-background text-text flex items-center justify-center px-6 py-6 sm:py-10">
+      <section className="w-full max-w-md bg-surface border border-border rounded-2xl p-6 sm:p-7 shadow-lg">
+        <div className="flex items-center gap-3 mb-4">
           <img
             src="/logo.png"
             alt="Applicate Logo"
@@ -70,15 +92,15 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold mb-3">Crear cuenta</h1>
+        <h1 className="text-2xl font-bold mb-1.5">Crear cuenta</h1>
 
-        <p className="text-text-muted mb-6">
+        <p className="text-sm text-text-muted mb-4">
           Registra tus datos para empezar a usar el Organizador y los
           Proyectos de Equipo.
         </p>
 
-        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
-        <form onSubmit={submit} className="space-y-4">
+        {error && <p role="alert" className="mb-4 text-sm text-red-500">{error}</p>}
+        <form onSubmit={submit} className="space-y-3">
           <div className="flex gap-3">
             <label className="block text-sm flex-1">
               Nombre
@@ -154,10 +176,10 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-sm text-text-muted">
+        <p className="mt-4 text-sm text-text-muted">
           ¿Ya tienes cuenta?{' '}
           <Link
-            to="/login"
+            to={buildAuthRouteWithNext('/login', rawNext)}
             className="text-accent-blue font-semibold hover:underline"
           >
             Inicia sesión

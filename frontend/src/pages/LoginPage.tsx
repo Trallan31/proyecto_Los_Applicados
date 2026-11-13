@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { describeError } from "../api/client";
+import { buildAuthRouteWithNext, sanitizeNextRoute } from '../utils/navigation';
 
 export default function LoginPage() {
   const { user, login } = useAuth()
@@ -10,14 +11,10 @@ export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  const next = searchParams.get('next')
-
-  // Solo aceptamos destinos que pertenecen a nuestras vistas.
-  const destination =
-    next === '/scrum' || next === '/organizador'
-      ? next
-      : '/organizador'
+  const rawNext = searchParams.get('next')
+  const destination = sanitizeNextRoute(rawNext)
 
   if (user) {
     return <Navigate to={destination} replace />
@@ -26,10 +23,20 @@ export default function LoginPage() {
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
+
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername) {
+      setError('Ingresa tu usuario o correo.')
+      return
+    }
+
+    setSaving(true)
     try {
-      await login(username, password)
+      await login(trimmedUsername, password)
     } catch (error: unknown) {
       setError(describeError(error));
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -59,7 +66,7 @@ export default function LoginPage() {
           Proyectos de Equipo.
         </p>
 
-        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+        {error && <p role="alert" className="mb-4 text-sm text-red-500">{error}</p>}
         <form onSubmit={submit} className="space-y-4">
           <label className="block text-sm">
             Usuario o correo
@@ -84,16 +91,17 @@ export default function LoginPage() {
           </label>
           <button
             type="submit"
-            className="w-full rounded-lg bg-accent-blue px-4 py-3 font-semibold text-white cursor-pointer hover:opacity-90 transition-opacity"
+            disabled={saving}
+            className="w-full rounded-lg bg-accent-blue px-4 py-3 font-semibold text-white cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Iniciar sesión
+            {saving ? 'Iniciando sesión...' : 'Iniciar sesión'}
           </button>
         </form>
 
         <p className="mt-6 text-sm text-text-muted">
           ¿No tienes cuenta?{' '}
           <Link
-            to="/registro"
+            to={buildAuthRouteWithNext('/registro', rawNext)}
             className="text-accent-blue font-semibold hover:underline"
           >
             Crear una
