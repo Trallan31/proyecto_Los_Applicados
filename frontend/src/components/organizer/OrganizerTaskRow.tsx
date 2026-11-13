@@ -1,7 +1,7 @@
 import type React from "react";
 import type { OrganizerTask, Course, Project } from "../../types";
 import { CATEGORY_COLORS, PRIORITY_META } from "../../constants/ui";
-import { parseLocalDate } from "../../utils/dateUtils";
+import { formatDisplayDate } from "../../utils/dateUtils";
 import { isScrumTask } from "../../utils/scrumSync";
 import { Check, Pencil, Trash2, Users } from "lucide-react";
 import { CountdownBadge } from "../shared/CountdownBadge";
@@ -28,7 +28,6 @@ export function OrganizerTaskRow({
   onDelete: () => void;
 }) {
   const isDone = task.status === "Completada";
-  const due = parseLocalDate(task.endDate);
   // Las tareas que vienen del tablero se editan y se borran alla.
   const fromScrum = isScrumTask(task);
 
@@ -154,7 +153,7 @@ export function OrganizerTaskRow({
           <div className="text-right flex flex-col items-end gap-1">
             <CountdownBadge dateStr={task.endDate} isDone={isDone} />
             <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted">
-              <span>{due.toLocaleDateString("es-CL", { day: "numeric", month: "short" })}</span>
+              <span>{formatDisplayDate(task.endDate)}</span>
               {task.dueTime && <span>• {task.dueTime}</span>}
             </div>
           </div>

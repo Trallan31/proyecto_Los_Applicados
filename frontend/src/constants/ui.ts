@@ -37,9 +37,3 @@ export const STATUS_META: Record<Status, { color: string; bg: string; dot: strin
 export const TASK_TYPES = Object.keys(CATEGORY_COLORS) as TaskType[];
 export const PRIORITIES = Object.keys(PRIORITY_META) as Priority[];
 export const STATUSES = Object.keys(STATUS_META) as Status[];
-
-/**
- * Usuario de la sesion. La app todavia no tiene login: cuando exista,
- * este valor sale del usuario autenticado y esta constante desaparece.
- */
-export const CURRENT_USER_ID = "user-1";

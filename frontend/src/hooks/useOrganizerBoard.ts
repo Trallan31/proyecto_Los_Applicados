@@ -8,6 +8,7 @@ import type {
   CourseSession,
   CourseLink,
   Project,
+  Status,
 } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { activityIdOf, assignedActivitiesAsTasks } from "../utils/scrumSync";
@@ -108,6 +109,7 @@ export function useOrganizerBoard() {
         if (statusFilter !== "all" && t.status !== statusFilter) return false;
         if (timeFilter !== "todas") {
           const due = parseLocalDate(t.endDate);
+          if (Number.isNaN(due.getTime())) return false;
           const bounds = timeFilter === "semana" ? weekBounds : monthBounds;
           if (due < bounds.start || due > bounds.end) return false;
         }
@@ -121,31 +123,45 @@ export function useOrganizerBoard() {
       [...filteredTasks].sort((a, b) => {
         if (a.status === "Completada" && b.status !== "Completada") return 1;
         if (b.status === "Completada" && a.status !== "Completada") return -1;
-        return parseLocalDate(a.endDate).getTime() - parseLocalDate(b.endDate).getTime();
+        const timeA = parseLocalDate(a.endDate).getTime();
+        const timeB = parseLocalDate(b.endDate).getTime();
+        const validA = !Number.isNaN(timeA);
+        const validB = !Number.isNaN(timeB);
+        if (!validA && !validB) {
+          return a.title.localeCompare(b.title, "es");
+        }
+        if (!validA) return 1;
+        if (!validB) return -1;
+        if (timeA !== timeB) return timeA - timeB;
+        return a.title.localeCompare(b.title, "es");
       }),
     [filteredTasks]
   );
 
-  function toggleTaskStatus(id: string): OrganizerTask["status"] | undefined {
+  async function toggleTaskStatus(id: string): Promise<OrganizerTask["status"] | null> {
     const task = allTasks.find((t) => t.id === id);
-    if (!task) return undefined;
+    if (!task) return null;
     const next: OrganizerTask["status"] =
       task.status === "Completada" ? "Pendiente" : "Completada";
-    setTaskStatus(id, next);
-    return next;
+    const saved = await setTaskStatus(id, next);
+    return saved ? next : null;
   }
 
   /**
    * En una tarea derivada el estado se escribe en la actividad, que es lo
-   * que ve todo el equipo en el tablero.
+   * que ve todo el equipo en el tablero. Si se indica `scrumRestoreStatus`,
+   * restaura el estado original de Scrum (p. ej. "En revisión").
    */
-  function setTaskStatus(id: string, status: OrganizerTask["status"]) {
+  async function setTaskStatus(
+    id: string,
+    status: OrganizerTask["status"],
+    scrumRestoreStatus?: Status
+  ): Promise<boolean> {
     const activityId = activityIdOf(id);
     if (activityId !== null) {
-      void activities.edit(activityId, { status });
-      return;
+      return activities.edit(activityId, { status: scrumRestoreStatus ?? status });
     }
-    void tasks.edit(id, { status });
+    return tasks.edit(id, { status });
   }
 
   /** Las derivadas no se borran desde aca: se borran en el tablero. */

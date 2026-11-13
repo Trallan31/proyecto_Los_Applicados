@@ -55,6 +55,7 @@ export function activityToTask(activity: Activity, userId: string): OrganizerTas
     endDate: activity.dueDate,
     dueTime: null,
     status: toTaskStatus(activity.status),
+    scrumOriginalStatus: activity.status,
     priority: toTaskPriority(activity.priority),
     notes: activity.description || null,
     scrumActivityId: activity.id,
@@ -71,7 +72,9 @@ export function assignedActivitiesAsTasks(
   return activities
     .filter(
       (activity) =>
-        activity.members.includes(userId) && activity.status !== "Cancelada"
+        Array.isArray(activity.members) &&
+        activity.members.includes(userId) &&
+        activity.status !== "Cancelada"
     )
     .map((activity) => activityToTask(activity, userId));
 }

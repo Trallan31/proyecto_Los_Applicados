@@ -1,3 +1,5 @@
+import type { Status as ScrumActivityStatus } from "./activities";
+
 export type TaskType = "Tarea" | "Evaluación" | "Proyecto" | "Lectura";
 export type TaskScope = "Ramo" | "Proyecto Universitario" | "Personal";
 
@@ -21,6 +23,8 @@ export interface OrganizerTask {
    * /activities. Ver utils/scrumSync.ts.
    */
   scrumActivityId?: string;
+  /** Estado original de la actividad en Scrum antes de mapearla al organizador. */
+  scrumOriginalStatus?: ScrumActivityStatus;
   /** Proyecto de equipo al que pertenece la actividad derivada. */
   projectId?: string;
 }

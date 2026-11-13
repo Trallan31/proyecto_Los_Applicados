@@ -71,9 +71,9 @@ export function useScrumBoard() {
     void activities.edit(taskId, { [field]: value } as Partial<Omit<Activity, "id">>);
   }
 
-  function addTask(task: Omit<Activity, "id" | "projectId">) {
-    if (!project) return;
-    void activities.add({ ...task, projectId: project.id });
+  async function addTask(task: Omit<Activity, "id" | "projectId">): Promise<Activity | null> {
+    if (!project) return null;
+    return activities.add({ ...task, projectId: project.id });
   }
 
   function deleteTask(taskId: string) {

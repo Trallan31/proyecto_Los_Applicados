@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight, ArrowUpRight } from "lucide-react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
-import type { OrganizerTask, TaskType, CourseLink } from "./types";
+import type { OrganizerTask, TaskType, CourseLink, Status } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
 import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
 import { CourseTab } from "./components/organizer/CourseTab";
@@ -78,7 +78,13 @@ export default function OrganizerView() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showCourseLinkModal, setShowCourseLinkModal] = useState(false);
   const [editingCourseLink, setEditingCourseLink] = useState<CourseLink | null>(null);
-  const [toasts, setToasts] = useState<Array<{ id: string; message: string; taskId: string; previousStatus: OrganizerTask["status"] }>>([]);
+  const [toasts, setToasts] = useState<Array<{
+    id: string;
+    message: string;
+    taskId: string;
+    previousStatus: OrganizerTask["status"];
+    previousScrumStatus?: Status;
+  }>>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const selectedTask = scopedTasks.find((t) => t.id === selectedTaskId) ?? null;
@@ -93,9 +99,11 @@ export default function OrganizerView() {
     setSelectedTaskId(null);
   }
 
-  function handleToggleStatus(task: OrganizerTask) {
+  async function handleToggleStatus(task: OrganizerTask) {
     const previousStatus = task.status;
-    const nextStatus = toggleTaskStatus(task.id);
+    const previousScrumStatus = task.scrumOriginalStatus;
+    const nextStatus = await toggleTaskStatus(task.id);
+    if (nextStatus === null) return;
     if (nextStatus === "Completada") {
       const toastId = `${task.id}-${++toastCounter}`;
       setToasts(prev => [...prev, {
@@ -103,15 +111,33 @@ export default function OrganizerView() {
         message: `"${task.title}" marcada como lista`,
         taskId: task.id,
         previousStatus,
+        previousScrumStatus,
       }]);
     } else {
       setToasts(prev => prev.filter(t => t.taskId !== task.id));
     }
   }
 
-  function handleUndo(toastId: string, taskId: string, previousStatus: OrganizerTask["status"]) {
-    setTaskStatus(taskId, previousStatus);
-    setToasts(prev => prev.filter(t => t.id !== toastId));
+  async function handleUndo(
+    toastId: string,
+    taskId: string,
+    previousStatus: OrganizerTask["status"],
+    previousScrumStatus?: Status
+  ) {
+    const restored = await setTaskStatus(taskId, previousStatus, previousScrumStatus);
+    if (restored) {
+      setToasts(prev => prev.filter(t => t.id !== toastId));
+    }
+  }
+
+  async function handleStatusChange(
+    taskId: string,
+    newStatus: OrganizerTask["status"]
+  ) {
+    const saved = await setTaskStatus(taskId, newStatus);
+    if (saved && newStatus !== "Completada") {
+      setToasts(prev => prev.filter(t => t.taskId !== taskId));
+    }
   }
 
   if (loading) return <Loading label="Cargando organizador..." />;
@@ -500,7 +526,7 @@ export default function OrganizerView() {
                   showCourseBadge={activeCourse === "all" || activeCourse === "all-courses" || activeCourse === "all-projects"}
                   isSelected={selectedTaskId === task.id}
                   onSelect={() => setSelectedTaskId(task.id)}
-                  onToggleStatus={() => handleToggleStatus(task)}
+                  onToggleStatus={() => void handleToggleStatus(task)}
                   onEdit={() => setEditingTask(task)}
                   onDelete={() => setConfirmDeleteId(task.id)}
                 />
@@ -518,8 +544,8 @@ export default function OrganizerView() {
                 project={projects.find((p) => p.id === selectedTask.projectId)}
                 isModalOpen={editingTask !== null || confirmDeleteId !== null}
                 onClose={() => setSelectedTaskId(null)}
-                onToggleStatus={() => handleToggleStatus(selectedTask)}
-                onStatusChange={(newStatus) => setTaskStatus(selectedTask.id, newStatus)}
+                onToggleStatus={() => void handleToggleStatus(selectedTask)}
+                onStatusChange={(newStatus) => void handleStatusChange(selectedTask.id, newStatus)}
                 onEdit={() => setEditingTask(selectedTask)}
                 onDelete={() => setConfirmDeleteId(selectedTask.id)}
               />
@@ -643,7 +669,7 @@ export default function OrganizerView() {
             <Toast
               message={t.message}
               actionLabel="Deshacer"
-              onAction={() => handleUndo(t.id, t.taskId, t.previousStatus)}
+              onAction={() => void handleUndo(t.id, t.taskId, t.previousStatus, t.previousScrumStatus)}
               onClose={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
             />
           </div>

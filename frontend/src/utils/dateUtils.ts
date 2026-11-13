@@ -3,13 +3,41 @@ import type { CourseSession, OrganizerTask, Course } from "../types";
 export type TimeFilter = "todas" | "semana" | "mes";
 export type ViewTab = "lista" | "semana" | "mes";
 
+const LOCAL_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
+
 export function parseLocalDate(dateStr: string): Date {
-  if (!dateStr || typeof dateStr !== "string" || !dateStr.includes("-")) {
+  if (typeof dateStr !== "string") {
     return new Date(NaN);
   }
-  const [y, m, d] = dateStr.split("-").map(Number);
-  if (isNaN(y) || isNaN(m) || isNaN(d)) return new Date(NaN);
-  return new Date(y, m - 1, d);
+  const match = LOCAL_DATE_REGEX.exec(dateStr);
+  if (!match) {
+    return new Date(NaN);
+  }
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const day = Number(match[3]);
+  const d = new Date(y, m - 1, day);
+  // Evita que fechas inexistentes (p. ej. 2026-02-31) avancen de mes.
+  if (d.getFullYear() !== y || d.getMonth() !== m - 1 || d.getDate() !== day) {
+    return new Date(NaN);
+  }
+  return d;
+}
+
+/**
+ * Formatea una fecha YYYY-MM-DD para mostrarla en pantalla.
+ * Devuelve `fallback` si la fecha es vacía o inválida, evitando "Invalid Date".
+ */
+export function formatDisplayDate(
+  dateStr: string,
+  fallback = "Sin fecha",
+  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
+): string {
+  const parsed = parseLocalDate(dateStr);
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback;
+  }
+  return parsed.toLocaleDateString("es-CL", options);
 }
 
 export function formatLocalDate(date: Date): string {

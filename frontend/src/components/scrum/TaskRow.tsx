@@ -24,16 +24,7 @@ export function TaskRow({
   onCreateCategory?: (name: string) => void;
   onCreateSprint?: (name: string) => Promise<Sprint | null>;
 }) {
-  const [editingCell, setEditingCell] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const targetId = params.get("editTaskId") || "activity-1";
-      if (task.id === targetId) {
-        return params.get("editField") || params.get("edit") || null;
-      }
-    }
-    return null;
-  });
+  const [editingCell, setEditingCell] = useState<string | null>(null);
 
   const isEditing = (field: string) => editingCell === field;
   const overdue = isOverdue(task.dueDate, task.status === "Completada");
@@ -72,7 +63,13 @@ export function TaskRow({
         {isEditing("title") ? (
           <InlineText
             value={task.title}
-            onCommit={(v) => { onUpdate(task.id, "title", v); setEditingCell(null); }}
+            onCommit={(v) => {
+              const trimmed = v.trim();
+              if (trimmed && trimmed !== task.title) {
+                onUpdate(task.id, "title", trimmed);
+              }
+              setEditingCell(null);
+            }}
             onBlur={() => setEditingCell(null)}
           />
         ) : (
@@ -261,7 +258,14 @@ export function TaskRow({
         {isEditing("hours") ? (
           <InlineText
             value={String(task.hours || 0)}
-            onCommit={(v) => { onUpdate(task.id, "hours", Math.max(0, Number(v) || 0)); setEditingCell(null); }}
+            onCommit={(v) => {
+              const parsed = Number(v);
+              const safeHours = Number.isFinite(parsed)
+                ? Math.min(10000, Math.max(0, parsed))
+                : task.hours;
+              onUpdate(task.id, "hours", safeHours);
+              setEditingCell(null);
+            }}
             onBlur={() => setEditingCell(null)}
           />
         ) : (
@@ -284,7 +288,12 @@ export function TaskRow({
         {isEditing("dueDate") ? (
           <InlineDate
             value={task.dueDate}
-            onCommit={(v) => { onUpdate(task.id, "dueDate", v); setEditingCell(null); }}
+            onCommit={(v) => {
+              if (v && !Number.isNaN(parseLocalDate(v).getTime()) && v !== task.dueDate) {
+                onUpdate(task.id, "dueDate", v);
+              }
+              setEditingCell(null);
+            }}
             onBlur={() => setEditingCell(null)}
           />
         ) : (

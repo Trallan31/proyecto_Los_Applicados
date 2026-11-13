@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { OrganizerTask, Course, Project } from "../../types";
 import { CATEGORY_COLORS, PRIORITY_META, STATUS_META } from "../../constants/ui";
-import { parseLocalDate } from "../../utils/dateUtils";
+import { formatDisplayDate } from "../../utils/dateUtils";
 import { isScrumTask } from "../../utils/scrumSync";
 import { CountdownBadge } from "../shared/CountdownBadge";
 import {
@@ -62,15 +62,12 @@ export function OrganizerTaskDetail({
   const isDone = task.status === "Completada";
   // Las tareas que vienen del tablero solo aceptan cambios de estado.
   const fromScrum = isScrumTask(task);
-  const dueDate = parseLocalDate(task.endDate);
-  const formattedDate = !isNaN(dueDate.getTime())
-    ? dueDate.toLocaleDateString("es-CL", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : task.endDate;
+  const formattedDate = formatDisplayDate(task.endDate, "Sin fecha", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
   return (
     <>

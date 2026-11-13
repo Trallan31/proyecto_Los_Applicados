@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Activity, Priority, Status, Member, Sprint } from "../../types";
 import { PRIORITIES, STATUSES } from "../../constants/ui";
+import { formatLocalDate, getToday, parseLocalDate } from "../../utils/dateUtils";
 
 export function AddRowForm({
   sprints: projectSprints,
@@ -14,12 +15,11 @@ export function AddRowForm({
   sprints: Sprint[];
   members: Member[];
   categories: string[];
-  onAdd: (t: Omit<Activity, "id" | "projectId">) => void;
+  onAdd: (t: Omit<Activity, "id" | "projectId">) => Promise<Activity | null>;
   onCreateCategory?: (name: string) => void;
   onCreateSprint?: (name: string) => Promise<Sprint | null>;
   onCancel: () => void;
 }) {
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [sprintId, setSprintId] = useState<string>(projectSprints[0]?.id ?? "");
@@ -28,7 +28,9 @@ export function AddRowForm({
   const [priority, setPriority] = useState<Priority>("Media");
   const [status, setStatus] = useState<Status>("Pendiente");
   const [hours, setHours] = useState(0);
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState(() => formatLocalDate(getToday()));
+  const [validationError, setValidationError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const [isCreatingCategory, setIsCreatingCategory] = useState(categories.length === 0);
   const [newCatName, setNewCatName] = useState("");
@@ -36,10 +38,27 @@ export function AddRowForm({
   const [newSprintName, setNewSprintName] = useState("");
 
   async function handleSubmit() {
-    if (!title.trim()) { onCancel(); return; }
+    if (submitting) return;
+    setValidationError("");
+
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setValidationError("Ingresa un nombre para la tarea.");
+      return;
+    }
+
+    const parsedDue = parseLocalDate(dueDate);
+    if (!dueDate || Number.isNaN(parsedDue.getTime())) {
+      setValidationError("Selecciona una fecha límite válida.");
+      return;
+    }
+
+    const safeHours = Number.isFinite(hours)
+      ? Math.min(10000, Math.max(0, hours))
+      : 0;
 
     let finalCat = category || categories[0] || "";
-    if (isCreatingCategory && newCatName.trim() && onCreateCategory) {
+    if ((isCreatingCategory || categories.length === 0) && newCatName.trim() && onCreateCategory) {
       finalCat = newCatName.trim();
       onCreateCategory(finalCat);
       setCategory(finalCat);
@@ -48,17 +67,39 @@ export function AddRowForm({
     }
 
     let finalSprintId = sprintId;
-    if (isCreatingSprint && newSprintName.trim() && onCreateSprint) {
-      const created = await onCreateSprint(newSprintName.trim());
-      if (created) {
-        finalSprintId = created.id;
-        setSprintId(finalSprintId);
+    if ((isCreatingSprint || projectSprints.length === 0) && newSprintName.trim() && onCreateSprint) {
+      setSubmitting(true);
+      const createdSprint = await onCreateSprint(newSprintName.trim());
+      if (!createdSprint) {
+        setSubmitting(false);
+        setValidationError("No se pudo crear el sprint. Intenta nuevamente.");
+        return;
       }
+      finalSprintId = createdSprint.id;
+      setSprintId(finalSprintId);
       setNewSprintName("");
       setIsCreatingSprint(false);
     }
 
-    onAdd({ title, description, sprintId: finalSprintId, category: finalCat, members, priority, status, hours, dueDate });
+    setSubmitting(true);
+    try {
+      const createdTask = await onAdd({
+        title: trimmedTitle,
+        description: description.trim(),
+        sprintId: finalSprintId,
+        category: finalCat,
+        members,
+        priority,
+        status,
+        hours: safeHours,
+        dueDate,
+      });
+      if (!createdTask) {
+        setValidationError("No se pudo guardar la tarea. Intenta nuevamente.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleCreateCategorySubmit() {
@@ -73,150 +114,309 @@ export function AddRowForm({
 
   async function handleCreateSprintSubmit() {
     if (!newSprintName.trim() || !onCreateSprint) return;
+    setValidationError("");
     const created = await onCreateSprint(newSprintName.trim());
-    if (created) setSprintId(created.id);
+    if (!created) {
+      setValidationError("No se pudo crear el sprint. Intenta nuevamente.");
+      return;
+    }
+    setSprintId(created.id);
     setNewSprintName("");
     setIsCreatingSprint(false);
   }
 
   return (
-    <tr className="border-b border-accent-blue/30 bg-accent-blue/5">
-
-      {/* 2. TAREA (title) */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        <input
-          autoFocus
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); if (e.key === "Escape") onCancel(); }}
-          placeholder="Nombre de la tarea..."
-          className="w-full bg-transparent px-2 py-1 text-[12px] font-medium text-text placeholder-text-muted focus:outline-none"
-        />
-      </td>
-
-      {/* 3. SPRINT */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        {isCreatingSprint || projectSprints.length === 0 ? (
-          <div className="flex items-center gap-1">
-            <input
-              autoFocus={isCreatingSprint}
-              value={newSprintName}
-              onChange={(e) => setNewSprintName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") void handleCreateSprintSubmit(); if (e.key === "Escape") setIsCreatingSprint(false); }}
-              placeholder="Nombre Sprint..."
-              className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none"
-            />
-            {projectSprints.length > 0 && (
-              <button onClick={() => setIsCreatingSprint(false)} className="text-[10px] text-text-muted" aria-label="Cancelar">✕</button>
-            )}
-          </div>
-        ) : (
-          <select
-            value={sprintId}
+    <>
+      <tr className="border-b border-accent-blue/30 bg-accent-blue/5">
+        {/* 1. TAREA (title) */}
+        <td className="px-1 py-0 border-r border-border h-9">
+          <input
+            autoFocus
+            value={title}
             onChange={(e) => {
-              if (e.target.value === "__NEW__") {
-                setIsCreatingSprint(true);
-              } else {
-                setSprintId(e.target.value);
-              }
+              setTitle(e.target.value);
+              if (validationError) setValidationError("");
             }}
-            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
-          >
-            {projectSprints.map((s) => <option key={s.id} value={s.id} className="bg-surface text-text">{s.name}</option>)}
-            <option value="__NEW__" className="bg-surface text-accent-blue font-bold">+ Nuevo Sprint...</option>
-          </select>
-        )}
-      </td>
-
-      {/* CATEGORIA */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        {isCreatingCategory || categories.length === 0 ? (
-          <div className="flex items-center gap-1">
-            <input
-              autoFocus={isCreatingCategory}
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleCreateCategorySubmit(); if (e.key === "Escape") setIsCreatingCategory(false); }}
-              placeholder="Categoría..."
-              className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none"
-            />
-            {categories.length > 0 && (
-              <button onClick={() => setIsCreatingCategory(false)} className="text-[10px] text-text-muted" aria-label="Cancelar">✕</button>
-            )}
-          </div>
-        ) : (
-          <select
-            value={categories.includes(category) ? category : (categories[0] ?? "")}
-            onChange={(e) => {
-              if (e.target.value === "__NEW__") {
-                setIsCreatingCategory(true);
-              } else {
-                setCategory(e.target.value);
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void handleSubmit();
               }
+              if (e.key === "Escape") onCancel();
             }}
-            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
-          >
-            {categories.map((c) => <option key={c} value={c} className="bg-surface text-text">{c}</option>)}
-            <option value="__NEW__" className="bg-surface text-accent-blue font-bold">+ Nueva categoría...</option>
-          </select>
-        )}
-      </td>
+            placeholder="Nombre de la tarea..."
+            aria-label="Nombre de la tarea"
+            className="w-full bg-transparent px-2 py-1 text-[12px] font-medium text-text placeholder-text-muted focus:outline-none"
+          />
+        </td>
 
-      {/* 4. RESPONSABLE (members) */}
-      <td className="px-2 py-0 border-r border-border h-9">
-        <div className="flex flex-wrap gap-1">
-          {teamMembers.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setMembers((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : [...prev, m.id])}
-              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white transition-all"
-              style={{ backgroundColor: members.includes(m.id) ? m.avatarColor : "var(--color-border)", opacity: members.includes(m.id) ? 1 : 0.5 }}
-              title={m.name}
-              aria-label={`Asignar a ${m.name}`}
+        {/* 2. SPRINT */}
+        <td className="px-1 py-0 border-r border-border h-9">
+          {isCreatingSprint || projectSprints.length === 0 ? (
+            <div className="flex items-center gap-1">
+              <input
+                autoFocus={isCreatingSprint}
+                value={newSprintName}
+                onChange={(e) => {
+                  setNewSprintName(e.target.value);
+                  if (validationError) setValidationError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void handleCreateSprintSubmit();
+                  }
+                  if (e.key === "Escape") setIsCreatingSprint(false);
+                }}
+                placeholder="Nombre Sprint..."
+                aria-label="Nombre del nuevo sprint"
+                className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none"
+              />
+              {projectSprints.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingSprint(false)}
+                  className="text-[10px] text-text-muted"
+                  aria-label="Cancelar nuevo sprint"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ) : (
+            <select
+              value={sprintId}
+              onChange={(e) => {
+                if (e.target.value === "__NEW__") {
+                  setIsCreatingSprint(true);
+                } else {
+                  setSprintId(e.target.value);
+                }
+              }}
+              aria-label="Sprint"
+              className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
             >
-              {m.initials}
-            </button>
-          ))}
-        </div>
-      </td>
+              {projectSprints.map((s) => (
+                <option key={s.id} value={s.id} className="bg-surface text-text">
+                  {s.name}
+                </option>
+              ))}
+              <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
+                + Nuevo Sprint...
+              </option>
+            </select>
+          )}
+        </td>
 
-      {/* 5. PRIORIDAD */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none">
-          {PRIORITIES.map((p) => <option key={p} value={p} className="bg-surface text-text">{p}</option>)}
-        </select>
-      </td>
+        {/* 3. CATEGORIA */}
+        <td className="px-1 py-0 border-r border-border h-9">
+          {isCreatingCategory || categories.length === 0 ? (
+            <div className="flex items-center gap-1">
+              <input
+                autoFocus={isCreatingCategory}
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreateCategorySubmit();
+                  }
+                  if (e.key === "Escape") setIsCreatingCategory(false);
+                }}
+                placeholder="Categoría..."
+                aria-label="Nombre de la nueva categoría"
+                className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none"
+              />
+              {categories.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingCategory(false)}
+                  className="text-[10px] text-text-muted"
+                  aria-label="Cancelar nueva categoría"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ) : (
+            <select
+              value={categories.includes(category) ? category : (categories[0] ?? "")}
+              onChange={(e) => {
+                if (e.target.value === "__NEW__") {
+                  setIsCreatingCategory(true);
+                } else {
+                  setCategory(e.target.value);
+                }
+              }}
+              aria-label="Categoría"
+              className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
+            >
+              {categories.map((c) => (
+                <option key={c} value={c} className="bg-surface text-text">
+                  {c}
+                </option>
+              ))}
+              <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
+                + Nueva categoría...
+              </option>
+            </select>
+          )}
+        </td>
 
-      {/* 6. ESTADO */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        <select value={status} onChange={(e) => setStatus(e.target.value as Status)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none">
-          {STATUSES.map((s) => <option key={s} value={s} className="bg-surface text-text">{s}</option>)}
-        </select>
-      </td>
+        {/* 4. RESPONSABLE (members) */}
+        <td className="px-2 py-0 border-r border-border h-9">
+          <div className="flex flex-wrap gap-1">
+            {teamMembers.map((m) => {
+              const selected = members.includes(m.id);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() =>
+                    setMembers((prev) =>
+                      prev.includes(m.id) ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                    )
+                  }
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold transition-all cursor-pointer ${
+                    selected
+                      ? "text-white"
+                      : "bg-panel text-text border border-border opacity-75 hover:opacity-100"
+                  }`}
+                  style={selected ? { backgroundColor: m.avatarColor } : undefined}
+                  title={m.name}
+                  aria-label={`Asignar a ${m.name}`}
+                  aria-pressed={selected}
+                >
+                  {m.initials}
+                </button>
+              );
+            })}
+          </div>
+        </td>
 
-      {/* HORAS */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        <input type="number" min="0" value={hours || ""} onChange={(e) => setHours(Number(e.target.value))} placeholder="h" className="w-full bg-transparent px-2 text-[11px] font-mono text-text placeholder-text-muted focus:outline-none" />
-      </td>
+        {/* 5. PRIORIDAD */}
+        <td className="px-1 py-0 border-r border-border h-9">
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as Priority)}
+            aria-label="Prioridad"
+            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
+          >
+            {PRIORITIES.map((p) => (
+              <option key={p} value={p} className="bg-surface text-text">
+                {p}
+              </option>
+            ))}
+          </select>
+        </td>
 
-      {/* 7. DEADLINE (dueDate) */}
-      <td className="px-1 py-0 border-r border-border h-9 cursor-pointer">
-        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none cursor-pointer text-right" />
-      </td>
+        {/* 6. ESTADO */}
+        <td className="px-1 py-0 border-r border-border h-9">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Status)}
+            aria-label="Estado"
+            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s} className="bg-surface text-text">
+                {s}
+              </option>
+            ))}
+          </select>
+        </td>
 
-      {/* 8. NOTAS (description) */}
-      <td className="px-1 py-0 border-r border-border h-9">
-        <input value={description} onChange={(e) => setDescription(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); if (e.key === "Escape") onCancel(); }} placeholder="Notas..." className="w-full bg-transparent text-[11px] text-text placeholder-text-muted focus:outline-none" />
-      </td>
+        {/* 7. HORAS */}
+        <td className="px-1 py-0 border-r border-border h-9">
+          <input
+            type="number"
+            min={0}
+            max={10000}
+            value={hours || ""}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") {
+                setHours(0);
+                return;
+              }
+              const parsed = Number(raw);
+              if (!Number.isFinite(parsed)) {
+                setHours(0);
+                return;
+              }
+              setHours(Math.min(10000, Math.max(0, parsed)));
+            }}
+            placeholder="h"
+            aria-label="Horas estimadas"
+            className="w-full bg-transparent px-2 text-[11px] font-mono text-text placeholder-text-muted focus:outline-none dark:[color-scheme:dark]"
+          />
+        </td>
 
-      {/* 9. Acciones */}
-      <td className="h-9 px-2">
-        <div className="flex items-center gap-1">
-          <button onClick={() => void handleSubmit()} className="text-[11px] font-mono text-accent-blue hover:opacity-80 font-bold transition-colors" aria-label="Guardar tarea">✓</button>
-          <button onClick={onCancel} className="text-[11px] font-mono text-text-muted hover:text-accent-red font-bold transition-colors" aria-label="Cancelar">✕</button>
-        </div>
-      </td>
-    </tr>
+        {/* 8. DEADLINE (dueDate) */}
+        <td className="px-1 py-0 border-r border-border h-9 cursor-pointer">
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => {
+              setDueDate(e.target.value);
+              if (validationError) setValidationError("");
+            }}
+            aria-label="Fecha límite"
+            className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none cursor-pointer text-right dark:[color-scheme:dark]"
+          />
+        </td>
+
+        {/* 9. NOTAS (description) Y ACCIONES */}
+        <td className="px-3 py-0 h-9">
+          <div className="flex items-center justify-between gap-2">
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void handleSubmit();
+                }
+                if (e.key === "Escape") onCancel();
+              }}
+              placeholder="Notas..."
+              aria-label="Notas de la tarea"
+              className="w-full bg-transparent text-[11px] text-text placeholder-text-muted focus:outline-none min-w-0"
+            />
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={submitting}
+                className="text-[11px] font-mono text-accent-blue hover:text-accent-green font-bold px-1 transition-colors cursor-pointer disabled:opacity-50"
+                title="Guardar tarea (Enter)"
+                aria-label="Guardar tarea"
+              >
+                ✓
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={submitting}
+                className="text-[11px] font-mono text-text-muted hover:text-accent-red font-bold px-1 transition-colors cursor-pointer disabled:opacity-50"
+                title="Cancelar (Esc)"
+                aria-label="Cancelar"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {validationError && (
+        <tr className="border-b border-accent-red/30 bg-accent-red/10">
+          <td colSpan={9} className="px-3 py-1.5">
+            <p role="alert" className="text-[11px] font-mono text-accent-red">
+              {validationError}
+            </p>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

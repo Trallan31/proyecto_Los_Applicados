@@ -99,7 +99,10 @@ export function ScrumView() {
               {projects.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => setActiveProjectId(p.id)}
+                  onClick={() => {
+                    setActiveProjectId(p.id);
+                    setShowNewRow(false);
+                  }}
                   className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all border ${
                     p.id === activeProjectId
                       ? "bg-panel text-text"
@@ -221,10 +224,15 @@ export function ScrumView() {
             ))}
             {showNewRow && (
               <AddRowForm
+                key={project.id}
                 sprints={projectSprints}
                 members={projectMembers}
                 categories={project.categories}
-                onAdd={(t) => { addTask(t); setShowNewRow(false); }}
+                onAdd={async (t) => {
+                  const created = await addTask(t);
+                  if (created) setShowNewRow(false);
+                  return created;
+                }}
                 onCreateCategory={addCategory}
                 onCreateSprint={addSprint}
                 onCancel={() => setShowNewRow(false)}
@@ -232,7 +240,7 @@ export function ScrumView() {
             )}
             {!showNewRow && (
               <tr>
-                <td colSpan={10} className="p-0">
+                <td colSpan={9} className="p-0">
                   <button onClick={() => setShowNewRow(true)} className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] font-mono text-text-muted hover:text-accent-blue hover:bg-accent-blue/5 transition-all border-b border-border">
                     <span>+</span> Añadir tarea
                   </button>
@@ -243,7 +251,16 @@ export function ScrumView() {
         </table>
       </div>
 
-      {showNewProject && <NewProjectModal onCreate={(proj) => { void createProject(proj); setShowNewProject(false); }} onClose={() => setShowNewProject(false)} />}
+      {showNewProject && (
+        <NewProjectModal
+          onCreate={(proj) => {
+            void createProject(proj).then((created) => {
+              if (created) setShowNewProject(false);
+            });
+          }}
+          onClose={() => setShowNewProject(false)}
+        />
+      )}
       {showInvite && <InviteModal users={users} members={projectMembers} onInvite={(u) => { inviteMember(u); setShowInvite(false); }} onClose={() => setShowInvite(false)} />}
       {showStats && <StatsModal project={project} tasks={projectTasks} members={projectMembers} onClose={() => setShowStats(false)} />}
       {showSettings && (
