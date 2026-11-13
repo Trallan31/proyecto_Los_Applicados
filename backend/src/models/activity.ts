@@ -56,11 +56,19 @@ const activitySchema = new Schema(
       type: Number,
       required: true,
       min: 0,
+      max: 10000,
       default: 0,
+      validate: {
+        validator: Number.isFinite,
+        message: "Las horas deben ser un número finito entre 0 y 10000.",
+      },
     },
     dueDate: requiredDate,
   },
   schemaOptions
 );
+
+activitySchema.index({ projectId: 1 });
+activitySchema.index({ sprintId: 1 });
 
 export default model("Activity", activitySchema);

@@ -1,5 +1,10 @@
 import { model, Schema } from "mongoose";
-import { requiredText, schemaOptions } from "./shared";
+import {
+  isEmailFormat,
+  requiredHexColor,
+  requiredText,
+  schemaOptions,
+} from "./shared";
 
 export interface UserData {
   _id: string;
@@ -18,9 +23,17 @@ const userSchema = new Schema<UserData>(
     username: { ...requiredText, unique: true },
     name: requiredText,
     lastName: requiredText,
-    mail: { ...requiredText, unique: true },
+    mail: {
+      ...requiredText,
+      lowercase: true,
+      unique: true,
+      validate: {
+        validator: isEmailFormat,
+        message: "El correo no tiene un formato válido.",
+      },
+    },
     initials: requiredText,
-    avatarColor: requiredText,
+    avatarColor: requiredHexColor,
     passwordHash: {
       type: String,
       select: false,

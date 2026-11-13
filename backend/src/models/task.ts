@@ -1,11 +1,24 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 import {
   requiredDate,
   requiredText,
   schemaOptions,
 } from "./shared";
 
-const taskSchema = new Schema(
+interface ITask {
+  userId: string;
+  title: string;
+  scope: "Ramo" | "Proyecto Universitario" | "Personal";
+  courseId: Types.ObjectId | null;
+  type: "Tarea" | "Evaluación" | "Proyecto" | "Lectura";
+  endDate: string;
+  dueTime: string | null;
+  status: "Pendiente" | "En curso" | "Completada";
+  priority: "Alta" | "Media" | "Baja";
+  notes: string | null;
+}
+
+const taskSchema = new Schema<ITask>(
   {
     userId: requiredText,
     title: requiredText,
@@ -28,6 +41,7 @@ const taskSchema = new Schema(
     dueTime: {
       type: String,
       default: null,
+      set: (value: unknown) => (value === "" ? null : value),
       validate: {
         validator: (value: string | null) =>
           value === null ||
@@ -55,4 +69,22 @@ const taskSchema = new Schema(
   schemaOptions
 );
 
-export default model("Task", taskSchema);
+taskSchema.pre("validate", function () {
+  if (this.scope === "Ramo" && this.courseId == null) {
+    this.invalidate(
+      "courseId",
+      "Una tarea de ramo debe tener un ramo asignado."
+    );
+  }
+  if (this.scope === "Personal" && this.courseId != null) {
+    this.invalidate(
+      "courseId",
+      "Una tarea personal no puede tener un ramo asignado."
+    );
+  }
+});
+
+taskSchema.index({ userId: 1, endDate: 1 });
+taskSchema.index({ courseId: 1 });
+
+export default model<ITask>("Task", taskSchema);

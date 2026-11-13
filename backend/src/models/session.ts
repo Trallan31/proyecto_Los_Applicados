@@ -61,4 +61,6 @@ sessionSchema.pre("validate", function () {
   }
 });
 
+sessionSchema.index({ courseId: 1 });
+
 export default model<ISession>("Session", sessionSchema);

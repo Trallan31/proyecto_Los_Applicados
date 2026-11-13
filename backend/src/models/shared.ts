@@ -1,5 +1,3 @@
-import { Types } from "mongoose";
-
 // Incluye el virtual "id" y oculta los campos internos de MongoDB.
 // Así el frontend recibe "id" en lugar de "_id".
 export const schemaOptions = {
@@ -48,6 +46,58 @@ export const requiredDate = {
   },
 };
 
+export function isHttpUrl(value: string): boolean {
+  if (typeof value !== "string") {
+    return false;
+  }
+  const trimmed = value.trim();
+  if (!trimmed || /^https?:\/\/\//i.test(trimmed)) {
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      Boolean(parsed.hostname) &&
+      !parsed.username &&
+      !parsed.password
+    );
+  } catch {
+    return false;
+  }
+}
+
+export const requiredHttpUrl = {
+  type: String,
+  required: true,
+  trim: true,
+  validate: {
+    validator: isHttpUrl,
+    message: "La URL debe ser válida y usar protocolo http o https.",
+  },
+};
+
+export function isHexColor(value: string): boolean {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+}
+
+export const requiredHexColor = {
+  type: String,
+  required: true,
+  trim: true,
+  validate: {
+    validator: isHexColor,
+    message: "El color debe tener formato hexadecimal #RRGGBB.",
+  },
+};
+
+export function isEmailFormat(value: string): boolean {
+  return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export function isOptionalObjectId(value: string): boolean {
-  return value === "" || Types.ObjectId.isValid(value);
+  return (
+    typeof value === "string" &&
+    (value === "" || /^[a-f\d]{24}$/i.test(value))
+  );
 }

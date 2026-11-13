@@ -1,6 +1,8 @@
 import { model, Schema } from "mongoose";
 import {
   embeddedOptions,
+  requiredHexColor,
+  requiredHttpUrl,
   requiredText,
   schemaOptions,
 } from "./shared";
@@ -21,7 +23,7 @@ const projectLinkSchema = new Schema(
   {
     id: requiredText,
     title: requiredText,
-    url: requiredText,
+    url: requiredHttpUrl,
     category: {
       type: String,
       enum: [
@@ -43,7 +45,7 @@ const projectSchema = new Schema(
       type: String,
       default: "",
     },
-    color: requiredText,
+    color: requiredHexColor,
     course: {
       type: String,
       default: "",
@@ -51,6 +53,29 @@ const projectSchema = new Schema(
     categories: {
       type: [String],
       default: [],
+      set: (value: unknown) => {
+        if (!Array.isArray(value)) {
+          return value;
+        }
+        return value.map((item) =>
+          typeof item === "string" ? item.trim() : item
+        );
+      },
+      validate: {
+        validator: (value: unknown) => {
+          if (!Array.isArray(value)) {
+            return false;
+          }
+          const normalized = value.map((item) =>
+            typeof item === "string" ? item.trim() : ""
+          );
+          return (
+            normalized.every((item) => item.length > 0) &&
+            new Set(normalized).size === normalized.length
+          );
+        },
+        message: "Las categorías no pueden estar vacías ni duplicarse.",
+      },
     },
     members: {
       type: [projectMemberSchema],
@@ -63,5 +88,7 @@ const projectSchema = new Schema(
   },
   schemaOptions
 );
+
+projectSchema.index({ "members.userId": 1 });
 
 export default model("Project", projectSchema);

@@ -1,6 +1,8 @@
 import { model, Schema } from "mongoose";
 import {
   embeddedOptions,
+  requiredHexColor,
+  requiredHttpUrl,
   requiredText,
   schemaOptions,
 } from "./shared";
@@ -9,7 +11,7 @@ const courseLinkSchema = new Schema(
   {
     id: requiredText,
     title: requiredText,
-    url: requiredText,
+    url: requiredHttpUrl,
     category: {
       type: String,
       enum: ["lms", "drive", "video", "web", "otro"],
@@ -24,7 +26,7 @@ const courseSchema = new Schema(
     name: requiredText,
     code: requiredText,
     shortName: requiredText,
-    color: requiredText,
+    color: requiredHexColor,
     links: {
       type: [courseLinkSchema],
       default: [],
@@ -32,5 +34,7 @@ const courseSchema = new Schema(
   },
   schemaOptions
 );
+
+courseSchema.index({ userId: 1 });
 
 export default model("Course", courseSchema);

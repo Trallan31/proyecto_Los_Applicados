@@ -13,4 +13,6 @@ const sprintSchema = new Schema(
   schemaOptions
 );
 
+sprintSchema.index({ projectId: 1 });
+
 export default model("Sprint", sprintSchema);

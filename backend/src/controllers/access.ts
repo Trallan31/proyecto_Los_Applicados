@@ -100,7 +100,7 @@ async function validateMembers(
       );
     }
     members.push({
-      userId: item.userId,
+      userId: item.userId.trim(),
       role: item.role,
     });
   }
@@ -187,6 +187,15 @@ export async function prepareWrite(
         "Una tarea de ramo necesita un ramo."
       );
     }
+    if (
+      finalData.scope === "Personal" &&
+      finalData.courseId != null
+    ) {
+      throw new HttpError(
+        400,
+        "Una tarea personal no puede tener un ramo."
+      );
+    }
   }
   if (resource === "sessions") {
     await ownedCourse(finalData.courseId, userId);
@@ -225,7 +234,8 @@ export async function prepareWrite(
     // Mover entidades entre proyectos requiere un flujo específico.
     if (
       current &&
-      objectId(current.projectId, "projectId") !== projectId
+      objectId(current.projectId, "projectId").toLowerCase() !==
+        projectId.toLowerCase()
     ) {
       throw new HttpError(
         400,

@@ -7,9 +7,13 @@ import User from "../models/user";
 import type { UserData } from "../models/user";
 import { HttpError } from "../errors";
 import { withUser } from "../middleware/auth";
+import { isEmailFormat } from "../models/shared";
 import { getJwtSecret } from "../utils/config";
 
 const router = Router();
+// Hash bcrypt válido precomputado (costo 12) para mitigar enumeración por tiempo.
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$zkfGFLBpZM.6F8fjzSCRZu42uG34BiHDySA1fncMBRKI.MCzqVYJ2";
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -108,14 +112,8 @@ router.post("/register", async (request, response, next) => {
         "El usuario debe tener entre 3 y 20 caracteres y solo letras, números, punto, guion o guion bajo."
       );
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+    if (!isEmailFormat(mail)) {
       throw new HttpError(400, "El correo no tiene un formato válido.");
-    }
-    if (password.length < 8) {
-      throw new HttpError(
-        400,
-        "La contraseña debe tener al menos 8 caracteres."
-      );
     }
 
     const taken = await User.findOne({
@@ -162,11 +160,17 @@ router.post("/login", async (request, response, next) => {
       throw new HttpError(400, "Usuario y contraseña son obligatorios.");
     }
 
+    const trimmed = username.trim();
     const user = await User.findOne({
-      $or: [{ username: username.trim() }, { mail: username.trim() }],
+      $or: [{ username: trimmed }, { mail: trimmed.toLowerCase() }],
     }).select("+passwordHash");
 
-    if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+    const validPassword = await bcrypt.compare(
+      password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH
+    );
+
+    if (!user?.passwordHash || !validPassword) {
       throw new HttpError(401, "Usuario o contraseña incorrectos.");
     }
 
@@ -183,7 +187,7 @@ router.get("/me", withUser, async (request, response, next) => {
     if (!user) {
       throw new HttpError(401, "La sesión no es válida.");
     }
-    response.json(user);
+    response.json(publicFields(user));
   } catch (error: unknown) {
     next(error);
   }
