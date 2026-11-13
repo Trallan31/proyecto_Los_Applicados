@@ -1,8 +1,8 @@
-import "dotenv/config";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import { isEmailFormat } from "./models/shared";
 import User from "./models/user";
+import { getMongodbUri } from "./utils/config";
 
 async function main(): Promise<void> {
   const [
@@ -48,10 +48,7 @@ async function main(): Promise<void> {
       ? `${name[0]}${lastName[0]}`.toUpperCase()
       : name.slice(0, 2).toUpperCase();
 
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error("Falta MONGODB_URI en el archivo .env.");
-  }
+  const uri = getMongodbUri();
 
   await mongoose.connect(uri);
   try {

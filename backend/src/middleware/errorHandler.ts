@@ -8,6 +8,7 @@ import {
   TokenExpiredError,
 } from "jsonwebtoken";
 import { HttpError } from "../errors";
+import { logger } from "../utils/logger";
 
 export const unknownEndpoint: RequestHandler = (
   _request,
@@ -88,12 +89,12 @@ export const errorHandler: ErrorRequestHandler = (
     "code" in error &&
     error.code === 11000
   ) {
-    response.status(400).json({
+    response.status(409).json({
       error: "Ya existe un recurso con esos datos únicos.",
     });
     return;
   }
-  console.error(
+  logger.error(
     "Error inesperado:",
     error instanceof Error ? error.message : "Error desconocido"
   );

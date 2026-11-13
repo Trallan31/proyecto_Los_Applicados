@@ -1,9 +1,9 @@
-import "dotenv/config";
 import bcrypt from "bcrypt";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import mongoose, { Types } from "mongoose";
+import { getMongodbUri, isProductionEnv } from "./utils/config";
 import Activity from "./models/activity";
 import Course from "./models/course";
 import Project from "./models/project";
@@ -129,17 +129,14 @@ async function createPlan(
 
 async function seed(): Promise<void> {
   const shouldReset = process.argv.includes("--reset");
-  if (process.env.NODE_ENV === "production") {
+  if (isProductionEnv()) {
     throw new Error(
       shouldReset
         ? "La opción --reset está prohibida en producción."
         : "El seed de presentación no se puede ejecutar en producción."
     );
   }
-  const mongodbUri = process.env.MONGODB_URI;
-  if (!mongodbUri) {
-    throw new Error("Falta MONGODB_URI en backend/.env.");
-  }
+  const mongodbUri = getMongodbUri();
   const demoUserId = process.env.SEED_DEMO_USER_ID ?? "user-1";
   const demoPassword = process.env.SEED_DEMO_PASSWORD;
   if (
@@ -325,7 +322,7 @@ async function seed(): Promise<void> {
         },
         { $set: { passwordHash: demoPasswordHash } }
       );
-      if (process.env.NODE_ENV !== "production") {
+      if (!isProductionEnv()) {
         console.log(
           `Usuarios demo locales (${seededUserIds.join(", ")}): comparten la contraseña de SEED_DEMO_PASSWORD.`
         );
