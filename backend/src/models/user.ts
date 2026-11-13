@@ -15,6 +15,7 @@ export interface UserData {
   initials: string;
   avatarColor: string;
   passwordHash?: string;
+  tokenVersion: number;
 }
 
 const userSchema = new Schema<UserData>(
@@ -38,6 +39,12 @@ const userSchema = new Schema<UserData>(
       type: String,
       select: false,
     },
+    tokenVersion: {
+      type: Number,
+      default: 0,
+      required: true,
+      select: false,
+    },
   },
   schemaOptions
 );
@@ -50,6 +57,7 @@ userSchema.set("toJSON", {
     delete target._id;
     delete target.__v;
     delete target.passwordHash;
+    delete target.tokenVersion;
     return target;
   },
 });

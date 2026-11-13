@@ -113,8 +113,13 @@ function storeSession({
 
 export async function restoreSession(): Promise<User | null> {
   try {
-    const { data } = await http.get<User>("/auth/me");
-    return data;
+    const response = await http.get<User>("/auth/me");
+    // Sincroniza el token CSRF si el backend lo reemite al restaurar la sesión.
+    const csrfToken = response.headers?.["x-csrf-token"];
+    if (typeof csrfToken === "string" && csrfToken.length > 0) {
+      setStoredCsrfToken(csrfToken);
+    }
+    return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       clearStoredSession();

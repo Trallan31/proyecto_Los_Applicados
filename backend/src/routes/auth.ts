@@ -6,20 +6,27 @@ import jwt from "jsonwebtoken";
 import User from "../models/user";
 import type { UserData } from "../models/user";
 import { HttpError } from "../errors";
-import { withUser } from "../middleware/auth";
+import { withCookieSession, withUser } from "../middleware/auth";
+import { authRateLimiter } from "../middleware/rateLimit";
 import { isEmailFormat } from "../models/shared";
-import { getJwtSecret } from "../utils/config";
+import { getJwtSecret, isProductionEnv } from "../utils/config";
 
 const router = Router();
 // Hash bcrypt válido precomputado (costo 12) para mitigar enumeración por tiempo.
 const DUMMY_PASSWORD_HASH =
   "$2b$12$zkfGFLBpZM.6F8fjzSCRZu42uG34BiHDySA1fncMBRKI.MCzqVYJ2";
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
-  path: "/",
-};
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+/** Opciones de cookie de sesión evaluadas de forma perezosa según el entorno. */
+function getCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: isProductionEnv(),
+    sameSite: "strict" as const,
+    path: "/",
+    maxAge: ONE_HOUR_MS,
+  };
+}
 
 // Paleta usada para el avatar de los usuarios nuevos.
 const avatarColors = [
@@ -45,12 +52,17 @@ const publicFields = (user: UserData) => ({
 function startSession(response: Response, user: UserData): void {
   const csrf = randomUUID();
   const token = jwt.sign(
-    { id: user._id, username: user.username, csrf },
+    {
+      id: user._id,
+      username: user.username,
+      csrf,
+      tokenVersion: user.tokenVersion ?? 0,
+    },
     getJwtSecret(),
-    { expiresIn: "1h" }
+    { algorithm: "HS256", expiresIn: "1h" }
   );
 
-  response.cookie("token", token, cookieOptions);
+  response.cookie("token", token, getCookieOptions());
   response.setHeader("X-CSRF-Token", csrf);
 }
 
@@ -97,57 +109,61 @@ function registrationPassword(value: unknown): string {
   return value;
 }
 
-router.post("/register", async (request, response, next) => {
-  try {
-    const body = readAuthBody(request.body);
-    const username = requiredField(body.username, "El usuario");
-    const name = requiredField(body.name, "El nombre");
-    const lastName = requiredField(body.lastName, "El apellido");
-    const mail = requiredField(body.mail, "El correo").toLowerCase();
-    const password = registrationPassword(body.password);
+router.post(
+  "/register",
+  authRateLimiter,
+  async (request, response, next) => {
+    try {
+      const body = readAuthBody(request.body);
+      const username = requiredField(body.username, "El usuario");
+      const name = requiredField(body.name, "El nombre");
+      const lastName = requiredField(body.lastName, "El apellido");
+      const mail = requiredField(body.mail, "El correo").toLowerCase();
+      const password = registrationPassword(body.password);
 
-    if (!/^[a-zA-Z0-9._-]{3,20}$/.test(username)) {
-      throw new HttpError(
-        400,
-        "El usuario debe tener entre 3 y 20 caracteres y solo letras, números, punto, guion o guion bajo."
-      );
+      if (!/^[a-zA-Z0-9._-]{3,20}$/.test(username)) {
+        throw new HttpError(
+          400,
+          "El usuario debe tener entre 3 y 20 caracteres y solo letras, números, punto, guion o guion bajo."
+        );
+      }
+      if (!isEmailFormat(mail)) {
+        throw new HttpError(400, "El correo no tiene un formato válido.");
+      }
+
+      const taken = await User.findOne({
+        $or: [{ username }, { mail }],
+      });
+      if (taken) {
+        throw new HttpError(
+          409,
+          taken.username === username
+            ? "Ese usuario ya está registrado."
+            : "Ese correo ya está registrado."
+        );
+      }
+
+      const user = await User.create({
+        _id: `user-${username}`,
+        username,
+        name,
+        lastName,
+        mail,
+        initials: `${name[0]}${lastName[0]}`.toUpperCase(),
+        avatarColor:
+          avatarColors[Math.floor(Math.random() * avatarColors.length)],
+        passwordHash: await bcrypt.hash(password, 12),
+      });
+
+      startSession(response, user);
+      response.status(201).json(publicFields(user));
+    } catch (error: unknown) {
+      next(error);
     }
-    if (!isEmailFormat(mail)) {
-      throw new HttpError(400, "El correo no tiene un formato válido.");
-    }
-
-    const taken = await User.findOne({
-      $or: [{ username }, { mail }],
-    });
-    if (taken) {
-      throw new HttpError(
-        409,
-        taken.username === username
-          ? "Ese usuario ya está registrado."
-          : "Ese correo ya está registrado."
-      );
-    }
-
-    const user = await User.create({
-      _id: `user-${username}`,
-      username,
-      name,
-      lastName,
-      mail,
-      initials: `${name[0]}${lastName[0]}`.toUpperCase(),
-      avatarColor:
-        avatarColors[Math.floor(Math.random() * avatarColors.length)],
-      passwordHash: await bcrypt.hash(password, 12),
-    });
-
-    startSession(response, user);
-    response.status(201).json(publicFields(user));
-  } catch (error: unknown) {
-    next(error);
   }
-});
+);
 
-router.post("/login", async (request, response, next) => {
+router.post("/login", authRateLimiter, async (request, response, next) => {
   try {
     const { username, password } = readAuthBody(request.body);
 
@@ -163,7 +179,7 @@ router.post("/login", async (request, response, next) => {
     const trimmed = username.trim();
     const user = await User.findOne({
       $or: [{ username: trimmed }, { mail: trimmed.toLowerCase() }],
-    }).select("+passwordHash");
+    }).select("+passwordHash +tokenVersion");
 
     const validPassword = await bcrypt.compare(
       password,
@@ -181,11 +197,14 @@ router.post("/login", async (request, response, next) => {
   }
 });
 
-router.get("/me", withUser, async (request, response, next) => {
+router.get("/me", withCookieSession, async (request, response, next) => {
   try {
     const user = await User.findById(request.userId);
     if (!user) {
       throw new HttpError(401, "La sesión no es válida.");
+    }
+    if (request.sessionCsrf) {
+      response.setHeader("X-CSRF-Token", request.sessionCsrf);
     }
     response.json(publicFields(user));
   } catch (error: unknown) {
@@ -193,9 +212,17 @@ router.get("/me", withUser, async (request, response, next) => {
   }
 });
 
-router.post("/logout", (_request, response) => {
-  response.clearCookie("token", cookieOptions);
-  response.status(204).end();
+router.post("/logout", withUser, async (request, response, next) => {
+  try {
+    await User.updateOne(
+      { _id: request.userId },
+      { $inc: { tokenVersion: 1 } }
+    );
+    response.clearCookie("token", getCookieOptions());
+    response.status(204).end();
+  } catch (error: unknown) {
+    next(error);
+  }
 });
 
 export default router;

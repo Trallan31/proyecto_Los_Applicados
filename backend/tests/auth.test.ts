@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, it } from "node:test";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import supertest from "supertest";
 import app from "../src/app";
 import Course from "../src/models/course";
 import User from "../src/models/user";
+import { getJwtSecret } from "../src/utils/config";
 import {
   connectTestDb,
   disconnectTestDb,
@@ -50,6 +52,7 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
       assert.match(response.body.avatarColor, /^#[0-9a-f]{6}$/i);
       assert.equal("passwordHash" in response.body, false);
       assert.equal("_id" in response.body, false);
+      assert.equal("tokenVersion" in response.body, false);
 
       const { cookie, csrfToken } = extractSessionHeaders(response);
       assert.ok(cookie.startsWith("token="));
@@ -66,6 +69,7 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
       assert.match(tokenHeader, /HttpOnly/i);
       assert.match(tokenHeader, /SameSite=Strict/i);
       assert.match(tokenHeader, /Path=\/(?:;|$)/i);
+      assert.match(tokenHeader, /Max-Age=3600(?:;|$)/i);
 
       const storedUser = await User.findById("user-lucia.gomez").select(
         "+passwordHash"
@@ -278,6 +282,7 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
       assert.equal(loginByUsername.body.id, "user-camila.soto");
       assert.equal("passwordHash" in loginByUsername.body, false);
       assert.equal("_id" in loginByUsername.body, false);
+      assert.equal("tokenVersion" in loginByUsername.body, false);
       extractSessionHeaders(loginByUsername);
 
       const loginByMail = await supertest(app)
@@ -293,6 +298,9 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
         `Se esperaba 200 al iniciar sesión por correo: ${JSON.stringify(loginByMail.body)}`
       );
       assert.equal(loginByMail.body.id, "user-camila.soto");
+      assert.equal("passwordHash" in loginByMail.body, false);
+      assert.equal("_id" in loginByMail.body, false);
+      assert.equal("tokenVersion" in loginByMail.body, false);
       extractSessionHeaders(loginByMail);
     });
 
@@ -360,26 +368,107 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
       assert.deepEqual(response.body, user);
       assert.equal("passwordHash" in response.body, false);
       assert.equal("_id" in response.body, false);
+      assert.equal("tokenVersion" in response.body, false);
     });
 
-    it("responde 401 sin cookie, sin X-CSRF-Token o con X-CSRF-Token incorrecto", async () => {
-      const { cookie, csrfToken } = await registerTestUser();
+    it("restaura X-CSRF-Token cuando falta el encabezado pero la cookie token es válida y habilita mutaciones posteriores", async () => {
+      const { user, cookie } = await registerTestUser();
 
-      const withoutCookie = await supertest(app)
-        .get("/api/auth/me")
-        .set("X-CSRF-Token", csrfToken);
-      assert.equal(withoutCookie.status, 401);
-
-      const withoutCsrf = await supertest(app)
+      const meResponse = await supertest(app)
         .get("/api/auth/me")
         .set("Cookie", cookie);
-      assert.equal(withoutCsrf.status, 401);
 
-      const wrongCsrf = await supertest(app)
-        .get("/api/auth/me")
+      assert.equal(meResponse.status, 200);
+      assert.deepEqual(meResponse.body, user);
+      assert.equal("passwordHash" in meResponse.body, false);
+      assert.equal("_id" in meResponse.body, false);
+      assert.equal("tokenVersion" in meResponse.body, false);
+
+      const rawRestoredCsrf = meResponse.headers["x-csrf-token"];
+      const restoredCsrf = Array.isArray(rawRestoredCsrf)
+        ? rawRestoredCsrf[0]
+        : rawRestoredCsrf;
+      assert.ok(
+        typeof restoredCsrf === "string" && restoredCsrf.length > 0,
+        "GET /api/auth/me debe devolver el header X-CSRF-Token válido para restaurar la sesión."
+      );
+
+      const courseResponse = await supertest(app)
+        .post("/api/courses")
         .set("Cookie", cookie)
-        .set("X-CSRF-Token", "token-csrf-invalido");
-      assert.equal(wrongCsrf.status, 401);
+        .set("X-CSRF-Token", restoredCsrf)
+        .send({
+          name: "Algoritmos y Estructuras de Datos",
+          code: "CC3001",
+          shortName: "AED",
+          color: "#4f7cff",
+        });
+
+      assert.equal(courseResponse.status, 201);
+      assert.equal(courseResponse.body.userId, user.id);
+      assert.equal(courseResponse.body.name, "Algoritmos y Estructuras de Datos");
+      assert.equal(await Course.countDocuments(), 1);
+    });
+
+    it("responde 401 sin cookie token", async () => {
+      const { csrfToken } = await registerTestUser();
+
+      const withoutCookieWithCsrf = await supertest(app)
+        .get("/api/auth/me")
+        .set("X-CSRF-Token", csrfToken);
+      assert.equal(withoutCookieWithCsrf.status, 401);
+
+      const withoutCookieOrCsrf = await supertest(app).get("/api/auth/me");
+      assert.equal(withoutCookieOrCsrf.status, 401);
+    });
+
+    it("responde 401 cuando el JWT usa un algoritmo distinto a HS256 (HS384 o alg: none) en /me y POST /api/courses", async () => {
+      const { user, csrfToken } = await registerTestUser();
+
+      const hs384Token = jwt.sign(
+        {
+          id: user.id,
+          username: user.username,
+          csrf: csrfToken,
+          tokenVersion: 0,
+        },
+        getJwtSecret(),
+        { algorithm: "HS384", expiresIn: "1h" }
+      );
+
+      const encodeBase64Url = (value: object): string =>
+        Buffer.from(JSON.stringify(value)).toString("base64url");
+      const noneAlgToken = `${encodeBase64Url({
+        alg: "none",
+        typ: "JWT",
+      })}.${encodeBase64Url({
+        id: user.id,
+        username: user.username,
+        csrf: csrfToken,
+        tokenVersion: 0,
+      })}.`;
+
+      for (const invalidToken of [hs384Token, noneAlgToken]) {
+        const meResponse = await supertest(app)
+          .get("/api/auth/me")
+          .set("Cookie", `token=${invalidToken}`)
+          .set("X-CSRF-Token", csrfToken);
+        assert.equal(meResponse.status, 401);
+
+        const courseResponse = await supertest(app)
+          .post("/api/courses")
+          .set("Cookie", `token=${invalidToken}`)
+          .set("X-CSRF-Token", csrfToken)
+          .send({
+            name: "Sistemas Operativos",
+            code: "CC4302",
+            shortName: "SO",
+            color: "#9b6dff",
+          });
+        assert.equal(courseResponse.status, 401);
+      }
+
+      assert.equal(await Course.countDocuments(), 0);
     });
 
     it("responde 401 cuando el token está manipulado o el usuario ya no existe en BD", async () => {
@@ -400,14 +489,27 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
 
       await User.deleteOne({ _id: user.id });
 
-      const missingUserResponse = await supertest(app)
+      const missingUserMeResponse = await supertest(app)
         .get("/api/auth/me")
         .set("Cookie", cookie)
         .set("X-CSRF-Token", csrfToken);
-      assert.equal(missingUserResponse.status, 401);
+      assert.equal(missingUserMeResponse.status, 401);
+
+      const missingUserCourseResponse = await supertest(app)
+        .post("/api/courses")
+        .set("Cookie", cookie)
+        .set("X-CSRF-Token", csrfToken)
+        .send({
+          name: "Arquitectura de Computadores",
+          code: "CC3102",
+          shortName: "ARQ",
+          color: "#ff8c42",
+        });
+      assert.equal(missingUserCourseResponse.status, 401);
+      assert.equal(await Course.countDocuments(), 0);
     });
 
-    it("protege rutas de recursos (POST /api/courses) exigiendo X-CSRF-Token", async () => {
+    it("protege rutas de recursos (POST /api/courses) exigiendo X-CSRF-Token válido", async () => {
       const { user, cookie, csrfToken } = await registerTestUser();
       const coursePayload = {
         name: "Bases de Datos",
@@ -416,11 +518,18 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
         color: "#4f7cff",
       };
 
-      const rejected = await supertest(app)
+      const rejectedWithoutCsrf = await supertest(app)
         .post("/api/courses")
         .set("Cookie", cookie)
         .send(coursePayload);
-      assert.equal(rejected.status, 401);
+      assert.equal(rejectedWithoutCsrf.status, 401);
+
+      const rejectedWrongCsrf = await supertest(app)
+        .post("/api/courses")
+        .set("Cookie", cookie)
+        .set("X-CSRF-Token", "token-csrf-incorrecto")
+        .send(coursePayload);
+      assert.equal(rejectedWrongCsrf.status, 401);
       assert.equal(await Course.countDocuments(), 0);
 
       const created = await supertest(app)
@@ -436,28 +545,56 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
   });
 
   describe("Cierre de sesión (POST /api/auth/logout)", () => {
-    it("responde 204, limpia la cookie token e invalida llamadas posteriores del agente", async () => {
-      const agent = supertest.agent(app);
+    it("responde 401 cuando tiene cookie token pero falta X-CSRF-Token o no coincide", async () => {
+      const { user, cookie, csrfToken } = await registerTestUser();
 
-      const registerResponse = await agent
-        .post("/api/auth/register")
-        .send({
-          username: "mateo.diaz",
-          name: "Mateo",
-          lastName: "Diaz",
-          mail: "mateo.diaz@ejemplo.com",
-          password: "ClaveLogout123",
-        });
-      assert.equal(registerResponse.status, 201);
+      const missingCsrfResponse = await supertest(app)
+        .post("/api/auth/logout")
+        .set("Cookie", cookie);
+      assert.equal(missingCsrfResponse.status, 401);
 
-      const { csrfToken } = extractSessionHeaders(registerResponse);
+      const wrongCsrfResponse = await supertest(app)
+        .post("/api/auth/logout")
+        .set("Cookie", cookie)
+        .set("X-CSRF-Token", "token-csrf-invalido");
+      assert.equal(wrongCsrfResponse.status, 401);
 
-      const meBeforeLogout = await agent
+      const userInDb = await User.findById(user.id).select("+tokenVersion");
+      assert.ok(userInDb);
+      assert.equal(userInDb.get("tokenVersion"), 0);
+
+      const meStillValid = await supertest(app)
         .get("/api/auth/me")
+        .set("Cookie", cookie)
+        .set("X-CSRF-Token", csrfToken);
+      assert.equal(meStillValid.status, 200);
+    });
+
+    it("responde 204, limpia la cookie token, incrementa tokenVersion (0 -> 1) y revoca realmente el JWT", async () => {
+      const { user, cookie, csrfToken } = await registerTestUser({
+        username: "mateo.diaz",
+        name: "Mateo",
+        lastName: "Diaz",
+        mail: "mateo.diaz@ejemplo.com",
+        password: "ClaveLogout123",
+      });
+
+      const userBeforeLogout = await User.findById(user.id).select(
+        "+tokenVersion"
+      );
+      assert.ok(userBeforeLogout);
+      assert.equal(userBeforeLogout.get("tokenVersion"), 0);
+
+      const meBeforeLogout = await supertest(app)
+        .get("/api/auth/me")
+        .set("Cookie", cookie)
         .set("X-CSRF-Token", csrfToken);
       assert.equal(meBeforeLogout.status, 200);
 
-      const logoutResponse = await agent.post("/api/auth/logout");
+      const logoutResponse = await supertest(app)
+        .post("/api/auth/logout")
+        .set("Cookie", cookie)
+        .set("X-CSRF-Token", csrfToken);
       assert.equal(logoutResponse.status, 204);
       assert.equal(logoutResponse.text, "");
 
@@ -471,10 +608,30 @@ describe("Autenticación y protección CSRF (/api/auth)", () => {
       assert.ok(clearedCookie);
       assert.match(clearedCookie, /^token=;/);
 
-      const meAfterLogout = await agent
+      const userAfterLogout = await User.findById(user.id).select(
+        "+tokenVersion"
+      );
+      assert.ok(userAfterLogout);
+      assert.equal(userAfterLogout.get("tokenVersion"), 1);
+
+      const meAfterLogout = await supertest(app)
         .get("/api/auth/me")
+        .set("Cookie", cookie)
         .set("X-CSRF-Token", csrfToken);
       assert.equal(meAfterLogout.status, 401);
+
+      const courseAfterLogout = await supertest(app)
+        .post("/api/courses")
+        .set("Cookie", cookie)
+        .set("X-CSRF-Token", csrfToken)
+        .send({
+          name: "Redes de Computadores",
+          code: "CC4303",
+          shortName: "RED",
+          color: "#2dd67b",
+        });
+      assert.equal(courseAfterLogout.status, 401);
+      assert.equal(await Course.countDocuments(), 0);
     });
   });
 });
