@@ -128,14 +128,17 @@ async function createPlan(
 }
 
 async function seed(): Promise<void> {
+  const shouldReset = process.argv.includes("--reset");
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      shouldReset
+        ? "La opción --reset está prohibida en producción."
+        : "El seed de presentación no se puede ejecutar en producción."
+    );
+  }
   const mongodbUri = process.env.MONGODB_URI;
   if (!mongodbUri) {
     throw new Error("Falta MONGODB_URI en backend/.env.");
-  }
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "El seed de presentación no se puede ejecutar en producción."
-    );
   }
   const demoUserId = process.env.SEED_DEMO_USER_ID ?? "user-1";
   const demoPassword = process.env.SEED_DEMO_PASSWORD;
@@ -148,9 +151,9 @@ async function seed(): Promise<void> {
       "Configura SEED_DEMO_PASSWORD en backend/.env (8 a 72 bytes) antes de importar los datos."
     );
   }
-  // npm run seed --prefix backend ejecuta el script desde backend/.
+  // Resuelve db.json relativo al archivo compilado/fuente, independiente del cwd.
   const file = await readFile(
-    resolve(process.cwd(), "db.json"),
+    resolve(__dirname, "..", "db.json"),
     "utf8"
   );
   const parsed: unknown = JSON.parse(file);
@@ -220,7 +223,7 @@ async function seed(): Promise<void> {
       };
       if (
         collection === "users" &&
-        readId(row) === demoUserId
+        (typeof row.passwordHash !== "string" || !row.passwordHash)
       ) {
         document.passwordHash = demoPasswordHash;
       }
@@ -287,6 +290,17 @@ async function seed(): Promise<void> {
   console.log(
     `Base de datos destino: ${mongoose.connection.name}`
   );
+  if (shouldReset) {
+    // Elimina en orden inverso de dependencias antes de re-sembrar.
+    await Activity.deleteMany({});
+    await Sprint.deleteMany({});
+    await Project.deleteMany({});
+    await Task.deleteMany({});
+    await Session.deleteMany({});
+    await Course.deleteMany({});
+    await User.deleteMany({});
+    console.log("Colecciones existentes eliminadas (--reset).");
+  }
   for (const plan of plans) {
     const inserted = await plan.write();
     if (plan.name === "users") {
@@ -297,6 +311,23 @@ async function seed(): Promise<void> {
       if (result.matchedCount !== 1) {
         throw new Error(
           `No se pudo preparar el usuario de presentación ${demoUserId}.`
+        );
+      }
+      const seededUserIds = Array.from(ids.get("users")?.values() ?? []);
+      await User.updateMany(
+        {
+          _id: { $in: seededUserIds },
+          $or: [
+            { passwordHash: { $exists: false } },
+            { passwordHash: null },
+            { passwordHash: "" },
+          ],
+        },
+        { $set: { passwordHash: demoPasswordHash } }
+      );
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `Usuarios demo locales (${seededUserIds.join(", ")}): comparten la contraseña de SEED_DEMO_PASSWORD.`
         );
       }
     }
