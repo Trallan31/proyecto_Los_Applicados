@@ -2,7 +2,9 @@ import type { Request, RequestHandler } from "express";
 import { HttpError } from "../errors";
 import {
   accessFilter,
+  afterUpdate,
   beforeDelete,
+  handleDeleteConflict,
   prepareWrite,
   removeRelated,
 } from "./access";
@@ -163,14 +165,20 @@ export function createCrudController<D extends CrudDocument>(
           "Recurso no encontrado o sin acceso."
         );
       }
+      const previous = document.toObject();
       const changes = await prepareWrite(
         resource,
         authenticatedUser(request),
         body,
-        document.toObject()
+        previous
       );
       document.set(changes);
       await document.save();
+      await afterUpdate(
+        resource,
+        previous,
+        document.toObject()
+      );
       response.json(document);
     } catch (error: unknown) {
       next(error);
@@ -183,6 +191,7 @@ export function createCrudController<D extends CrudDocument>(
     next
   ) => {
     try {
+      const userId = authenticatedUser(request);
       const filter = await resourceFilter(request);
       const document = await model.findOne(filter);
       if (!document) {
@@ -192,19 +201,23 @@ export function createCrudController<D extends CrudDocument>(
         );
       }
       const current = document.toObject();
-      await beforeDelete(
+      const atomicDeleteFilter = await beforeDelete(
         resource,
-        authenticatedUser(request),
-        current
+        userId,
+        current,
+        filter
       );
-      await removeRelated(resource, current._id);
-      const deleted = await model.findOneAndDelete(filter);
+      const deleted = await model.findOneAndDelete(
+        atomicDeleteFilter
+      );
       if (!deleted) {
-        throw new HttpError(
-          404,
-          "Recurso no encontrado o sin acceso."
+        await handleDeleteConflict(
+          resource,
+          userId,
+          current
         );
       }
+      await removeRelated(resource, current._id);
       response.status(204).end();
     } catch (error: unknown) {
       next(error);

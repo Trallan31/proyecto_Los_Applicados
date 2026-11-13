@@ -23,6 +23,31 @@ interface MemberData {
   role: "Admin" | "Miembro";
 }
 
+export interface ProjectMemberHolder {
+  members?: Array<{ userId: string; role: "Admin" | "Miembro" }>;
+}
+
+export function isProjectAdmin(
+  project: ProjectMemberHolder,
+  userId: string
+): boolean {
+  return Boolean(
+    project.members?.some(
+      (member) => member.userId === userId && member.role === "Admin"
+    )
+  );
+}
+
+export function requireProjectAdmin(
+  project: ProjectMemberHolder,
+  userId: string,
+  message: string
+): void {
+  if (!isProjectAdmin(project, userId)) {
+    throw new HttpError(403, message);
+  }
+}
+
 function objectId(value: unknown, field: string): string {
   if (value instanceof Types.ObjectId) {
     return value.toHexString();
@@ -205,25 +230,21 @@ export async function prepareWrite(
       changes.members = [
         { userId, role: "Admin" },
       ];
-    } else if (
-      Object.prototype.hasOwnProperty.call(body, "members")
-    ) {
+    } else {
       const project = await accessibleProject(
         current._id,
         userId
       );
-      const isAdmin = project.members.some(
-        (member) =>
-          member.userId === userId &&
-          member.role === "Admin"
+      requireProjectAdmin(
+        project,
+        userId,
+        "Solo un administrador puede modificar el proyecto."
       );
-      if (!isAdmin) {
-        throw new HttpError(
-          403,
-          "Solo un administrador puede gestionar los miembros."
-        );
+      if (
+        Object.prototype.hasOwnProperty.call(body, "members")
+      ) {
+        changes.members = await validateMembers(body.members);
       }
-      changes.members = await validateMembers(body.members);
     }
   }
   if (resource === "sprints" || resource === "activities") {
@@ -246,11 +267,22 @@ export async function prepareWrite(
       projectId,
       userId
     );
+    if (resource === "sprints") {
+      requireProjectAdmin(
+        project,
+        userId,
+        "Solo un administrador puede gestionar los sprints."
+      );
+    }
     if (resource === "activities") {
+      // Cualquier miembro del proyecto (Admin o Miembro) tiene permisos para
+      // crear, listar, consultar, editar y eliminar actividades del proyecto
+      // compartido. Los usuarios externos no tienen acceso y reciben 404.
       const sprintId = finalData.sprintId;
       if (
         sprintId !== undefined &&
-        sprintId !== ""
+        sprintId !== "" &&
+        sprintId !== null
       ) {
         const sprint = await Sprint.findOne({
           _id: objectId(sprintId, "sprintId"),
@@ -262,7 +294,38 @@ export async function prepareWrite(
             "El sprint no pertenece a este proyecto."
           );
         }
+        changes.sprintId = sprint._id.toString();
       }
+
+      if (!current || Object.prototype.hasOwnProperty.call(body, "category")) {
+        let resolvedCategory = "";
+        if (Object.prototype.hasOwnProperty.call(body, "category")) {
+          if (typeof body.category !== "string") {
+            throw new HttpError(
+              400,
+              "La categoría debe ser una cadena de texto."
+            );
+          }
+          const trimmed = body.category.trim();
+          changes.category = trimmed;
+          resolvedCategory = trimmed;
+        } else if (current && typeof current.category === "string") {
+          resolvedCategory = current.category;
+        }
+        const projectCategories: string[] = Array.isArray(project.categories)
+          ? project.categories
+          : [];
+        if (
+          resolvedCategory !== "" &&
+          !projectCategories.includes(resolvedCategory)
+        ) {
+          throw new HttpError(
+            400,
+            "La categoría no pertenece a este proyecto."
+          );
+        }
+      }
+
       const members = finalData.members ?? [];
       if (
         !Array.isArray(members) ||
@@ -299,29 +362,157 @@ export async function prepareWrite(
   return changes;
 }
 
-/** Comprueba permisos antes de tocar los recursos relacionados. */
+/**
+ * Limpieza en el servidor de referencias derivadas tras actualizar un documento.
+ */
+export async function afterUpdate(
+  resource: Resource,
+  previous: Data,
+  updated: Data
+): Promise<void> {
+  if (resource !== "projects") return;
+
+  const rawId = updated._id ?? updated.id;
+  const projectObjectId = new Types.ObjectId(
+    objectId(rawId, "projectId")
+  );
+
+  // 1. Limpieza de miembros removidos en las actividades del proyecto
+  const prevMembers = Array.isArray(previous.members)
+    ? previous.members
+    : [];
+  const updatedMembers = Array.isArray(updated.members)
+    ? updated.members
+    : [];
+
+  const prevMemberIds = prevMembers
+    .map((m) =>
+      typeof m === "object" && m !== null && "userId" in m
+        ? String((m as { userId: unknown }).userId)
+        : ""
+    )
+    .filter((id) => id.length > 0);
+
+  const updatedMemberIds = new Set(
+    updatedMembers
+      .map((m) =>
+        typeof m === "object" && m !== null && "userId" in m
+          ? String((m as { userId: unknown }).userId)
+          : ""
+      )
+      .filter((id) => id.length > 0)
+  );
+
+  const removedMembers = prevMemberIds.filter(
+    (id) => !updatedMemberIds.has(id)
+  );
+
+  if (removedMembers.length > 0) {
+    await Activity.updateMany(
+      {
+        projectId: projectObjectId,
+        members: { $in: removedMembers },
+      },
+      {
+        $pull: {
+          members: { $in: removedMembers } as unknown as string,
+        },
+      }
+    );
+  }
+
+  // 2. Limpieza de categorías removidas en las actividades del proyecto
+  const prevCategories = Array.isArray(previous.categories)
+    ? (previous.categories as unknown[])
+        .map((c) => (typeof c === "string" ? c.trim() : ""))
+        .filter((c) => c.length > 0)
+    : [];
+
+  const updatedCategories = new Set(
+    Array.isArray(updated.categories)
+      ? (updated.categories as unknown[])
+          .map((c) => (typeof c === "string" ? c.trim() : ""))
+          .filter((c) => c.length > 0)
+      : []
+  );
+
+  const removedCategories = prevCategories.filter(
+    (c) => !updatedCategories.has(c)
+  );
+
+  if (removedCategories.length > 0) {
+    await Activity.updateMany(
+      {
+        projectId: projectObjectId,
+        category: { $in: removedCategories },
+      },
+      {
+        $set: { category: "" },
+      }
+    );
+  }
+}
+
+/**
+ * Comprueba permisos antes de eliminar y devuelve el filtro atómico
+ * final para la operación findOneAndDelete (protección anti-TOCTOU).
+ */
 export async function beforeDelete(
   resource: Resource,
   userId: string,
-  current: Data
-): Promise<void> {
-  if (resource !== "projects") return;
-  const project = await accessibleProject(
-    current._id,
-    userId
-  );
-  if (
-    !project.members.some(
-      (member) =>
-        member.userId === userId &&
-        member.role === "Admin"
-    )
-  ) {
-    throw new HttpError(
-      403,
+  current: Data,
+  baseFilter: Data
+): Promise<Data> {
+  if (resource === "projects") {
+    const project = await accessibleProject(current._id, userId);
+    requireProjectAdmin(
+      project,
+      userId,
       "Solo un administrador puede eliminar el proyecto."
     );
+    return {
+      _id: current._id,
+      members: { $elemMatch: { userId, role: "Admin" } },
+    };
   }
+
+  if (resource === "sprints") {
+    const project = await accessibleProject(current.projectId, userId);
+    requireProjectAdmin(
+      project,
+      userId,
+      "Solo un administrador puede eliminar sprints."
+    );
+    return baseFilter;
+  }
+
+  // Para actividades y recursos personales/académicos (courses, sessions, tasks),
+  // la autorización ya fue validada mediante baseFilter y se aplica directamente.
+  return baseFilter;
+}
+
+/**
+ * Gestiona fallos atómicos en la eliminación (documento modificado concurrentemente).
+ */
+export async function handleDeleteConflict(
+  resource: Resource,
+  userId: string,
+  current: Data
+): Promise<never> {
+  if (resource === "projects") {
+    const exists = await Project.exists({
+      _id: current._id,
+      "members.userId": userId,
+    });
+    if (exists) {
+      throw new HttpError(
+        403,
+        "Solo un administrador puede eliminar el proyecto."
+      );
+    }
+  }
+
+  throw new HttpError(404, "Recurso no encontrado o sin acceso.");
 }
 
 /**
