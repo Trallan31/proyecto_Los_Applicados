@@ -7,6 +7,7 @@ import { useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import NotFoundPage from './pages/NotFoundPage'
 import { useState } from "react";
 import { describeError } from "./api/client";
 import './index.css'
@@ -151,7 +152,7 @@ export default function App() {
 
       <Route
         path="*"
-        element={<Navigate to="/" replace />}
+        element={<NotFoundPage />}
       />
     </Routes>
   )
