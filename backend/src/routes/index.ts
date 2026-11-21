@@ -11,11 +11,10 @@ import { withUser } from "../middleware/auth";
 
 const router = Router();
 
-router.use(withUser);
-router.use("/users", usersRouter);
+router.use("/users", withUser, usersRouter);
 
 router.use(
-  "/activities",
+  "/activities", withUser,
   createCrudRouter(
     Activity,
     [
@@ -35,7 +34,7 @@ router.use(
 );
 
 router.use(
-  "/courses",
+  "/courses", withUser,
   createCrudRouter(
     Course,
     [
@@ -51,7 +50,7 @@ router.use(
 );
 
 router.use(
-  "/projects",
+  "/projects", withUser,
   createCrudRouter(
     Project,
     [
@@ -68,7 +67,7 @@ router.use(
 );
 
 router.use(
-  "/sessions",
+  "/sessions", withUser,
   createCrudRouter(
     Session,
     [
@@ -83,7 +82,7 @@ router.use(
 );
 
 router.use(
-  "/sprints",
+  "/sprints", withUser,
   createCrudRouter(
     Sprint,
     ["projectId", "name"],
@@ -92,7 +91,7 @@ router.use(
 );
 
 router.use(
-  "/tasks",
+  "/tasks", withUser,
   createCrudRouter(
     Task,
     [
