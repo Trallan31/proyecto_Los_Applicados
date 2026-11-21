@@ -3,7 +3,7 @@ import { Moon, Sun } from 'lucide-react'
 import OrganizerView from './OrganizerView'
 import { ScrumView } from './ScrumView'
 import { useTheme } from './context/ThemeContext'
-import { useAuth } from './context/AuthContext'
+import { useAuthStore } from './store/useAuthStore'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -25,7 +25,8 @@ function navigationClassName({ isActive }: { isActive: boolean }) {
 
 function AppLayout() {
   const { theme, toggleTheme } = useTheme()
-  const { user, logout } = useAuth()
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
   const [logoutError, setLogoutError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
 

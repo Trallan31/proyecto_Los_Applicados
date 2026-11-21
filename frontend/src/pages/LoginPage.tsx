@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuthStore } from '../store/useAuthStore'
 import { describeError } from "../api/client";
 import { buildAuthRouteWithNext, sanitizeNextRoute } from '../utils/navigation';
 
 export default function LoginPage() {
-  const { user, login } = useAuth()
+  const user = useAuthStore((state) => state.user)
+  const login = useAuthStore((state) => state.login)
   const [searchParams] = useSearchParams()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

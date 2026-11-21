@@ -10,7 +10,7 @@ import type {
   Project,
   Status,
 } from "../types";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../store/useAuthStore";
 import { activityIdOf, assignedActivitiesAsTasks } from "../utils/scrumSync";
 import {
   parseLocalDate,
@@ -29,7 +29,7 @@ export function useOrganizerBoard() {
   const activities = useCollection<Activity>("activities");
   const projects = useCollection<Project>("projects");
 
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? "";
 
   /**

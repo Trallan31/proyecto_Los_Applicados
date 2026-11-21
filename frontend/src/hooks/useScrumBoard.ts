@@ -2,10 +2,10 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCollection } from "./useCollection";
 import type { Project, ProjectMember, ProjectRole, Activity, User, Member, Sprint, ProjectLink } from "../types";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../store/useAuthStore";
 
 export function useScrumBoard() {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get("project") ?? "";
 
