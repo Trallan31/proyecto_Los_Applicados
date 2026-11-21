@@ -1,36 +1,69 @@
-import { useState, useMemo } from "react";
-import { useCollection } from "./useCollection";
-import type {
-  Activity,
-  OrganizerTask,
-  TaskType,
-  Course,
-  CourseSession,
-  CourseLink,
-  Project,
-  Status,
-} from "../types";
-import { useAuth } from "../context/AuthContext";
-import { activityIdOf, assignedActivitiesAsTasks } from "../utils/scrumSync";
+import { useEffect, useMemo } from "react";
+import type { OrganizerTask } from "../types";
+import { useAuthStore } from "../store/useAuthStore";
+import { useOrganizerStore } from "../store/useOrganizerStore";
+import { assignedActivitiesAsTasks } from "../utils/scrumSync";
 import {
   parseLocalDate,
   formatLocalDate,
   getToday,
   getWeekBounds,
   getMonthBounds,
-  type TimeFilter,
-  type ViewTab,
 } from "../utils/dateUtils";
 
+/**
+ * Capa delgada sobre el store global (useOrganizerStore).
+ * Los datos, filtros y acciones viven en Zustand; aquí solo se calculan
+ * los derivados (filtrado, orden y estadísticas) con useMemo.
+ * Mantiene la misma API pública de antes: OrganizerView y sus componentes
+ * hijos quedan conectados al store global sin cambios.
+ */
 export function useOrganizerBoard() {
-  const courses = useCollection<Course>("courses");
-  const sessions = useCollection<CourseSession>("sessions");
-  const tasks = useCollection<OrganizerTask>("tasks");
-  const activities = useCollection<Activity>("activities");
-  const projects = useCollection<Project>("projects");
+  const courses = useOrganizerStore((s) => s.courses);
+  const sessions = useOrganizerStore((s) => s.sessions);
+  const ownTasks = useOrganizerStore((s) => s.tasks);
+  const activities = useOrganizerStore((s) => s.activities);
+  const projects = useOrganizerStore((s) => s.projects);
 
-  const { user } = useAuth();
-  const userId = user?.id ?? "";
+  const loading = useOrganizerStore((s) => s.loading);
+  const error = useOrganizerStore((s) => s.loadError);
+  const mutationError = useOrganizerStore((s) => s.mutationError);
+  const clearMutationError = useOrganizerStore((s) => s.clearMutationError);
+  const refetch = useOrganizerStore((s) => s.refetch);
+
+  const activeCourse = useOrganizerStore((s) => s.activeCourse);
+  const setActiveCourse = useOrganizerStore((s) => s.setActiveCourse);
+  const timeFilter = useOrganizerStore((s) => s.timeFilter);
+  const setTimeFilter = useOrganizerStore((s) => s.setTimeFilter);
+  const typeFilter = useOrganizerStore((s) => s.typeFilter);
+  const setTypeFilter = useOrganizerStore((s) => s.setTypeFilter);
+  const statusFilter = useOrganizerStore((s) => s.statusFilter);
+  const setStatusFilter = useOrganizerStore((s) => s.setStatusFilter);
+  const tab = useOrganizerStore((s) => s.tab);
+  const setTab = useOrganizerStore((s) => s.setTab);
+
+  const toggleTaskStatus = useOrganizerStore((s) => s.toggleTaskStatus);
+  const setTaskStatus = useOrganizerStore((s) => s.setTaskStatus);
+  const deleteTask = useOrganizerStore((s) => s.deleteTask);
+  const addTask = useOrganizerStore((s) => s.addTask);
+  const updateTask = useOrganizerStore((s) => s.updateTask);
+  const addCourse = useOrganizerStore((s) => s.addCourse);
+  const deleteCourse = useOrganizerStore((s) => s.deleteCourse);
+  const addSession = useOrganizerStore((s) => s.addSession);
+  const deleteSession = useOrganizerStore((s) => s.deleteSession);
+  const addCourseLink = useOrganizerStore((s) => s.addCourseLink);
+  const deleteCourseLink = useOrganizerStore((s) => s.deleteCourseLink);
+  const updateCourseLink = useOrganizerStore((s) => s.updateCourseLink);
+
+  const userId = useAuthStore((s) => s.user?.id ?? "");
+
+  // Carga una sola vez por sesión: al volver desde /scrum los datos ya
+  // están en el store y no se vuelven a pedir.
+  useEffect(() => {
+    if (userId) {
+      void useOrganizerStore.getState().ensureLoaded();
+    }
+  }, [userId]);
 
   /**
    * Las actividades de Scrum asignadas al usuario se muestran junto a sus
@@ -38,50 +71,12 @@ export function useOrganizerBoard() {
    * verdad sigue siendo /activities.
    */
   const allTasks = useMemo(
-    () => [...tasks.items, ...assignedActivitiesAsTasks(activities.items, userId)],
-    [tasks.items, activities.items, userId]
+    () => [...ownTasks, ...assignedActivitiesAsTasks(activities, userId)],
+    [ownTasks, activities, userId]
   );
 
-  const [activeCourse, setActiveCourse] = useState<string | "all">("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("todas");
-  const [typeFilter, setTypeFilter] = useState<TaskType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<OrganizerTask["status"] | "all">("all");
-  const [tab, setTab] = useState<ViewTab>("lista");
-
-  const loading =
-    courses.loading || sessions.loading || tasks.loading || activities.loading || projects.loading;
-  
-  const error =
-    courses.error ?? sessions.error ?? tasks.error ?? activities.error ?? projects.error;
-  
-  const mutationError =
-    courses.mutationError ??
-    sessions.mutationError ??
-    tasks.mutationError ??
-    activities.mutationError ?? 
-    projects.mutationError;
-
-  const refetch = async () => {
-    await Promise.all([
-      courses.refetch(),
-      sessions.refetch(),
-      tasks.refetch(),
-      activities.refetch(),
-      projects.refetch(),
-    ]);
-  };
-
-  const clearMutationError = () => {
-    courses.clearMutationError();
-    sessions.clearMutationError();
-    tasks.clearMutationError();
-    activities.clearMutationError();
-    projects.clearMutationError();
-  };
-
-  // Clave del dia actual: mantiene estables weekBounds/monthBounds dentro
-  // del mismo dia (filteredTasks depende de su identidad) y los recalcula
-  // cuando el dia cambia.
+  // Clave del día actual: mantiene estables weekBounds/monthBounds dentro
+  // del mismo día y los recalcula cuando el día cambia.
   const todayKey = formatLocalDate(getToday());
   const weekBounds = useMemo(() => getWeekBounds(parseLocalDate(todayKey)), [todayKey]);
   const monthBounds = useMemo(() => getMonthBounds(parseLocalDate(todayKey)), [todayKey]);
@@ -138,130 +133,22 @@ export function useOrganizerBoard() {
     [filteredTasks]
   );
 
-  async function toggleTaskStatus(id: string): Promise<OrganizerTask["status"] | null> {
-    const task = allTasks.find((t) => t.id === id);
-    if (!task) return null;
-    const next: OrganizerTask["status"] =
-      task.status === "Completada" ? "Pendiente" : "Completada";
-    const saved = await setTaskStatus(id, next);
-    return saved ? next : null;
-  }
-
-  /**
-   * En una tarea derivada el estado se escribe en la actividad, que es lo
-   * que ve todo el equipo en el tablero. Si se indica `scrumRestoreStatus`,
-   * restaura el estado original de Scrum (p. ej. "En revisión").
-   */
-  async function setTaskStatus(
-    id: string,
-    status: OrganizerTask["status"],
-    scrumRestoreStatus?: Status
-  ): Promise<boolean> {
-    const activityId = activityIdOf(id);
-    if (activityId !== null) {
-      return activities.edit(activityId, { status: scrumRestoreStatus ?? status });
-    }
-    return tasks.edit(id, { status });
-  }
-
-  /** Las derivadas no se borran desde aca: se borran en el tablero. */
-  function deleteTask(id: string) {
-    if (activityIdOf(id) !== null) return;
-    void tasks.destroy(id);
-  }
-
-  function addTask(task: Omit<OrganizerTask, "id" | "userId">) {
-    if (!user) return;
-    void tasks.add({
-      ...task,
-      userId: user.id,
-    });
-  }
-
-  /** Las derivadas no se editan desde aca: se editan en el tablero. */
-  function updateTask(id: string, changes: Partial<Omit<OrganizerTask, "id" | "userId">>) {
-    if (activityIdOf(id) !== null) return;
-    void tasks.edit(id, changes);
-  }
-
-  function addCourse(course: Omit<Course, "id" | "userId">) {
-    if (!user) return;
-    void courses.add({
-      ...course,
-      userId: user.id,
-    });
-  }
-
-  /** Borra el ramo y, en cascada, sus sesiones. Las tareas quedan personales. */
-  async function deleteCourse(courseId: string) {
-    const deleted = await courses.destroy(courseId);
-    if (!deleted) return;
-    if (activeCourse === courseId) {
-      setActiveCourse("all");
-    }
-    await Promise.all([
-      courses.refetch(),
-      sessions.refetch(),
-      tasks.refetch(),
-    ]);
-  }
-
-  function addSession(s: Omit<CourseSession, "id">) {
-    void sessions.add(s);
-  }
-
-  function deleteSession(id: string) {
-    void sessions.destroy(id);
-  }
-
-  function addCourseLink(courseId: string, link: Omit<CourseLink, "id">) {
-    const course = courses.items.find((c) => c.id === courseId);
-    if (!course) return;
-    const newLink: CourseLink = {
-      ...link,
-      id: `clink-${Date.now()}`,
-    };
-    void courses.edit(course.id, {
-      links: [...(course.links || []), newLink],
-    });
-  }
-
-  function deleteCourseLink(courseId: string, linkId: string) {
-    const course = courses.items.find((c) => c.id === courseId);
-    if (!course) return;
-    void courses.edit(course.id, {
-      links: (course.links || []).filter((l) => l.id !== linkId),
-    });
-  }
-
-  function updateCourseLink(
-    courseId: string,
-    linkId: string,
-    changes: Partial<Omit<CourseLink, "id">>
-  ) {
-    const course = courses.items.find((c) => c.id === courseId);
-    if (!course) return;
-    void courses.edit(course.id, {
-      links: (course.links || []).map((l) => (l.id === linkId ? { ...l, ...changes } : l)),
-    });
-  }
-
   const userProjects = useMemo(() => {
-    if (!userId) return projects.items;
-    return projects.items.filter(
+    if (!userId) return projects;
+    return projects.filter(
       (p) => !p.members || p.members.length === 0 || p.members.some((m) => m.userId === userId)
     );
-  }, [projects.items, userId]);
+  }, [projects, userId]);
 
   const allCourseStats = useMemo(
     () =>
-      courses.items.map((c) => ({
+      courses.map((c) => ({
         ...c,
         total: allTasks.filter((t) => t.courseId === c.id).length,
         done: allTasks.filter((t) => t.courseId === c.id && t.status === "Completada").length,
         pending: allTasks.filter((t) => t.courseId === c.id && t.status !== "Completada").length,
       })),
-    [courses.items, allTasks]
+    [courses, allTasks]
   );
 
   const allProjectStats = useMemo(
@@ -304,19 +191,19 @@ export function useOrganizerBoard() {
   );
   const doneCount = scopedTasks.filter((t) => t.status === "Completada").length;
   const totalCount = scopedTasks.length;
-  const activeCourseObj = courses.items.find((c) => c.id === activeCourse);
+  const activeCourseObj = courses.find((c) => c.id === activeCourse);
   const activeProjectId = activeCourse.startsWith("project:")
     ? activeCourse.slice("project:".length)
     : null;
   const activeProjectObj = activeProjectId
-    ? projects.items.find((p) => p.id === activeProjectId)
+    ? projects.find((p) => p.id === activeProjectId)
     : undefined;
 
   return {
-    courses: courses.items,
-    sessions: sessions.items,
+    courses,
+    sessions,
     tasks: allTasks,
-    projects: projects.items,
+    projects,
     userProjects,
     loading,
     error,

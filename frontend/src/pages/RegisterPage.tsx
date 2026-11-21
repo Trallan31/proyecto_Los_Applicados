@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuthStore } from '../store/useAuthStore'
 import { describeError } from '../api/client'
 import { buildAuthRouteWithNext, sanitizeNextRoute } from '../utils/navigation'
 
@@ -9,7 +9,8 @@ const inputClassName =
   'mt-1 w-full rounded-lg border border-border bg-background px-3 py-2'
 
 export default function RegisterPage() {
-  const { user, register } = useAuth()
+  const user = useAuthStore((state) => state.user)
+  const register = useAuthStore((state) => state.register)
   const [searchParams] = useSearchParams()
   const [form, setForm] = useState({
     name: '',
