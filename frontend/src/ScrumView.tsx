@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TaskRow } from "./components/scrum/TaskRow";
 import { AddRowForm } from "./components/scrum/AddRowForm";
 import { NewProjectModal } from "./components/scrum/modals/NewProjectModal";
@@ -55,6 +55,8 @@ export function ScrumView() {
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'task' | 'project'; id: string } | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  // Id de la tarea que se esta arrastrando con el dedo (null si no hay).
+  const [touchDragId, setTouchDragId] = useState<string | null>(null);
 
   /** Devuelve los ids del tablero con la tarea movida a la posicion `to`. */
   function idsWithMove(taskId: string, to: number): string[] | null {
@@ -82,6 +84,55 @@ export function ScrumView() {
     const ids = idsWithMove(taskId, from + delta);
     if (ids) reorderTasks(ids);
   }
+
+  /**
+   * Arrastre con el dedo. En pantallas tactiles el navegador no emite
+   * dragstart/drop, asi que mientras el dedo este abajo seguimos el puntero
+   * y miramos sobre que fila esta para resaltarla y, al soltar, moverla.
+   */
+  useEffect(() => {
+    if (!touchDragId) return;
+
+    function taskIdAt(x: number, y: number): string | null {
+      const element = document.elementFromPoint(x, y);
+      const row = element?.closest<HTMLElement>("tr[data-task-id]");
+      return row?.dataset.taskId ?? null;
+    }
+
+    function handlePointerMove(e: PointerEvent) {
+      // Evita que la pagina haga scroll mientras se arrastra la fila.
+      e.preventDefault();
+      const overId = taskIdAt(e.clientX, e.clientY);
+      setDropTargetId(overId && overId !== touchDragId ? overId : null);
+    }
+
+    function handlePointerUp(e: PointerEvent) {
+      const targetId = taskIdAt(e.clientX, e.clientY);
+      const dragged = touchDragId;
+      setTouchDragId(null);
+      if (targetId && dragged) {
+        handleDropOn(targetId, dragged);
+      } else {
+        setDraggingTaskId(null);
+        setDropTargetId(null);
+      }
+    }
+
+    function handlePointerCancel() {
+      setTouchDragId(null);
+      setDraggingTaskId(null);
+      setDropTargetId(null);
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+    };
+  });
 
   const doneCount = projectTasks.filter((t) => t.status === "Completada").length;
   const totalCount = projectTasks.length;
@@ -219,7 +270,7 @@ export function ScrumView() {
             <tr className="bg-surface border-b border-border">
 
               {[
-                { key: "drag", label: "", w: "34px" },
+                { key: "drag", label: "", w: "44px" },
                 { key: "title", label: "TAREA", w: "280px" },
                 { key: "sprintId", label: "SPRINT", w: "130px" },
                 { key: "category", label: "CATEGORÍA", w: "130px" },
@@ -260,6 +311,10 @@ export function ScrumView() {
                 onDragEndTask={() => {
                   setDraggingTaskId(null);
                   setDropTargetId(null);
+                }}
+                onTouchDragStart={() => {
+                  setTouchDragId(task.id);
+                  setDraggingTaskId(task.id);
                 }}
                 onMoveTask={(delta) => handleMoveBy(task.id, delta)}
               />
