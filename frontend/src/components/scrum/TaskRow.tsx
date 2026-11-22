@@ -21,6 +21,7 @@ export function TaskRow({
   onDragEnterTask,
   onDropTask,
   onDragEndTask,
+  onTouchDragStart,
   onMoveTask,
 }: {
   task: Activity;
@@ -40,6 +41,8 @@ export function TaskRow({
   /** Recibe el id de la tarea arrastrada, que viaja en el dataTransfer. */
   onDropTask?: (draggedTaskId: string) => void;
   onDragEndTask?: () => void;
+  /** Arrastre con el dedo: el navegador no emite eventos de drag en tactil. */
+  onTouchDragStart?: () => void;
   /** Mueve la fila delta posiciones (teclado: flechas sobre el tirador). */
   onMoveTask?: (delta: number) => void;
 }) {
@@ -71,6 +74,7 @@ export function TaskRow({
 
   return (
     <tr
+      data-task-id={task.id}
       draggable={dragEnabled}
       onDragStart={(e) => {
         // El id viaja en el evento: asi la fila destino sabe que se solto
@@ -100,15 +104,24 @@ export function TaskRow({
       } ${isDropTarget ? "outline outline-2 -outline-offset-2 outline-accent-blue" : ""}`}
     >
       {/* TIRADOR PARA REORDENAR */}
-      <td className="px-1 py-2 border-r border-border align-middle">
+      <td className="px-1 py-1 border-r border-border align-middle">
         <button
           type="button"
           title="Arrastra para reordenar"
           aria-label={`Reordenar la tarea ${task.title}: arrastra el tirador o usa las flechas arriba y abajo`}
-          onMouseDown={() => setDragEnabled(true)}
-          onMouseUp={() => setDragEnabled(false)}
-          onTouchStart={() => setDragEnabled(true)}
-          onTouchEnd={() => setDragEnabled(false)}
+          onPointerDown={(e) => {
+            if (e.pointerType === "mouse") {
+              // Con raton arrastra el navegador (drag & drop nativo).
+              setDragEnabled(true);
+              return;
+            }
+            // Con el dedo o el lapiz no hay eventos de drag nativos:
+            // el tablero sigue el puntero por su cuenta.
+            e.preventDefault();
+            onTouchDragStart?.();
+          }}
+          onPointerUp={() => setDragEnabled(false)}
+          onPointerCancel={() => setDragEnabled(false)}
           onKeyDown={(e) => {
             if (e.key === "ArrowUp") {
               e.preventDefault();
@@ -119,7 +132,7 @@ export function TaskRow({
               onMoveTask?.(1);
             }
           }}
-          className="w-full flex items-center justify-center rounded text-text-dim hover:text-accent-blue cursor-grab active:cursor-grabbing transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+          className="w-full h-8 flex items-center justify-center rounded text-text-dim hover:text-accent-blue cursor-grab active:cursor-grabbing touch-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
         >
           <GripVertical className="w-3.5 h-3.5" />
         </button>
