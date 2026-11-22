@@ -3,8 +3,9 @@ import type { OrganizerTask, Course, Project } from "../../types";
 import { CATEGORY_COLORS, PRIORITY_META } from "../../constants/ui";
 import { formatDisplayDate } from "../../utils/dateUtils";
 import { isScrumTask } from "../../utils/scrumSync";
-import { Check, Pencil, Trash2, Users } from "lucide-react";
+import { Check, Pencil, Trash2, TrashOff, Users } from "lucide-react";
 import { CountdownBadge } from "../shared/CountdownBadge";
+import { useNavigate } from "react-router-dom";
 
 export function OrganizerTaskRow({
   task,
@@ -27,6 +28,7 @@ export function OrganizerTaskRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const navigate = useNavigate();
   const isDone = task.status === "Completada";
   // Las tareas que vienen del tablero se editan y se borran alla.
   const fromScrum = isScrumTask(task);
@@ -159,9 +161,30 @@ export function OrganizerTaskRow({
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
             {fromScrum ? (
-              <span className="text-[9px] font-mono text-text-muted px-1.5 whitespace-nowrap">
-                Se edita en el tablero
+              <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/scrum?project=${task.id}`);
+                }}
+                title="Editar desde proyecto"
+                aria-label="Editar dede proyecto"
+                className="text-text-muted hover:text-accent-blue transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <span
+                title="Eliminable desde el proyecto"
+                aria-label="Eliminable desde el proyecto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+                className="text-text-muted hover:text-accent-red transition-colors p-1.5 rounded-lg cursor-not-allowed hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-red"
+              >
+                <TrashOff className="w-3.5 h-3.5" />
               </span>
+              </>
             ) : (
               <>
               <button

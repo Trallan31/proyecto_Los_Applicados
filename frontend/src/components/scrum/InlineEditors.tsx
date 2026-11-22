@@ -103,7 +103,7 @@ export function InlineDate({
         className="fixed inset-0 z-10"
         onClick={handleCommit}
       />
-      <div className="relative z-20 flex items-center justify-end gap-1 w-full bg-background border border-accent-blue rounded px-1.5 py-0.5 shadow-xs">
+      <div className="relative z-20 flex items-center justify-end gap-1 w-full bg-background border border-accent-blue rounded px-1.5 py-0.5 shadow-xs" onBlur={onBlur}>
         <input
           autoFocus
           type="date"
@@ -270,6 +270,7 @@ export function InlineSelectWithCreate({
             onCommit(e.target.value);
           }
         }}
+        onBlur={onBlur}
         className="w-full bg-background border border-accent-blue rounded px-1 py-0.5 text-[11px] font-mono text-text focus:outline-none"
       >
         {options.map((o) => (
