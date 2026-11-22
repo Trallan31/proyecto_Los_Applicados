@@ -43,4 +43,30 @@ test.describe('autenticacion y acceso restringido', () => {
       'Usuario o contraseña incorrectos.'
     );
   });
+  test('cierra la sesion y revoca el acceso a rutas protegidas', async ({
+    page,
+    request,
+  }) => {
+    const user = await registerTestUser(request);
+
+    await page.goto('/organizador');
+    await loginWith(page, user.username, user.password);
+    await expect(page).toHaveURL(/\/organizador$/);
+
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+
+    await expect(page).toHaveURL(/\/login\?next=%2Forganizador/);
+    await expect(
+      page.getByRole('heading', { name: 'Iniciar sesión' })
+    ).toBeVisible();
+
+    await page.goto('/organizador');
+    await expect(page).toHaveURL(/\/login\?next=%2Forganizador/);
+
+    await page.goto('/scrum');
+    await expect(page).toHaveURL(/\/login\?next=%2Fscrum/);
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/login\?next=%2Fscrum/);
+  });
 });

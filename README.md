@@ -417,6 +417,18 @@ npm test --prefix e2etests
 Playwright iniciara automaticamente el backend y el frontend si no detecta
 servidores existentes en los puertos 3001 y 5173.
 
+Para ejecutar las pruebas con interfaz visual (modo UI de Playwright):
+
+```powershell
+npm run test:ui --prefix e2etests
+```
+
+Para abrir el reporte HTML de la ultima ejecucion:
+
+```powershell
+npm run test:report --prefix e2etests
+```
+
 ## Pruebas de componentes del frontend
 
 Las pruebas de componentes usan Vitest, jsdom y Testing Library. Simulan el
