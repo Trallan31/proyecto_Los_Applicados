@@ -27,8 +27,8 @@ export function SettingsModal({
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'category' | 'sprint'; id: string } | null>(null);
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-surface border border-border rounded-xl w-[520px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-surface border border-border rounded-xl w-full max-w-[520px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         <div className="p-6 border-b border-border flex justify-between items-center bg-panel">
           <div>
             <h2 className="text-lg font-bold text-text">Ajustes del Proyecto</h2>

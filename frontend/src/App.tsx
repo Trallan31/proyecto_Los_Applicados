@@ -14,7 +14,7 @@ import './index.css'
 
 function navigationClassName({ isActive }: { isActive: boolean }) {
   const base =
-    'px-6 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 cursor-pointer'
+    'px-4 sm:px-6 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap'
 
   return `${base} ${
     isActive
@@ -44,8 +44,9 @@ function AppLayout() {
 
   return (
     <div className="w-full h-screen bg-background text-text flex flex-col overflow-hidden">
-      <header className="h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-50 shrink-0">
-        <div className="flex items-center gap-3 w-1/3">
+      {/* En movil el header se apila: logo y acciones arriba, navegacion abajo. */}
+      <header className="min-h-16 bg-surface/80 backdrop-blur-md border-b border-border flex flex-wrap items-center justify-between gap-y-2 px-4 sm:px-6 py-2 sm:py-0 sticky top-0 z-50 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 sm:w-1/3">
           <img
             src="/logo.png"
             alt="Applicate Logo"
@@ -59,26 +60,28 @@ function AppLayout() {
 
         <nav
           aria-label="Navegación principal"
-          className="flex justify-center w-1/3"
+          className="order-last w-full flex justify-center sm:order-none sm:w-1/3"
         >
           <div className="bg-background p-1 rounded-full flex gap-1 border border-border shadow-inner">
             <NavLink
               to="/organizador"
               className={navigationClassName}
             >
-              Organizador Personal
+              <span className="sm:hidden">Organizador</span>
+              <span className="hidden sm:inline">Organizador Personal</span>
             </NavLink>
 
             <NavLink
               to="/scrum"
               className={navigationClassName}
             >
-              Proyectos de Equipo
+              <span className="sm:hidden">Equipo</span>
+              <span className="hidden sm:inline">Proyectos de Equipo</span>
             </NavLink>
           </div>
         </nav>
 
-        <div className="w-1/3 flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-2 sm:gap-3 ml-auto sm:w-1/3">
           <button
             type="button"
             onClick={toggleTheme}
@@ -105,7 +108,7 @@ function AppLayout() {
             type="button"
             onClick={() => void handleLogout()}
             disabled={loggingOut}
-            className="text-xs text-text-muted hover:text-text cursor-pointer"
+            className="text-xs text-text-muted hover:text-text cursor-pointer whitespace-nowrap"
           >
             Cerrar sesión
           </button>

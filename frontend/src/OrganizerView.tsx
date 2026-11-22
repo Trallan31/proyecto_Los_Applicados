@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight, ArrowUpRight } from "lucide-react";
+import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight, ArrowUpRight, Menu, X } from "lucide-react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
 import type { OrganizerTask, TaskType, CourseLink, Status } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
@@ -70,6 +70,8 @@ export default function OrganizerView() {
 
   const navigate = useNavigate();
   const today = getToday();
+  // En movil y tablet la lista de ramos se oculta y se abre como cajon.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [coursesExpanded, setCoursesExpanded] = useState(true);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -92,6 +94,8 @@ export default function OrganizerView() {
   function handleSelectCourse(courseId: string | "all") {
     setActiveCourse(courseId);
     setSelectedTaskId(null);
+    // En movil la lista de ramos es un cajon: al elegir uno se cierra.
+    setSidebarOpen(false);
   }
 
   function handleSelectTab(nextTab: ViewTab) {
@@ -144,9 +148,35 @@ export default function OrganizerView() {
   if (error) return <ErrorBox message={error} onRetry={refetch} />;
 
   return (
-    <div className="flex h-full overflow-hidden text-text">
-      {/* Course sidebar */}
-      <div className="w-60 flex-shrink-0 border-r border-border bg-surface flex flex-col">
+    <div className="relative flex h-full overflow-hidden text-text">
+      {/* Fondo oscuro del cajon de ramos en movil */}
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Cerrar la lista de ramos"
+          onClick={() => setSidebarOpen(false)}
+          className="absolute inset-0 z-30 bg-black/50 lg:hidden cursor-pointer"
+        />
+      )}
+
+      {/* Course sidebar: cajon deslizante en movil, columna fija en escritorio */}
+      <div
+        className={`${
+          sidebarOpen ? "flex" : "hidden"
+        } absolute inset-y-0 left-0 z-40 w-64 shadow-2xl lg:static lg:z-auto lg:flex lg:w-60 lg:shadow-none flex-shrink-0 border-r border-border bg-surface flex-col`}
+      >
+        {/* Cerrar el cajon (solo movil) */}
+        <div className="flex justify-end p-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Cerrar la lista de ramos"
+            className="p-1.5 rounded-md text-text-muted hover:text-text transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
         {/* Vista general at the top */}
         <div className="p-2 border-b border-border">
           <CourseTab
@@ -332,11 +362,21 @@ export default function OrganizerView() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* min-w-0: sin esto el calendario ancho empuja la columna y arrastra el header. */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex-shrink-0 px-5 py-3 border-b border-border bg-surface flex flex-col gap-2.5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <header className="flex-shrink-0 px-4 sm:px-5 py-3 border-b border-border bg-surface flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              {/* Abre la lista de ramos cuando esta oculta (movil y tablet) */}
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Abrir la lista de ramos y proyectos"
+                className="lg:hidden shrink-0 p-1.5 rounded-md border border-border bg-panel text-text-muted hover:text-text transition-colors cursor-pointer"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
               {activeCourseObj && (
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeCourseObj.color }} />
@@ -414,7 +454,7 @@ export default function OrganizerView() {
         </header>
 
         {/* Barra de navegación principal (Tabs + Stats compactas) */}
-        <div className="flex-shrink-0 px-5 border-b border-border bg-surface flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+        <div className="flex-shrink-0 px-4 sm:px-5 border-b border-border bg-surface flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
           {/* Pestañas de vista a la izquierda */}
           <div className="flex items-center gap-1">
             {[
@@ -464,7 +504,7 @@ export default function OrganizerView() {
 
         {/* Sub-barra ligera de filtros (solo visible en Lista de tareas) */}
         {tab === "lista" && (
-          <div className="flex-shrink-0 px-5 py-2 border-b border-border bg-background/80 flex items-center justify-between gap-4">
+          <div className="flex-shrink-0 px-4 sm:px-5 py-2 border-b border-border bg-background/80 flex items-center justify-between gap-3 flex-wrap">
             {/* Selector de tiempo segmentado */}
             <div className="flex items-center bg-panel p-0.5 rounded-lg border border-border/50">
               {([
@@ -516,7 +556,7 @@ export default function OrganizerView() {
         {/* Tab views */}
         {tab === "lista" && (
           <div className="flex-1 flex overflow-hidden relative">
-            <div className="flex-1 overflow-y-auto scrollbar-hide p-5 space-y-2 min-w-0">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-3 sm:p-5 space-y-2 min-w-0">
               {sortedTasks.map((task) => (
                 <OrganizerTaskRow
                   key={task.id}
@@ -654,7 +694,7 @@ export default function OrganizerView() {
           }}
         />
       )}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-2rem)]">
         {mutationError && (
           <div className="pointer-events-auto">
             <Toast

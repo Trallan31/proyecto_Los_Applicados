@@ -14,8 +14,8 @@ export function NewProjectModal({
   const [color, setColor] = useState(PALETTE[0]);
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-surface border border-border rounded-xl p-6 w-[400px] shadow-2xl">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-[400px] shadow-2xl">
         <h2 className="text-lg font-bold text-text mb-6">Nuevo Proyecto</h2>
         
         <div className="space-y-4">
