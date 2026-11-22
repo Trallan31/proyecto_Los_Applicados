@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
 import { Router } from "express";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/user";
 import type { UserData } from "../models/user";
@@ -17,11 +17,14 @@ const DUMMY_PASSWORD_HASH =
   "$2b$12$zkfGFLBpZM.6F8fjzSCRZu42uG34BiHDySA1fncMBRKI.MCzqVYJ2";
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
-/** Opciones de cookie de sesión evaluadas de forma perezosa según el entorno. */
-function getCookieOptions() {
+/** Opciones de cookie evaluadas segun el protocolo real de la peticion. */
+function getCookieOptions(request: Request) {
   return {
     httpOnly: true,
-    secure: isProductionEnv(),
+    // Con trust proxy, request.secure es true solo si el proxy frontal
+    // reporto X-Forwarded-Proto: https. En http puro la cookie no puede
+    // ser Secure o el navegador la descartaria y el login quedaria roto.
+    secure: request.secure,
     sameSite: "strict" as const,
     path: "/",
     maxAge: ONE_HOUR_MS,
@@ -49,7 +52,7 @@ const publicFields = (user: UserData) => ({
 });
 
 /** Emite la cookie de sesión y el token CSRF para un usuario recién validado. */
-function startSession(response: Response, user: UserData): void {
+function startSession(request: Request, response: Response, user: UserData): void {
   const csrf = randomUUID();
   const token = jwt.sign(
     {
@@ -62,7 +65,7 @@ function startSession(response: Response, user: UserData): void {
     { algorithm: "HS256", expiresIn: "1h" }
   );
 
-  response.cookie("token", token, getCookieOptions());
+  response.cookie("token", token, getCookieOptions(request));
   response.setHeader("X-CSRF-Token", csrf);
 }
 
@@ -155,7 +158,7 @@ router.post(
         passwordHash: await bcrypt.hash(password, 12),
       });
 
-      startSession(response, user);
+      startSession(request, response, user);
       response.status(201).json(publicFields(user));
     } catch (error: unknown) {
       next(error);
@@ -190,7 +193,7 @@ router.post("/login", authRateLimiter, async (request, response, next) => {
       throw new HttpError(401, "Usuario o contraseña incorrectos.");
     }
 
-    startSession(response, user);
+    startSession(request, response, user);
     response.json(publicFields(user));
   } catch (error: unknown) {
     next(error);
@@ -218,7 +221,7 @@ router.post("/logout", withUser, async (request, response, next) => {
       { _id: request.userId },
       { $inc: { tokenVersion: 1 } }
     );
-    response.clearCookie("token", getCookieOptions());
+    response.clearCookie("token", getCookieOptions(request));
     response.status(204).end();
   } catch (error: unknown) {
     next(error);
