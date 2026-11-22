@@ -16,6 +16,7 @@ import {
   isProductionEnv,
   isTestEnv,
 } from "./utils/config";
+import path from "node:path";
 
 const app = express();
 
@@ -51,6 +52,23 @@ if (isTestEnv()) {
   app.use("/api/testing", unknownEndpoint);
 }
 app.use("/api", apiRateLimiter, routes);
+
+if (isProductionEnv()) {
+  // backend/dist/app.js -> __dirname = backend/dist -> ../../frontend/dist
+  const frontendDist = path.resolve(__dirname, "..", "..", "frontend", "dist");
+
+  // Checkbox 2: servir los estaticos del bundle de Vite
+  app.use(express.static(frontendDist));
+
+  // Checkbox 3: fallback SPA para cualquier GET no-API (F5 en /organizador, /scrum...)
+  app.use((request, response, next) => {
+    if (request.method === "GET" && !request.path.startsWith("/api")) {
+      response.sendFile(path.join(frontendDist, "index.html"));
+      return;
+    }
+    next();
+  });
+}
 
 app.use(unknownEndpoint);
 app.use(errorHandler);
