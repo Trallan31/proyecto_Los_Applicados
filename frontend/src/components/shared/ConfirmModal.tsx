@@ -18,8 +18,8 @@ export function ConfirmModal({
   onCancel 
 }: ConfirmModalProps) {
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[60]">
-      <div className="bg-surface border border-border rounded-xl p-6 w-[380px] shadow-2xl">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-[380px] shadow-2xl">
         <h3 className="text-base font-bold text-text mb-2">{title}</h3>
         <p className="text-sm text-text-muted mb-6">{message}</p>
         <div className="flex gap-3">

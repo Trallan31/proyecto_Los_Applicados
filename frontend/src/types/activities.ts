@@ -14,4 +14,10 @@ export interface Activity {
   status: Status;
   hours: number;
   dueDate: string;
+  /**
+   * Posicion de la tarea dentro del tablero, para el drag & drop.
+   * Es opcional: las actividades creadas antes de esta funcion no la traen
+   * y se ordenan al final con 0.
+   */
+  order?: number;
 }

@@ -33,6 +33,7 @@ interface ScrumState {
   updateActivity: <K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) => void;
   addActivity: (projectId: string, task: Omit<Activity, "id" | "projectId">) => Promise<Activity | null>;
   deleteActivity: (taskId: string) => void;
+  reorderActivities: (projectId: string, orderedIds: string[]) => Promise<void>;
 
   // Categorías.
   addCategory: (projectId: string, name: string) => void;
@@ -166,10 +167,18 @@ export const useScrumStore = create<ScrumState>((set, get) => {
       );
     },
 
-    addActivity: (projectId, task) =>
-      addItem<Activity>("activities", { ...task, projectId }, (created) =>
-        set((state) => ({ activities: [...state.activities, created], mutationError: null }))
-      ),
+    /** La tarea nueva queda al final del tablero del proyecto. */
+    addActivity: (projectId, task) => {
+      const lastOrder = get()
+        .activities.filter((a) => a.projectId === projectId)
+        .reduce((max, a) => Math.max(max, a.order ?? 0), -1);
+      return addItem<Activity>(
+        "activities",
+        { ...task, projectId, order: task.order ?? lastOrder + 1 },
+        (created) =>
+          set((state) => ({ activities: [...state.activities, created], mutationError: null }))
+      );
+    },
 
     deleteActivity: (taskId) => {
       void removeItem("activities", taskId, () =>
@@ -178,6 +187,39 @@ export const useScrumStore = create<ScrumState>((set, get) => {
           mutationError: null,
         }))
       );
+    },
+
+    /**
+     * Reordena las tareas del proyecto segun `orderedIds`: aplica el orden
+     * nuevo al instante y luego guarda solo las que cambiaron de posicion.
+     * Si alguna falla se restaura el orden anterior, para que la vista no
+     * muestre un orden que el servidor no tiene.
+     */
+    reorderActivities: async (projectId, orderedIds) => {
+      const previous = get().activities;
+      const positionById = new Map(orderedIds.map((id, index) => [id, index]));
+      set({
+        activities: previous.map((a) =>
+          positionById.has(a.id) ? { ...a, order: positionById.get(a.id) } : a
+        ),
+        mutationError: null,
+      });
+      const moved = previous.filter(
+        (a) =>
+          a.projectId === projectId &&
+          positionById.has(a.id) &&
+          a.order !== positionById.get(a.id)
+      );
+      if (moved.length === 0) return;
+      try {
+        await Promise.all(
+          moved.map((a) =>
+            api.update<Activity>("activities", a.id, { order: positionById.get(a.id) })
+          )
+        );
+      } catch (error: unknown) {
+        set({ activities: previous, mutationError: api.describeError(error) });
+      }
     },
 
     addCategory: (projectId, name) => {

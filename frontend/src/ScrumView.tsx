@@ -30,6 +30,7 @@ export function ScrumView() {
     updateTask,
     addTask,
     deleteTask,
+    reorderTasks,
     addCategory,
     deleteCategory,
     addSprint,
@@ -52,6 +53,35 @@ export function ScrumView() {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [editingLink, setEditingLink] = useState<ProjectLink | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'task' | 'project'; id: string } | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
+  /** Devuelve los ids del tablero con la tarea movida a la posicion `to`. */
+  function idsWithMove(taskId: string, to: number): string[] | null {
+    const ids = projectTasks.map((t) => t.id);
+    const from = ids.indexOf(taskId);
+    if (from === -1 || to < 0 || to >= ids.length || to === from) return null;
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    return ids;
+  }
+
+  /** Suelta la tarea arrastrada en la posicion de la tarea destino. */
+  function handleDropOn(targetId: string, draggedTaskId: string) {
+    setDropTargetId(null);
+    setDraggingTaskId(null);
+    const dragged = draggedTaskId || draggingTaskId;
+    if (!dragged || dragged === targetId) return;
+    const ids = idsWithMove(dragged, projectTasks.findIndex((t) => t.id === targetId));
+    if (ids) reorderTasks(ids);
+  }
+
+  /** Mueve la tarea una posicion arriba o abajo, desde el teclado. */
+  function handleMoveBy(taskId: string, delta: number) {
+    const from = projectTasks.findIndex((t) => t.id === taskId);
+    const ids = idsWithMove(taskId, from + delta);
+    if (ids) reorderTasks(ids);
+  }
 
   const doneCount = projectTasks.filter((t) => t.status === "Completada").length;
   const totalCount = projectTasks.length;
@@ -92,10 +122,11 @@ export function ScrumView() {
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-surface overflow-hidden text-text">
       {/* Header */}
-      <header className="px-6 py-4 flex flex-col gap-4 border-b border-border bg-surface shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2">
+      <header className="px-4 sm:px-6 py-3 sm:py-4 flex flex-col gap-3 sm:gap-4 border-b border-border bg-surface shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-4 min-w-0">
+            {/* En movil las pestañas de proyecto se desplazan en horizontal */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
               {projects.map((p) => (
                 <button
                   key={p.id}
@@ -103,7 +134,7 @@ export function ScrumView() {
                     setActiveProjectId(p.id);
                     setShowNewRow(false);
                   }}
-                  className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all border ${
+                  className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all border whitespace-nowrap shrink-0 ${
                     p.id === activeProjectId
                       ? "bg-panel text-text"
                       : "border-transparent text-text-muted hover:text-text hover:bg-panel-hover"
@@ -116,13 +147,13 @@ export function ScrumView() {
               ))}
               <button
                 onClick={() => setShowNewProject(true)}
-                className="px-2.5 py-1.5 rounded-md text-[13px] text-accent-blue hover:bg-accent-blue/10 transition-colors flex items-center gap-1 font-medium"
+                className="px-2.5 py-1.5 rounded-md text-[13px] text-accent-blue hover:bg-accent-blue/10 transition-colors flex items-center gap-1 font-medium whitespace-nowrap shrink-0"
               >
                 <span>+</span> Proyecto
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => setShowStats(true)} className="p-1.5 rounded hover:bg-panel-hover text-text-muted hover:text-accent-blue transition-colors" title="Estadísticas">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
             </button>
@@ -132,12 +163,12 @@ export function ScrumView() {
           </div>
         </div>
 
-        <div className="flex items-end justify-between mt-2">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+        <div className="flex flex-col gap-3 mt-1 sm:mt-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{project.name}</h1>
             <p className="text-sm text-text-muted mt-1">{project.description}</p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
             <div className="flex flex-col items-end gap-1.5">
               <span className="text-[10px] font-mono text-text-muted tracking-wider uppercase">Progreso</span>
               <div className="flex items-center gap-3">
@@ -147,7 +178,7 @@ export function ScrumView() {
                 <span className="text-[11px] font-mono text-text">{Math.round(progress)}%</span>
               </div>
             </div>
-            <div className="h-8 w-px bg-border"></div>
+            <div className="hidden sm:block h-8 w-px bg-border"></div>
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
                 {projectMembers.map((m) => (
@@ -188,6 +219,7 @@ export function ScrumView() {
             <tr className="bg-surface border-b border-border">
 
               {[
+                { key: "drag", label: "", w: "34px" },
                 { key: "title", label: "TAREA", w: "280px" },
                 { key: "sprintId", label: "SPRINT", w: "130px" },
                 { key: "category", label: "CATEGORÍA", w: "130px" },
@@ -220,6 +252,16 @@ export function ScrumView() {
                 onDeleteTask={(id) => setConfirmDelete({ type: 'task', id })}
                 onCreateCategory={addCategory}
                 onCreateSprint={addSprint}
+                isDragging={draggingTaskId === task.id}
+                isDropTarget={dropTargetId === task.id && draggingTaskId !== task.id}
+                onDragStartTask={() => setDraggingTaskId(task.id)}
+                onDragEnterTask={() => setDropTargetId(task.id)}
+                onDropTask={(draggedTaskId) => handleDropOn(task.id, draggedTaskId)}
+                onDragEndTask={() => {
+                  setDraggingTaskId(null);
+                  setDropTargetId(null);
+                }}
+                onMoveTask={(delta) => handleMoveBy(task.id, delta)}
               />
             ))}
             {showNewRow && (
@@ -240,7 +282,7 @@ export function ScrumView() {
             )}
             {!showNewRow && (
               <tr>
-                <td colSpan={9} className="p-0">
+                <td colSpan={10} className="p-0">
                   <button onClick={() => setShowNewRow(true)} className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] font-mono text-text-muted hover:text-accent-blue hover:bg-accent-blue/5 transition-all border-b border-border">
                     <span>+</span> Añadir tarea
                   </button>

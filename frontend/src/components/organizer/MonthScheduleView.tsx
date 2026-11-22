@@ -55,7 +55,8 @@ export function MonthScheduleView({
         </h3>
       </div>
 
-      <div className="border border-border rounded-xl overflow-hidden bg-surface">
+      {/* En pantallas angostas el mes se desplaza en horizontal, igual que la semana */}
+      <div className="border border-border rounded-xl overflow-hidden bg-surface min-w-[560px] sm:min-w-0">
         {/* Day Header */}
         <div className="grid grid-cols-7 border-b border-border bg-panel text-center">
           {WEEK_DAYS.map((d) => (
