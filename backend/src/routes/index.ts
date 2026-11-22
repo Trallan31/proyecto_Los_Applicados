@@ -28,6 +28,7 @@ router.use(
       "status",
       "hours",
       "dueDate",
+      "order",
     ],
     "activities"
   )

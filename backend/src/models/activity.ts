@@ -64,11 +64,23 @@ const activitySchema = new Schema(
       },
     },
     dueDate: requiredDate,
+    // Posicion de la tarea dentro del tablero del proyecto.
+    // La reordena el drag & drop del frontend.
+    order: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+      validate: {
+        validator: Number.isFinite,
+        message: "El orden debe ser un número finito mayor o igual a 0.",
+      },
+    },
   },
   schemaOptions
 );
 
-activitySchema.index({ projectId: 1 });
+activitySchema.index({ projectId: 1, order: 1 });
 activitySchema.index({ sprintId: 1 });
 
 export default model("Activity", activitySchema);

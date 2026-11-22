@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GripVertical } from "lucide-react";
 import type { Activity, Member, Sprint, Priority, Status } from "../../types";
 import { InlineText, InlineDate, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
 import { parseLocalDate, isOverdue } from "../../utils/dateUtils";
@@ -14,6 +15,13 @@ export function TaskRow({
   onDeleteTask,
   onCreateCategory,
   onCreateSprint,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStartTask,
+  onDragEnterTask,
+  onDropTask,
+  onDragEndTask,
+  onMoveTask,
 }: {
   task: Activity;
   sprints: Sprint[];
@@ -23,8 +31,22 @@ export function TaskRow({
   onDeleteTask?: (id: string) => void;
   onCreateCategory?: (name: string) => void;
   onCreateSprint?: (name: string) => Promise<Sprint | null>;
+  /** La fila es la que se esta arrastrando. */
+  isDragging?: boolean;
+  /** La fila es el lugar donde se soltaria la tarea arrastrada. */
+  isDropTarget?: boolean;
+  onDragStartTask?: () => void;
+  onDragEnterTask?: () => void;
+  /** Recibe el id de la tarea arrastrada, que viaja en el dataTransfer. */
+  onDropTask?: (draggedTaskId: string) => void;
+  onDragEndTask?: () => void;
+  /** Mueve la fila delta posiciones (teclado: flechas sobre el tirador). */
+  onMoveTask?: (delta: number) => void;
 }) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
+  // La fila solo es arrastrable mientras se sostiene el tirador: asi editar
+  // celdas o seleccionar texto sigue funcionando igual que antes.
+  const [dragEnabled, setDragEnabled] = useState(false);
 
   const isEditing = (field: string) => editingCell === field;
   const overdue = isOverdue(task.dueDate, task.status === "Completada");
@@ -48,8 +70,60 @@ export function TaskRow({
   const cellFocusClasses = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-inset";
 
   return (
-    <tr className="border-b border-border hover:bg-panel-hover transition-colors group">
-
+    <tr
+      draggable={dragEnabled}
+      onDragStart={(e) => {
+        // El id viaja en el evento: asi la fila destino sabe que se solto
+        // sobre ella sin depender del estado de la fila de origen.
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", task.id);
+        onDragStartTask?.();
+      }}
+      onDragEnter={() => onDragEnterTask?.()}
+      onDragOver={(e) => {
+        // Sin preventDefault el navegador no permite soltar sobre la fila.
+        if (!onDropTask) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragEnabled(false);
+        onDropTask?.(e.dataTransfer.getData("text/plain"));
+      }}
+      onDragEnd={() => {
+        setDragEnabled(false);
+        onDragEndTask?.();
+      }}
+      className={`border-b border-border hover:bg-panel-hover transition-colors group ${
+        isDragging ? "opacity-40" : ""
+      } ${isDropTarget ? "outline outline-2 -outline-offset-2 outline-accent-blue" : ""}`}
+    >
+      {/* TIRADOR PARA REORDENAR */}
+      <td className="px-1 py-2 border-r border-border align-middle">
+        <button
+          type="button"
+          title="Arrastra para reordenar"
+          aria-label={`Reordenar la tarea ${task.title}: arrastra el tirador o usa las flechas arriba y abajo`}
+          onMouseDown={() => setDragEnabled(true)}
+          onMouseUp={() => setDragEnabled(false)}
+          onTouchStart={() => setDragEnabled(true)}
+          onTouchEnd={() => setDragEnabled(false)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              onMoveTask?.(-1);
+            }
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              onMoveTask?.(1);
+            }
+          }}
+          className="w-full flex items-center justify-center rounded text-text-dim hover:text-accent-blue cursor-grab active:cursor-grabbing transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </button>
+      </td>
 
       {/* TAREA */}
       <td

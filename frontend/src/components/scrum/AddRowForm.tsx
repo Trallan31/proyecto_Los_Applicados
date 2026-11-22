@@ -128,6 +128,9 @@ export function AddRowForm({
   return (
     <>
       <tr className="border-b border-accent-blue/30 bg-accent-blue/5">
+        {/* Columna del tirador de reordenar: la fila nueva no se arrastra. */}
+        <td className="border-r border-border h-9" />
+
         {/* 1. TAREA (title) */}
         <td className="px-1 py-0 border-r border-border h-9">
           <input
@@ -410,7 +413,7 @@ export function AddRowForm({
       </tr>
       {validationError && (
         <tr className="border-b border-accent-red/30 bg-accent-red/10">
-          <td colSpan={9} className="px-3 py-1.5">
+          <td colSpan={10} className="px-3 py-1.5">
             <p role="alert" className="text-[11px] font-mono text-accent-red">
               {validationError}
             </p>

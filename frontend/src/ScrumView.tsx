@@ -30,6 +30,7 @@ export function ScrumView() {
     updateTask,
     addTask,
     deleteTask,
+    reorderTasks,
     addCategory,
     deleteCategory,
     addSprint,
@@ -52,6 +53,35 @@ export function ScrumView() {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [editingLink, setEditingLink] = useState<ProjectLink | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'task' | 'project'; id: string } | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
+  /** Devuelve los ids del tablero con la tarea movida a la posicion `to`. */
+  function idsWithMove(taskId: string, to: number): string[] | null {
+    const ids = projectTasks.map((t) => t.id);
+    const from = ids.indexOf(taskId);
+    if (from === -1 || to < 0 || to >= ids.length || to === from) return null;
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    return ids;
+  }
+
+  /** Suelta la tarea arrastrada en la posicion de la tarea destino. */
+  function handleDropOn(targetId: string, draggedTaskId: string) {
+    setDropTargetId(null);
+    setDraggingTaskId(null);
+    const dragged = draggedTaskId || draggingTaskId;
+    if (!dragged || dragged === targetId) return;
+    const ids = idsWithMove(dragged, projectTasks.findIndex((t) => t.id === targetId));
+    if (ids) reorderTasks(ids);
+  }
+
+  /** Mueve la tarea una posicion arriba o abajo, desde el teclado. */
+  function handleMoveBy(taskId: string, delta: number) {
+    const from = projectTasks.findIndex((t) => t.id === taskId);
+    const ids = idsWithMove(taskId, from + delta);
+    if (ids) reorderTasks(ids);
+  }
 
   const doneCount = projectTasks.filter((t) => t.status === "Completada").length;
   const totalCount = projectTasks.length;
@@ -188,6 +218,7 @@ export function ScrumView() {
             <tr className="bg-surface border-b border-border">
 
               {[
+                { key: "drag", label: "", w: "34px" },
                 { key: "title", label: "TAREA", w: "280px" },
                 { key: "sprintId", label: "SPRINT", w: "130px" },
                 { key: "category", label: "CATEGORÍA", w: "130px" },
@@ -220,6 +251,16 @@ export function ScrumView() {
                 onDeleteTask={(id) => setConfirmDelete({ type: 'task', id })}
                 onCreateCategory={addCategory}
                 onCreateSprint={addSprint}
+                isDragging={draggingTaskId === task.id}
+                isDropTarget={dropTargetId === task.id && draggingTaskId !== task.id}
+                onDragStartTask={() => setDraggingTaskId(task.id)}
+                onDragEnterTask={() => setDropTargetId(task.id)}
+                onDropTask={(draggedTaskId) => handleDropOn(task.id, draggedTaskId)}
+                onDragEndTask={() => {
+                  setDraggingTaskId(null);
+                  setDropTargetId(null);
+                }}
+                onMoveTask={(delta) => handleMoveBy(task.id, delta)}
               />
             ))}
             {showNewRow && (
@@ -240,7 +281,7 @@ export function ScrumView() {
             )}
             {!showNewRow && (
               <tr>
-                <td colSpan={9} className="p-0">
+                <td colSpan={10} className="p-0">
                   <button onClick={() => setShowNewRow(true)} className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] font-mono text-text-muted hover:text-accent-blue hover:bg-accent-blue/5 transition-all border-b border-border">
                     <span>+</span> Añadir tarea
                   </button>

@@ -38,6 +38,7 @@ export function useScrumBoard() {
   const updateTask = useScrumStore((s) => s.updateActivity);
   const addActivity = useScrumStore((s) => s.addActivity);
   const deleteTask = useScrumStore((s) => s.deleteActivity);
+  const storeReorderActivities = useScrumStore((s) => s.reorderActivities);
   const storeAddCategory = useScrumStore((s) => s.addCategory);
   const storeDeleteCategory = useScrumStore((s) => s.deleteCategory);
   const storeAddSprint = useScrumStore((s) => s.addSprint);
@@ -70,8 +71,14 @@ export function useScrumBoard() {
     [sprints, activeProjectId]
   );
 
+  // El tablero se muestra en el orden que dejo el drag & drop. Las
+  // actividades antiguas no tienen `order` y cuentan como 0: al ser estable,
+  // sort las deja en el orden en que vinieron de la API.
   const projectTasks = useMemo(
-    () => activities.filter((a) => a.projectId === activeProjectId),
+    () =>
+      activities
+        .filter((a) => a.projectId === activeProjectId)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [activities, activeProjectId]
   );
 
@@ -87,6 +94,11 @@ export function useScrumBoard() {
   async function addTask(task: Omit<Activity, "id" | "projectId">): Promise<Activity | null> {
     if (!project) return null;
     return addActivity(project.id, task);
+  }
+
+  /** Guarda el orden completo de las tareas del proyecto activo. */
+  function reorderTasks(orderedIds: string[]) {
+    if (project) void storeReorderActivities(project.id, orderedIds);
   }
 
   function addCategory(name: string) {
@@ -159,6 +171,7 @@ export function useScrumBoard() {
     updateTask,
     addTask,
     deleteTask,
+    reorderTasks,
     addCategory,
     deleteCategory,
     addSprint,
