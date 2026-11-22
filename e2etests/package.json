@@ -1,8 +1,7 @@
 {
   "name": "e2etests",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Pruebas E2E de Applicate con Playwright",
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
@@ -10,7 +9,7 @@
     "test:report": "playwright show-report"
   },
   "keywords": [],
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@playwright/test": "^1.65.1",
     "@types/node": "^26.6.6"

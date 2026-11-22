@@ -82,6 +82,7 @@ sobrescribirlo. Abre `backend/.env` y completa sus valores:
 |---|---|
 | `PORT` | Puerto de Express; por defecto, `3001`. |
 | `MONGODB_URI` | URI de tu MongoDB. Para el ejemplo local: `mongodb://127.0.0.1:27017/mibase`. |
+| `TEST_MONGODB_URI` | Base separada usada por las pruebas E2E: `mongodb://127.0.0.1:27017/applicate_test`. |
 | `JWT_SECRET` | Secreto aleatorio privado para firmar los JWT. |
 | `SEED_DEMO_USER_ID` | Conserva `user-1` para usar `mgonzalez` con los datos de presentación. |
 | `SEED_DEMO_PASSWORD` | Contraseña local de la cuenta de presentación: al menos 8 caracteres y como máximo 72 bytes UTF-8. |
@@ -388,3 +389,51 @@ Comprueba TypeScript y genera los archivos de producción en `frontend/dist`.
 ```powershell
 npm run lint --prefix frontend
 ```
+
+## Pruebas E2E
+
+Las pruebas E2E estan en la carpeta independiente [e2etests](e2etests/).
+Usan Playwright y cubren el acceso restringido y el inicio de sesion.
+También incluyen un flujo de Organizador que crea un ramo, crea una actividad
+asociada y elimina esa actividad.
+
+Antes de ejecutarlas, ten MongoDB activo y configura `TEST_MONGODB_URI`
+en `backend/.env`. La base de pruebas debe ser distinta de `MONGODB_URI`,
+porque la suite elimina sus colecciones antes de cada caso.
+
+Instala Playwright y sus navegadores desde la raiz del repositorio:
+
+```powershell
+npm install --prefix e2etests
+npx --prefix e2etests playwright install chromium
+```
+
+Ejecuta las pruebas:
+
+```powershell
+npm test --prefix e2etests
+```
+
+Playwright iniciara automaticamente el backend y el frontend si no detecta
+servidores existentes en los puertos 3001 y 5173.
+
+## Pruebas de componentes del frontend
+
+Las pruebas de componentes usan Vitest, jsdom y Testing Library. Simulan el
+DOM de React y permiten buscar elementos renderizados con `screen`, sin abrir
+un navegador real. Las interacciones escriben y hacen clic mediante
+`@testing-library/user-event`.
+
+Ejecuta las pruebas desde la raiz del repositorio:
+
+```powershell
+npm test --prefix frontend
+```
+
+La prueba inicial esta en
+[LoginPage.test.tsx](frontend/src/pages/LoginPage.test.tsx) y verifica que:
+
+- el formulario de login se renderice;
+- los campos sean accesibles mediante sus etiquetas;
+- las credenciales se entreguen a la accion de login;
+- el mensaje de error se muestre en un elemento con rol `alert`.
