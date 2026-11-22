@@ -395,7 +395,7 @@ npm run lint --prefix frontend
 Las pruebas E2E estan en la carpeta independiente [e2etests](e2etests/).
 Usan Playwright y cubren el acceso restringido y el inicio de sesion.
 También incluyen un flujo de Organizador que crea un ramo, crea una actividad
-asociada y elimina esa actividad.
+asociada, edita la actividad y después la elimina.
 
 Antes de ejecutarlas, ten MongoDB activo y configura `TEST_MONGODB_URI`
 en `backend/.env`. La base de pruebas debe ser distinta de `MONGODB_URI`,

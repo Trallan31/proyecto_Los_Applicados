@@ -6,7 +6,7 @@ test.describe('organizador: ramo y actividad', () => {
     await resetTestDb(request);
   });
 
-  test('crea un ramo, crea una actividad y elimina la actividad', async ({
+  test('crea un ramo, crea, edita y elimina una actividad', async ({
     page,
     request,
   }) => {
@@ -72,13 +72,32 @@ test.describe('organizador: ramo y actividad', () => {
       .toBeVisible();
 
     await page
+      .getByRole('button', { name: 'Editar actividad', exact: true })
+      .click();
+
+    await expect(
+      page.getByRole('dialog', { name: 'Editar Actividad' })
+    ).toBeVisible();
+
+    const updatedActivityTitle = 'Proyecto E2E actualizado';
+    await page.getByLabel('Título').fill(updatedActivityTitle);
+    await page
+      .getByRole('button', { name: 'Guardar cambios' })
+      .click();
+
+    await expect(page.getByText(updatedActivityTitle, { exact: true }))
+      .toBeVisible();
+    await expect(page.getByText(activityTitle, { exact: true }))
+      .not.toBeVisible();
+
+    await page
       .getByRole('button', { name: 'Eliminar actividad', exact: true })
       .click();
     await page
       .getByRole('button', { name: 'Sí, eliminar' })
       .click();
 
-    await expect(page.getByText(activityTitle, { exact: true }))
+    await expect(page.getByText(updatedActivityTitle, { exact: true }))
       .not.toBeVisible();
   });
 });
