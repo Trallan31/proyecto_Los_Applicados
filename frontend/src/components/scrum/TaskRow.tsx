@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GripVertical } from "lucide-react";
 import type { Activity, Member, Sprint, Priority, Status } from "../../types";
 import { InlineText, InlineDate, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
 import { parseLocalDate, isOverdue } from "../../utils/dateUtils";
 import { PRIORITY_META, STATUS_META } from "../../constants/ui";
 import { CountdownBadge } from "../shared/CountdownBadge";
+import { useLocation } from "react-router-dom";
 
 export function TaskRow({
   task,
@@ -58,6 +59,23 @@ export function TaskRow({
   const pMeta = PRIORITY_META[task.priority] || PRIORITY_META["Media"];
   const sMeta = STATUS_META[task.status] || STATUS_META["Pendiente"];
 
+  const location = useLocation();
+  const [highlight, setHighlight] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.taskId !== task.id) return;
+
+    setHighlight(true);
+
+    const timeout = setTimeout(() => {
+      setHighlight(false);
+    }, 1000);
+
+    window.history.replaceState({}, '');
+    
+    return () => clearTimeout(timeout);
+  }, [location.state]);
+
   const handleDoubleClick = (field: string) => {
     setEditingCell(field);
   };
@@ -101,7 +119,8 @@ export function TaskRow({
       }}
       className={`border-b border-border hover:bg-panel-hover transition-colors group ${
         isDragging ? "opacity-40" : ""
-      } ${isDropTarget ? "outline outline-2 -outline-offset-2 outline-accent-blue" : ""}`}
+      } ${isDropTarget ? "outline outline-2 -outline-offset-2 outline-accent-blue" : ""
+      } duration-500 ${highlight ? "bg-sky-400 bg-panel-hover" : ""}`}
     >
       {/* TIRADOR PARA REORDENAR */}
       <td className="px-1 py-1 border-r border-border align-middle">

@@ -2,7 +2,7 @@ import type React from "react";
 import type { OrganizerTask, Course, Project } from "../../types";
 import { CATEGORY_COLORS, PRIORITY_META } from "../../constants/ui";
 import { formatDisplayDate } from "../../utils/dateUtils";
-import { isScrumTask } from "../../utils/scrumSync";
+import { activityIdOf, isScrumTask } from "../../utils/scrumSync";
 import { Check, Pencil, Trash2, TrashOff, Users } from "lucide-react";
 import { CountdownBadge } from "../shared/CountdownBadge";
 import { useNavigate } from "react-router-dom";
@@ -166,10 +166,10 @@ export function OrganizerTaskRow({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/scrum?project=${task.id}`);
+                  navigate(`/scrum?project=${task.projectId}`, { state: { taskId: activityIdOf(task.id) }});
                 }}
                 title="Editar desde proyecto"
-                aria-label="Editar dede proyecto"
+                aria-label="Editar desde proyecto"
                 className="text-text-muted hover:text-accent-blue transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue"
               >
                 <Pencil className="w-3.5 h-3.5" />
