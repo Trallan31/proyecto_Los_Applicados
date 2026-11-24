@@ -9,7 +9,8 @@ import { ConfirmModal } from "./components/shared/ConfirmModal";
 import { ProjectLinksBar } from "./components/scrum/ProjectLinksBar";
 import { ProjectLinkModal } from "./components/scrum/modals/ProjectLinkModal";
 import { useScrumBoard } from "./hooks/useScrumBoard";
-import { Loading, ErrorBox, Toast } from "./components/shared/Feedback";
+import { useToastStore } from "./store/useToastStore";
+import { Loading, ErrorBox } from "./components/shared/Feedback";
 import type { ProjectLink } from "./types";
 
 export function ScrumView() {
@@ -57,6 +58,15 @@ export function ScrumView() {
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   // Id de la tarea que se esta arrastrando con el dedo (null si no hay).
   const [touchDragId, setTouchDragId] = useState<string | null>(null);
+  const showError = useToastStore((s) => s.showError);
+
+  useEffect(() => {
+    if (!mutationError) return;
+    showError(`Error al guardar cambios: ${mutationError}`, {
+      tag: "scrum-mutation-error",
+    });
+    clearMutationError();
+  }, [mutationError, showError, clearMutationError]);
 
   /** Devuelve los ids del tablero con la tarea movida a la posicion `to`. */
   const idsWithMove = useCallback(
@@ -413,15 +423,6 @@ export function ScrumView() {
             }
           }}
         />
-      )}
-      {mutationError && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Toast
-            message={`Error al guardar cambios: ${mutationError}`}
-            variant="error"
-            onClose={clearMutationError}
-          />
-        </div>
       )}
     </div>
   );

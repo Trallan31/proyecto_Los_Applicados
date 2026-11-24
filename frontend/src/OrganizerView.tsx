@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight, ArrowUpRight, Menu, X } from "lucide-react";
 import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
 import type { OrganizerTask, TaskType, CourseLink, Status } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
 import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
+import { useToastStore } from "./store/useToastStore";
 import { CourseTab } from "./components/organizer/CourseTab";
 import { StatPill } from "./components/organizer/StatPill";
 import { OrganizerTaskRow } from "./components/organizer/OrganizerTaskRow";
@@ -16,10 +17,11 @@ import { CourseLinkModal } from "./components/organizer/modals/CourseLinkModal";
 import { ManageCoursesModal } from "./components/organizer/modals/ManageCoursesModal";
 import { AddOrganizerTaskModal } from "./components/organizer/modals/AddOrganizerTaskModal";
 import { ConfirmModal } from "./components/shared/ConfirmModal";
-import { Loading, ErrorBox, Toast } from "./components/shared/Feedback";
+import { Loading, ErrorBox } from "./components/shared/Feedback";
 
-
-let toastCounter = 0;
+function taskToastTag(taskId: string): string {
+  return `organizer-task-done:${taskId}`;
+}
 
 export default function OrganizerView() {
   const {
@@ -80,14 +82,19 @@ export default function OrganizerView() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showCourseLinkModal, setShowCourseLinkModal] = useState(false);
   const [editingCourseLink, setEditingCourseLink] = useState<CourseLink | null>(null);
-  const [toasts, setToasts] = useState<Array<{
-    id: string;
-    message: string;
-    taskId: string;
-    previousStatus: OrganizerTask["status"];
-    previousScrumStatus?: Status;
-  }>>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const addToast = useToastStore((s) => s.addToast);
+  const removeByTag = useToastStore((s) => s.removeByTag);
+  const showError = useToastStore((s) => s.showError);
+
+  useEffect(() => {
+    if (!mutationError) return;
+    showError(`Error al guardar cambios: ${mutationError}`, {
+      tag: "organizer-mutation-error",
+    });
+    clearMutationError();
+  }, [mutationError, showError, clearMutationError]);
 
   const selectedTask = scopedTasks.find((t) => t.id === selectedTaskId) ?? null;
 
@@ -108,29 +115,31 @@ export default function OrganizerView() {
     const previousScrumStatus = task.scrumOriginalStatus;
     const nextStatus = await toggleTaskStatus(task.id);
     if (nextStatus === null) return;
+    const tag = taskToastTag(task.id);
     if (nextStatus === "Completada") {
-      const toastId = `${task.id}-${++toastCounter}`;
-      setToasts(prev => [...prev, {
-        id: toastId,
+      addToast({
         message: `"${task.title}" marcada como lista`,
-        taskId: task.id,
-        previousStatus,
-        previousScrumStatus,
-      }]);
+        variant: "success",
+        actionLabel: "Deshacer",
+        tag,
+        onAction: () => {
+          void handleUndo(tag, task.id, previousStatus, previousScrumStatus);
+        },
+      });
     } else {
-      setToasts(prev => prev.filter(t => t.taskId !== task.id));
+      removeByTag(tag);
     }
   }
 
   async function handleUndo(
-    toastId: string,
+    tag: string,
     taskId: string,
     previousStatus: OrganizerTask["status"],
     previousScrumStatus?: Status
   ) {
     const restored = await setTaskStatus(taskId, previousStatus, previousScrumStatus);
     if (restored) {
-      setToasts(prev => prev.filter(t => t.id !== toastId));
+      removeByTag(tag);
     }
   }
 
@@ -140,7 +149,7 @@ export default function OrganizerView() {
   ) {
     const saved = await setTaskStatus(taskId, newStatus);
     if (saved && newStatus !== "Completada") {
-      setToasts(prev => prev.filter(t => t.taskId !== taskId));
+      removeByTag(taskToastTag(taskId));
     }
   }
 
@@ -654,7 +663,7 @@ export default function OrganizerView() {
           onClose={() => setEditingTask(null)}
           onEdit={(id, changes) => {
             updateTask(id, changes);
-            setToasts((prev) => prev.filter((t) => t.taskId !== id));
+            removeByTag(taskToastTag(id));
             setEditingTask(null);
           }}
         />
@@ -669,7 +678,7 @@ export default function OrganizerView() {
             if (confirmDeleteId === selectedTaskId) {
               setSelectedTaskId(null);
             }
-            setToasts((prev) => prev.filter((t) => t.taskId !== confirmDeleteId));
+            removeByTag(taskToastTag(confirmDeleteId));
             setConfirmDeleteId(null);
           }}
           onCancel={() => setConfirmDeleteId(null)}
@@ -694,27 +703,6 @@ export default function OrganizerView() {
           }}
         />
       )}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-2rem)]">
-        {mutationError && (
-          <div className="pointer-events-auto">
-            <Toast
-              message={`Error al guardar cambios: ${mutationError}`}
-              variant="error"
-              onClose={clearMutationError}
-            />
-          </div>
-        )}
-        {toasts.map(t => (
-          <div key={t.id} className="pointer-events-auto">
-            <Toast
-              message={t.message}
-              actionLabel="Deshacer"
-              onAction={() => void handleUndo(t.id, t.taskId, t.previousStatus, t.previousScrumStatus)}
-              onClose={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
-            />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

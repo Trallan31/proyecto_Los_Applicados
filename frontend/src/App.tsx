@@ -4,7 +4,9 @@ import OrganizerView from './OrganizerView'
 import { ScrumView } from './ScrumView'
 import { useTheme } from './context/ThemeContext'
 import { useAuthStore } from './store/useAuthStore'
+import { useToastStore } from './store/useToastStore'
 import ProtectedRoute from './components/ProtectedRoute'
+import { ToastViewport } from './components/shared/Feedback'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -27,16 +29,14 @@ function AppLayout() {
   const { theme, toggleTheme } = useTheme()
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
-  const [logoutError, setLogoutError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function handleLogout(): Promise<void> {
-    setLogoutError("");
     setLoggingOut(true);
     try {
       await logout();
     } catch (error: unknown) {
-      setLogoutError(describeError(error));
+      useToastStore.getState().showError(describeError(error), { tag: "logout-error" });
     } finally {
       setLoggingOut(false);
     }
@@ -114,14 +114,6 @@ function AppLayout() {
           </button>
         </div>
       </header>
-      {logoutError && (
-        <p
-          role="alert"
-          className="px-6 py-3 text-sm text-red-500"
-        >
-          {logoutError}
-        </p>
-      )}
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <Outlet />
@@ -132,32 +124,35 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/registro" element={<RegisterPage />} />
+    <>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<RegisterPage />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route
-            path="/organizador"
-            element={<OrganizerView />}
-          />
-          <Route
-            path="/scrum"
-            element={<ScrumView />}
-          />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route
+              path="/organizador"
+              element={<OrganizerView />}
+            />
+            <Route
+              path="/scrum"
+              element={<ScrumView />}
+            />
+          </Route>
         </Route>
-      </Route>
 
-      <Route
-        path="/"
-        element={<Navigate to="/organizador" replace />}
-      />
+        <Route
+          path="/"
+          element={<Navigate to="/organizador" replace />}
+        />
 
-      <Route
-        path="*"
-        element={<NotFoundPage />}
-      />
-    </Routes>
+        <Route
+          path="*"
+          element={<NotFoundPage />}
+        />
+      </Routes>
+      <ToastViewport />
+    </>
   )
 }
