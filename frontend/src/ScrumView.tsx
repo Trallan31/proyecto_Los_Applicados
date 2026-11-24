@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TaskRow } from "./components/scrum/TaskRow";
 import { AddRowForm } from "./components/scrum/AddRowForm";
 import { NewProjectModal } from "./components/scrum/modals/NewProjectModal";
@@ -59,24 +59,30 @@ export function ScrumView() {
   const [touchDragId, setTouchDragId] = useState<string | null>(null);
 
   /** Devuelve los ids del tablero con la tarea movida a la posicion `to`. */
-  function idsWithMove(taskId: string, to: number): string[] | null {
-    const ids = projectTasks.map((t) => t.id);
-    const from = ids.indexOf(taskId);
-    if (from === -1 || to < 0 || to >= ids.length || to === from) return null;
-    const [moved] = ids.splice(from, 1);
-    ids.splice(to, 0, moved);
-    return ids;
-  }
+  const idsWithMove = useCallback(
+    (taskId: string, to: number): string[] | null => {
+      const ids = projectTasks.map((t) => t.id);
+      const from = ids.indexOf(taskId);
+      if (from === -1 || to < 0 || to >= ids.length || to === from) return null;
+      const [moved] = ids.splice(from, 1);
+      ids.splice(to, 0, moved);
+      return ids;
+    },
+    [projectTasks]
+  );
 
   /** Suelta la tarea arrastrada en la posicion de la tarea destino. */
-  function handleDropOn(targetId: string, draggedTaskId: string) {
-    setDropTargetId(null);
-    setDraggingTaskId(null);
-    const dragged = draggedTaskId || draggingTaskId;
-    if (!dragged || dragged === targetId) return;
-    const ids = idsWithMove(dragged, projectTasks.findIndex((t) => t.id === targetId));
-    if (ids) reorderTasks(ids);
-  }
+  const handleDropOn = useCallback(
+    (targetId: string, draggedTaskId: string) => {
+      setDropTargetId(null);
+      setDraggingTaskId(null);
+      const dragged = draggedTaskId || draggingTaskId;
+      if (!dragged || dragged === targetId) return;
+      const ids = idsWithMove(dragged, projectTasks.findIndex((t) => t.id === targetId));
+      if (ids) reorderTasks(ids);
+    },
+    [draggingTaskId, idsWithMove, projectTasks, reorderTasks]
+  );
 
   /** Mueve la tarea una posicion arriba o abajo, desde el teclado. */
   function handleMoveBy(taskId: string, delta: number) {
@@ -132,7 +138,7 @@ export function ScrumView() {
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerCancel);
     };
-  });
+  }, [touchDragId, handleDropOn]);
 
   const doneCount = projectTasks.filter((t) => t.status === "Completada").length;
   const totalCount = projectTasks.length;

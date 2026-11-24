@@ -9,7 +9,7 @@ import { HttpError } from "../errors";
 import { withCookieSession, withUser } from "../middleware/auth";
 import { authRateLimiter } from "../middleware/rateLimit";
 import { isEmailFormat } from "../models/shared";
-import { getJwtSecret, isProductionEnv } from "../utils/config";
+import { getJwtSecret } from "../utils/config";
 
 const router = Router();
 // Hash bcrypt válido precomputado (costo 12) para mitigar enumeración por tiempo.

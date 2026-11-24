@@ -87,9 +87,9 @@ export function InlineDate({
   const cancelledRef = useRef(false);
 
   const handleCommit = () => {
-    if (!cancelledRef.current) {
-      onCommit(val);
-    }
+    if (cancelledRef.current) return;
+    cancelledRef.current = true;
+    onCommit(val);
   };
 
   const handleCancel = () => {
@@ -103,7 +103,14 @@ export function InlineDate({
         className="fixed inset-0 z-10"
         onClick={handleCommit}
       />
-      <div className="relative z-20 flex items-center justify-end gap-1 w-full bg-background border border-accent-blue rounded px-1.5 py-0.5 shadow-xs" onBlur={onBlur}>
+      <div
+        className="relative z-20 flex items-center justify-end gap-1 w-full bg-background border border-accent-blue rounded px-1.5 py-0.5 shadow-xs"
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            handleCommit();
+          }
+        }}
+      >
         <input
           autoFocus
           type="date"

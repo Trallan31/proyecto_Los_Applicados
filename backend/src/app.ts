@@ -24,7 +24,16 @@ if (isProductionEnv()) {
   app.set("trust proxy", 1);
 }
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        // Permite despliegue en HTTP puro (ej. servidor del curso) sin forzar HTTPS en assets.
+        "upgrade-insecure-requests": null,
+      },
+    },
+  })
+);
 app.use(
   cors({
     origin: (origin, callback) => {

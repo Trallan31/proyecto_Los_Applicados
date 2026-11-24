@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import type {
   Activity,
@@ -97,9 +97,14 @@ export function useScrumBoard() {
   }
 
   /** Guarda el orden completo de las tareas del proyecto activo. */
-  function reorderTasks(orderedIds: string[]) {
-    if (project) void storeReorderActivities(project.id, orderedIds);
-  }
+  const reorderTasks = useCallback(
+    (orderedIds: string[]) => {
+      if (activeProjectId) {
+        void storeReorderActivities(activeProjectId, orderedIds);
+      }
+    },
+    [activeProjectId, storeReorderActivities]
+  );
 
   function addCategory(name: string) {
     if (project) storeAddCategory(project.id, name);
