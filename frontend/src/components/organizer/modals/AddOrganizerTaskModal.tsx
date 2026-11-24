@@ -11,13 +11,13 @@ type BaseModalProps = {
 
 type CreateModalProps = BaseModalProps & {
   initialTask?: undefined;
-  onAdd: (t: Omit<OrganizerTask, "id" | "userId">) => void;
+  onAdd: (t: Omit<OrganizerTask, "id" | "userId">) => Promise<boolean> | boolean;
   onEdit?: undefined;
 };
 
 type EditModalProps = BaseModalProps & {
   initialTask: OrganizerTask;
-  onEdit: (id: string, changes: Partial<Omit<OrganizerTask, "id" | "userId">>) => void;
+  onEdit: (id: string, changes: Partial<Omit<OrganizerTask, "id" | "userId">>) => Promise<boolean> | boolean;
   onAdd?: undefined;
 };
 
@@ -40,18 +40,19 @@ export function AddOrganizerTaskModal(props: OrganizerTaskModalProps) {
   const [endDate, setEndDate] = useState(initialTask ? initialTask.endDate : "");
   const [dueTime, setDueTime] = useState(initialTask ? (initialTask.dueTime ?? "") : "");
   const [notes, setNotes] = useState(initialTask ? (initialTask.notes ?? "") : "");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !submitting) onClose();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, submitting]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !endDate) return;
+    if (submitting || !title.trim() || !endDate) return;
     const finalCourseId = courseId || null;
     const payload = {
       title: title.trim(),
@@ -65,17 +66,26 @@ export function AddOrganizerTaskModal(props: OrganizerTaskModalProps) {
       scope: (finalCourseId === null ? "Personal" : "Ramo") as TaskScope,
     };
 
-    if (props.initialTask) {
-      props.onEdit(props.initialTask.id, payload);
-    } else {
-      props.onAdd(payload);
+    // Solo cierra el modal si la mutación tuvo éxito; si falla, conserva el formulario.
+    setSubmitting(true);
+    try {
+      const ok = props.initialTask
+        ? await props.onEdit(props.initialTask.id, payload)
+        : await props.onAdd(payload);
+      if (ok) {
+        onClose();
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={() => {
+        if (!submitting) onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-task-title"
@@ -87,10 +97,13 @@ export function AddOrganizerTaskModal(props: OrganizerTaskModalProps) {
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            disabled={submitting}
+            onClick={() => {
+              if (!submitting) onClose();
+            }}
             aria-label="Cerrar modal"
             title="Cerrar modal"
-            className="text-text-muted hover:text-text text-lg leading-none cursor-pointer rounded p-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue"
+            className="text-text-muted hover:text-text text-lg leading-none cursor-pointer rounded p-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue disabled:opacity-40 disabled:cursor-not-allowed"
           >
             ✕
           </button>
@@ -142,17 +155,20 @@ export function AddOrganizerTaskModal(props: OrganizerTaskModalProps) {
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-1.5 text-[12px] font-semibold text-text-muted hover:text-text transition-colors cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+              disabled={submitting}
+              onClick={() => {
+                if (!submitting) onClose();
+              }}
+              className="px-4 py-1.5 text-[12px] font-semibold text-text-muted hover:text-text transition-colors cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || !endDate}
+              disabled={submitting || !title.trim() || !endDate}
               className="px-4 py-1.5 text-[12px] font-semibold bg-accent-blue hover:opacity-90 text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
             >
-              {isEditing ? "Guardar cambios" : "Crear actividad"}
+              {submitting ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear actividad"}
             </button>
           </div>
         </form>

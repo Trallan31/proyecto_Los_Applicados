@@ -16,15 +16,36 @@ export function SettingsModal({
   project: Project;
   members: Member[];
   sprints: Sprint[];
-  onRemove: (id: string) => void;
-  onUpdateRole: (id: string, role: "Admin" | "Miembro") => void;
-  onDeleteCategory?: (category: string) => void;
-  onDeleteSprint?: (sprintId: string) => void;
+  onRemove: (id: string) => Promise<boolean> | boolean;
+  onUpdateRole: (id: string, role: "Admin" | "Miembro") => Promise<boolean> | boolean;
+  onDeleteCategory?: (category: string) => Promise<boolean> | boolean;
+  onDeleteSprint?: (sprintId: string) => Promise<boolean> | boolean;
   onDeleteProject?: () => void;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<"team" | "categories" | "sprints" | "danger">("team");
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'category' | 'sprint'; id: string } | null>(null);
+  const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+
+  async function handleRoleChange(memberId: string, role: Member["role"]) {
+    if (busyMemberId !== null) return;
+    setBusyMemberId(memberId);
+    try {
+      await onUpdateRole(memberId, role);
+    } finally {
+      setBusyMemberId(null);
+    }
+  }
+
+  async function handleRemoveMember(memberId: string) {
+    if (busyMemberId !== null) return;
+    setBusyMemberId(memberId);
+    try {
+      await onRemove(memberId);
+    } finally {
+      setBusyMemberId(null);
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -87,21 +108,22 @@ export function SettingsModal({
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <select 
-                        value={m.role} 
-                        onChange={(e) => onUpdateRole(m.id, e.target.value as Member["role"])}
+                      <select
+                        value={m.role}
+                        onChange={(e) => void handleRoleChange(m.id, e.target.value as Member["role"])}
                         className="bg-transparent text-xs font-mono text-text-muted focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isOnlyAdmin}
+                        disabled={isOnlyAdmin || busyMemberId === m.id}
                         title={isOnlyAdmin ? "El proyecto debe conservar al menos un Administrador." : undefined}
                       >
                         <option value="Admin" className="bg-surface text-text">Admin</option>
                         <option value="Miembro" className="bg-surface text-text">Miembro</option>
                       </select>
-                      <button 
-                        onClick={() => onRemove(m.id)} 
-                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-accent-red'} disabled:cursor-not-allowed`}
+                      <button
+                        type="button"
+                        onClick={() => void handleRemoveMember(m.id)}
+                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin || busyMemberId === m.id ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-accent-red'} disabled:cursor-not-allowed`}
                         title={isOnlyMember ? "No puedes eliminar al único integrante del proyecto." : isOnlyAdmin ? "No puedes eliminar al único Administrador." : "Quitar miembro"}
-                        disabled={isOnlyMember || isOnlyAdmin}
+                        disabled={isOnlyMember || isOnlyAdmin || busyMemberId === m.id}
                       >✕</button>
                     </div>
                   </div>
@@ -157,11 +179,9 @@ export function SettingsModal({
                 <p className="text-xs text-text-muted mt-1">Esta acción borrará el proyecto y todas sus tareas asociadas. Esta acción no se puede deshacer.</p>
               </div>
               <button
-                onClick={() => {
-                  onDeleteProject();
-                  onClose();
-                }}
-                className="w-full py-2 bg-accent-red text-white text-xs font-bold rounded hover:opacity-90 transition-colors"
+                type="button"
+                onClick={onDeleteProject}
+                className="w-full py-2 bg-accent-red text-white text-xs font-bold rounded hover:opacity-90 transition-colors cursor-pointer"
               >
                 Eliminar Proyecto Definitivamente
               </button>
@@ -174,10 +194,14 @@ export function SettingsModal({
           title={confirmDelete.type === 'category' ? "Eliminar categoría" : "Eliminar sprint"}
           message={confirmDelete.type === 'category' ? "Se removerá la categoría de todas las tareas. ¿Continuar?" : "Se eliminará el sprint y sus referencias. ¿Continuar?"}
           confirmLabel="Sí, eliminar"
-          onConfirm={() => {
-            if (confirmDelete.type === 'category' && onDeleteCategory) onDeleteCategory(confirmDelete.id);
-            if (confirmDelete.type === 'sprint' && onDeleteSprint) onDeleteSprint(confirmDelete.id);
-            setConfirmDelete(null);
+          onConfirm={async () => {
+            const ok =
+              confirmDelete.type === 'category'
+                ? (onDeleteCategory ? await onDeleteCategory(confirmDelete.id) : true)
+                : (onDeleteSprint ? await onDeleteSprint(confirmDelete.id) : true);
+            if (ok) {
+              setConfirmDelete(null);
+            }
           }}
           onCancel={() => setConfirmDelete(null)}
         />

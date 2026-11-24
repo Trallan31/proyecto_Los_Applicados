@@ -15,10 +15,10 @@ export function ManageCoursesModal({
 }: {
   courses: Course[];
   sessions: CourseSession[];
-  onAddCourse: (c: Omit<Course, "id" | "userId">) => void;
-  onDeleteCourse: (id: string) => void;
-  onAddSession: (s: Omit<CourseSession, "id">) => void;
-  onDeleteSession: (id: string) => void;
+  onAddCourse: (c: Omit<Course, "id" | "userId">) => Promise<boolean> | boolean;
+  onDeleteCourse: (id: string) => Promise<boolean> | boolean;
+  onAddSession: (s: Omit<CourseSession, "id">) => Promise<boolean> | boolean;
+  onDeleteSession: (id: string) => Promise<boolean> | boolean;
   onClose: () => void;
 }) {
   // El ramo seleccionado es lo unico que el modal guarda: el resto son los
@@ -26,39 +26,54 @@ export function ManageCoursesModal({
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'course' | 'session'; id: string } | null>(null);
 
-  // New Course Inputs
+  // Entradas para nuevo ramo
   const [newName, setNewName] = useState("");
   const [newCode, setNewCode] = useState("");
   const [newColor, setNewColor] = useState(PALETTE[0]);
+  const [submittingCourse, setSubmittingCourse] = useState(false);
 
-  // New Session Inputs for Active Course
+  // Entradas para nuevo horario del ramo activo
   const [sessType, setSessType] = useState<SessionType>("Cátedra");
   const [sessDay, setSessDay] = useState(0);
   const [sessHour, setSessHour] = useState(8);
   const [sessDuration, setSessDuration] = useState(2);
+  const [submittingSession, setSubmittingSession] = useState(false);
 
-  function handleAddCourse() {
-    if (!newName.trim() || !newCode.trim()) return;
+  async function handleAddCourse() {
+    if (submittingCourse || !newName.trim() || !newCode.trim()) return;
     const codeUpper = newCode.trim().toUpperCase();
-    onAddCourse({
-      name: newName.trim(),
-      code: codeUpper,
-      shortName: codeUpper.slice(0, 4),
-      color: newColor,
-    });
-    setNewName("");
-    setNewCode("");
+    setSubmittingCourse(true);
+    try {
+      const ok = await onAddCourse({
+        name: newName.trim(),
+        code: codeUpper,
+        shortName: codeUpper.slice(0, 4),
+        color: newColor,
+      });
+      // Solo limpia los campos si el ramo se creó correctamente.
+      if (ok) {
+        setNewName("");
+        setNewCode("");
+      }
+    } finally {
+      setSubmittingCourse(false);
+    }
   }
 
-  function handleAddSession() {
-    if (!selectedCourse) return;
-    onAddSession({
-      courseId: selectedCourse.id,
-      dayOfWeek: sessDay,
-      startHour: sessHour,
-      duration: sessDuration,
-      type: sessType,
-    });
+  async function handleAddSession() {
+    if (submittingSession || !selectedCourse) return;
+    setSubmittingSession(true);
+    try {
+      await onAddSession({
+        courseId: selectedCourse.id,
+        dayOfWeek: sessDay,
+        startHour: sessHour,
+        duration: sessDuration,
+        type: sessType,
+      });
+    } finally {
+      setSubmittingSession(false);
+    }
   }
 
   // Si no hay seleccion explicita, o el ramo elegido se borro, cae al primero.
@@ -136,11 +151,12 @@ export function ManageCoursesModal({
                   ))}
                 </div>
                 <button
-                  onClick={handleAddCourse}
-                  disabled={!newName.trim() || !newCode.trim()}
-                  className="px-3 py-1 bg-accent-blue text-white rounded text-xs font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => void handleAddCourse()}
+                  disabled={submittingCourse || !newName.trim() || !newCode.trim()}
+                  className="px-3 py-1 bg-accent-blue text-white rounded text-xs font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  + Ramo
+                  {submittingCourse ? "Guardando..." : "+ Ramo"}
                 </button>
               </div>
             </div>
@@ -220,8 +236,15 @@ export function ManageCoursesModal({
                         </select>
                       </div>
                     </div>
-                    <button onClick={handleAddSession} className="w-full py-1.5 bg-accent-green text-black font-bold text-xs rounded hover:opacity-90 transition-colors">
-                      + Agregar Horario a {selectedCourse.shortName || selectedCourse.code}
+                    <button
+                      type="button"
+                      disabled={submittingSession}
+                      onClick={() => void handleAddSession()}
+                      className="w-full py-1.5 bg-accent-green text-black font-bold text-xs rounded hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {submittingSession
+                        ? "Guardando..."
+                        : `+ Agregar Horario a ${selectedCourse.shortName || selectedCourse.code}`}
                     </button>
                   </div>
                 </div>
@@ -245,10 +268,12 @@ export function ManageCoursesModal({
           title={confirmDelete.type === 'course' ? "Eliminar ramo" : "Eliminar horario"}
           message={confirmDelete.type === 'course' ? "¿Seguro que deseas eliminar este ramo y todos sus horarios asociados?" : "¿Seguro que deseas eliminar este horario?"}
           confirmLabel="Sí, eliminar"
-          onConfirm={() => {
-            if (confirmDelete.type === 'course') onDeleteCourse(confirmDelete.id);
-            else onDeleteSession(confirmDelete.id);
-            setConfirmDelete(null);
+          onConfirm={async () => {
+            const ok =
+              confirmDelete.type === 'course'
+                ? await onDeleteCourse(confirmDelete.id)
+                : await onDeleteSession(confirmDelete.id);
+            if (ok) setConfirmDelete(null);
           }}
           onCancel={() => setConfirmDelete(null)}
         />

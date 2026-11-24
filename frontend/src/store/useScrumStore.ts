@@ -30,32 +30,32 @@ interface ScrumState {
   clearMutationError: () => void;
 
   // Actividades (tareas del tablero).
-  updateActivity: <K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) => void;
+  updateActivity: <K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) => Promise<boolean>;
   addActivity: (projectId: string, task: Omit<Activity, "id" | "projectId">) => Promise<Activity | null>;
-  deleteActivity: (taskId: string) => void;
+  deleteActivity: (taskId: string) => Promise<boolean>;
   reorderActivities: (projectId: string, orderedIds: string[]) => Promise<void>;
 
   // Categorías.
-  addCategory: (projectId: string, name: string) => void;
-  deleteCategory: (projectId: string, categoryName: string) => Promise<void>;
+  addCategory: (projectId: string, name: string) => Promise<boolean>;
+  deleteCategory: (projectId: string, categoryName: string) => Promise<boolean>;
 
   // Sprints.
   addSprint: (projectId: string, name: string) => Promise<Sprint | null>;
-  deleteSprint: (sprintId: string) => Promise<void>;
+  deleteSprint: (sprintId: string) => Promise<boolean>;
 
   // Proyectos.
   createProject: (data: Omit<Project, "id" | "categories" | "members">) => Promise<Project | null>;
   deleteProject: (projectId: string) => Promise<boolean>;
 
   // Miembros.
-  inviteMember: (projectId: string, user: User) => void;
-  removeMember: (projectId: string, memberId: string) => Promise<void>;
-  updateMemberRole: (projectId: string, memberId: string, role: ProjectRole) => void;
+  inviteMember: (projectId: string, user: User) => Promise<boolean>;
+  removeMember: (projectId: string, memberId: string) => Promise<boolean>;
+  updateMemberRole: (projectId: string, memberId: string, role: ProjectRole) => Promise<boolean>;
 
   // Enlaces del proyecto.
-  addProjectLink: (projectId: string, link: Omit<ProjectLink, "id">) => void;
-  deleteProjectLink: (projectId: string, linkId: string) => void;
-  updateProjectLink: (projectId: string, linkId: string, changes: Partial<Omit<ProjectLink, "id">>) => void;
+  addProjectLink: (projectId: string, link: Omit<ProjectLink, "id">) => Promise<boolean>;
+  deleteProjectLink: (projectId: string, linkId: string) => Promise<boolean>;
+  updateProjectLink: (projectId: string, linkId: string, changes: Partial<Omit<ProjectLink, "id">>) => Promise<boolean>;
 }
 
 const initialData = {
@@ -70,29 +70,52 @@ const initialData = {
 };
 
 let inflightLoad: Promise<void> | null = null;
+// Se incrementa al cambiar de usuario para descartar cargas obsoletas en vuelo.
+let sessionEpoch = 0;
+// Identificador secuencial para que un refetch() posterior invalide cargas previas.
+let latestLoadId = 0;
 
 export const useScrumStore = create<ScrumState>((set, get) => {
-  async function loadAll(): Promise<void> {
+  async function loadAll(force: boolean): Promise<void> {
+    const epoch = sessionEpoch;
+    const loadId = ++latestLoadId;
     set({ loading: true, loadError: null });
     try {
+      // Si el Organizador ya cargó y no es refetch forzado, reutilizamos projects y activities.
+      if (!force && useOrganizerStore.getState().loaded) {
+        const [sprints, users] = await Promise.all([
+          api.list<Sprint>("sprints"),
+          api.list<User>("users"),
+        ]);
+        if (epoch !== sessionEpoch || loadId !== latestLoadId) return;
+        const { projects, activities } = useOrganizerStore.getState();
+        set({ projects, sprints, activities, users, loaded: true, loading: false });
+        return;
+      }
+
       const [projects, sprints, activities, users] = await Promise.all([
         api.list<Project>("projects"),
         api.list<Sprint>("sprints"),
         api.list<Activity>("activities"),
         api.list<User>("users"),
       ]);
+      if (epoch !== sessionEpoch || loadId !== latestLoadId) return;
       set({ projects, sprints, activities, users, loaded: true, loading: false });
     } catch (error: unknown) {
+      if (epoch !== sessionEpoch || loadId !== latestLoadId) return;
       set({ loadError: api.describeError(error), loading: false });
     }
   }
 
   function load(force: boolean): Promise<void> {
     if (!force && get().loaded) return Promise.resolve();
-    if (!inflightLoad) {
-      inflightLoad = loadAll().finally(() => {
-        inflightLoad = null;
+    if (force || !inflightLoad) {
+      const currentLoad = loadAll(force).finally(() => {
+        if (inflightLoad === currentLoad) {
+          inflightLoad = null;
+        }
       });
+      inflightLoad = currentLoad;
     }
     return inflightLoad;
   }
@@ -158,14 +181,13 @@ export const useScrumStore = create<ScrumState>((set, get) => {
     refetch: () => load(true),
     clearMutationError: () => set({ mutationError: null }),
 
-    updateActivity: <K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) => {
-      void editItem<Activity>(
+    updateActivity: <K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) =>
+      editItem<Activity>(
         "activities",
         taskId,
         { [field]: value } as Partial<Omit<Activity, "id">>,
         applyActivity
-      );
-    },
+      ),
 
     /** La tarea nueva queda al final del tablero del proyecto. */
     addActivity: (projectId, task) => {
@@ -180,22 +202,22 @@ export const useScrumStore = create<ScrumState>((set, get) => {
       );
     },
 
-    deleteActivity: (taskId) => {
-      void removeItem("activities", taskId, () =>
+    deleteActivity: (taskId) =>
+      removeItem("activities", taskId, () =>
         set((state) => ({
           activities: state.activities.filter((a) => a.id !== taskId),
           mutationError: null,
         }))
-      );
-    },
+      ),
 
     /**
      * Reordena las tareas del proyecto segun `orderedIds`: aplica el orden
      * nuevo al instante y luego guarda solo las que cambiaron de posicion.
-     * Si alguna falla se restaura el orden anterior, para que la vista no
-     * muestre un orden que el servidor no tiene.
+     * Si alguna falla se restaura el orden anterior y se sincroniza con el
+     * servidor para evitar inconsistencias ante fallos parciales.
      */
     reorderActivities: async (projectId, orderedIds) => {
+      const epoch = sessionEpoch;
       const previous = get().activities;
       const positionById = new Map(orderedIds.map((id, index) => [id, index]));
       set({
@@ -218,15 +240,18 @@ export const useScrumStore = create<ScrumState>((set, get) => {
           )
         );
       } catch (error: unknown) {
+        if (epoch !== sessionEpoch) return;
         set({ activities: previous, mutationError: api.describeError(error) });
+        await get().refetch();
       }
     },
 
-    addCategory: (projectId, name) => {
+    addCategory: async (projectId, name) => {
       const trimmed = name.trim();
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project || !trimmed || project.categories.includes(trimmed)) return;
-      void editItem<Project>(
+      if (!project || !trimmed) return false;
+      if (project.categories.includes(trimmed)) return true;
+      return editItem<Project>(
         "projects",
         project.id,
         { categories: [...project.categories, trimmed] },
@@ -234,24 +259,24 @@ export const useScrumStore = create<ScrumState>((set, get) => {
       );
     },
 
-    /** Borra la categoría del proyecto y la quita de las tareas que la usaban. */
+    /** Borra la categoría del proyecto; el servidor la quita de las tareas. */
     deleteCategory: async (projectId, categoryName) => {
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project) return;
-      const updated = await editItem<Project>(
+      if (!project) return false;
+      return editItem<Project>(
         "projects",
         project.id,
         { categories: project.categories.filter((c) => c !== categoryName) },
-        applyProject
-      );
-      if (!updated) return;
-      const affected = get().activities.filter(
-        (a) => a.projectId === projectId && a.category === categoryName
-      );
-      await Promise.all(
-        affected.map((task) =>
-          editItem<Activity>("activities", task.id, { category: "" }, applyActivity)
-        )
+        (updated) =>
+          set((state) => ({
+            projects: state.projects.map((p) => (p.id === updated.id ? updated : p)),
+            activities: state.activities.map((a) =>
+              a.projectId === projectId && a.category === categoryName
+                ? { ...a, category: "" }
+                : a
+            ),
+            mutationError: null,
+          }))
       );
     },
 
@@ -260,17 +285,17 @@ export const useScrumStore = create<ScrumState>((set, get) => {
         set((state) => ({ sprints: [...state.sprints, created], mutationError: null }))
       ),
 
-    /** Borra el sprint y deja sin sprint a las tareas que lo tenían. */
-    deleteSprint: async (sprintId) => {
-      const deleted = await removeItem("sprints", sprintId, () =>
+    /** Borra el sprint y deja sin sprint en memoria a las tareas que lo tenían. */
+    deleteSprint: (sprintId) =>
+      removeItem("sprints", sprintId, () =>
         set((state) => ({
           sprints: state.sprints.filter((s) => s.id !== sprintId),
+          activities: state.activities.map((a) =>
+            a.sprintId === sprintId ? { ...a, sprintId: "" } : a
+          ),
           mutationError: null,
         }))
-      );
-      if (!deleted) return;
-      await get().refetch();
-    },
+      ),
 
     createProject: async (projectData) => {
       const user = useAuthStore.getState().user;
@@ -293,65 +318,59 @@ export const useScrumStore = create<ScrumState>((set, get) => {
       return created;
     },
 
-    /** Borra el proyecto con sus sprints y tareas, para no dejar huérfanos. */
-    deleteProject: async (projectId) => {
-      const deleted = await removeItem("projects", projectId, () =>
+    /** Borra el proyecto con sus sprints y tareas en memoria, sin dejar huérfanos. */
+    deleteProject: (projectId) =>
+      removeItem("projects", projectId, () =>
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== projectId),
+          sprints: state.sprints.filter((s) => s.projectId !== projectId),
+          activities: state.activities.filter((a) => a.projectId !== projectId),
           mutationError: null,
         }))
-      );
-      if (!deleted) return false;
-      await get().refetch();
-      return true;
-    },
+      ),
 
-    inviteMember: (projectId, user) => {
+    inviteMember: async (projectId, user) => {
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project || project.members.some((m) => m.userId === user.id)) return;
+      if (!project || project.members.some((m) => m.userId === user.id)) return false;
       const members: ProjectMember[] = [...project.members, { userId: user.id, role: "Miembro" }];
-      void editItem<Project>("projects", project.id, { members }, applyProject);
+      return editItem<Project>("projects", project.id, { members }, applyProject);
     },
 
     /** No se puede dejar el proyecto sin miembros ni sin ningún Admin. */
     removeMember: async (projectId, memberId) => {
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project) return;
+      if (!project) return false;
       const target = project.members.find((m) => m.userId === memberId);
-      if (!target || project.members.length <= 1) return;
+      if (!target || project.members.length <= 1) return false;
       const adminCount = project.members.filter((m) => m.role === "Admin").length;
-      if (target.role === "Admin" && adminCount <= 1) return;
-      const updated = await editItem<Project>(
+      if (target.role === "Admin" && adminCount <= 1) return false;
+      return editItem<Project>(
         "projects",
         project.id,
         { members: project.members.filter((m) => m.userId !== memberId) },
-        applyProject
-      );
-      if (!updated) return;
-      const affected = get().activities.filter(
-        (a) => a.projectId === projectId && a.members.includes(memberId)
-      );
-      await Promise.all(
-        affected.map((task) =>
-          editItem<Activity>(
-            "activities",
-            task.id,
-            { members: task.members.filter((id) => id !== memberId) },
-            applyActivity
-          )
-        )
+        (updated) =>
+          set((state) => ({
+            projects: state.projects.map((p) => (p.id === updated.id ? updated : p)),
+            activities: state.activities.map((a) =>
+              a.projectId === projectId && a.members.includes(memberId)
+                ? { ...a, members: a.members.filter((id) => id !== memberId) }
+                : a
+            ),
+            mutationError: null,
+          }))
       );
     },
 
-    updateMemberRole: (projectId, memberId, role) => {
+    updateMemberRole: async (projectId, memberId, role) => {
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project) return;
+      if (!project) return false;
+      const target = project.members.find((m) => m.userId === memberId);
+      if (!target) return false;
       if (role === "Miembro") {
-        const target = project.members.find((m) => m.userId === memberId);
         const adminCount = project.members.filter((m) => m.role === "Admin").length;
-        if (target?.role === "Admin" && adminCount <= 1) return;
+        if (target.role === "Admin" && adminCount <= 1) return false;
       }
-      void editItem<Project>(
+      return editItem<Project>(
         "projects",
         project.id,
         { members: project.members.map((m) => (m.userId === memberId ? { ...m, role } : m)) },
@@ -359,11 +378,11 @@ export const useScrumStore = create<ScrumState>((set, get) => {
       );
     },
 
-    addProjectLink: (projectId, link) => {
+    addProjectLink: async (projectId, link) => {
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project) return;
+      if (!project) return false;
       const newLink: ProjectLink = { ...link, id: `link-${Date.now()}` };
-      void editItem<Project>(
+      return editItem<Project>(
         "projects",
         project.id,
         { links: [...(project.links || []), newLink] },
@@ -371,10 +390,10 @@ export const useScrumStore = create<ScrumState>((set, get) => {
       );
     },
 
-    deleteProjectLink: (projectId, linkId) => {
+    deleteProjectLink: async (projectId, linkId) => {
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project) return;
-      void editItem<Project>(
+      if (!project) return false;
+      return editItem<Project>(
         "projects",
         project.id,
         { links: (project.links || []).filter((l) => l.id !== linkId) },
@@ -382,10 +401,10 @@ export const useScrumStore = create<ScrumState>((set, get) => {
       );
     },
 
-    updateProjectLink: (projectId, linkId, changes) => {
+    updateProjectLink: async (projectId, linkId, changes) => {
       const project = get().projects.find((p) => p.id === projectId);
-      if (!project) return;
-      void editItem<Project>(
+      if (!project) return false;
+      return editItem<Project>(
         "projects",
         project.id,
         { links: (project.links || []).map((l) => (l.id === linkId ? { ...l, ...changes } : l)) },
@@ -397,6 +416,8 @@ export const useScrumStore = create<ScrumState>((set, get) => {
 
 // --- Sincronización con el Organizador (projects y activities compartidos) ---
 // Guards por referencia: al propagar se copia el mismo array, el eco se detiene.
+// La dirección inversa (Organizador -> Scrum) se suscribe en useOrganizerStore.ts
+// para evitar evaluar la dependencia circular en el nivel superior.
 useScrumStore.subscribe((state, prev) => {
   if (state.projects !== prev.projects) {
     useOrganizerStore.setState({ projects: state.projects });
@@ -406,16 +427,11 @@ useScrumStore.subscribe((state, prev) => {
   }
 });
 
-// El Organizador solo muta activities (estado de tareas derivadas).
-useOrganizerStore.subscribe((state, prev) => {
-  if (state.activities !== prev.activities) {
-    useScrumStore.setState({ activities: state.activities });
-  }
-});
-
 // Si cambia el usuario (logout/login), se descartan los datos del anterior.
 useAuthStore.subscribe((state, previous) => {
   if (state.user?.id !== previous.user?.id) {
+    sessionEpoch += 1;
+    inflightLoad = null;
     useScrumStore.setState({ ...initialData });
   }
 });

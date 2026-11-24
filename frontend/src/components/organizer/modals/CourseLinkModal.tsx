@@ -7,7 +7,7 @@ interface CourseLinkModalProps {
   linkToEdit?: CourseLink | null;
   courseName: string;
   onClose: () => void;
-  onSave: (link: Omit<CourseLink, "id">) => void;
+  onSave: (link: Omit<CourseLink, "id">) => Promise<boolean> | boolean;
 }
 
 const CATEGORIES: { value: CourseLinkCategory; label: string }[] = [
@@ -29,22 +29,24 @@ export function CourseLinkModal({
   const [url, setUrl] = useState(linkToEdit?.url ?? "");
   const [category, setCategory] = useState<CourseLinkCategory>(linkToEdit?.category ?? "otro");
   const [urlError, setUrlError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !submitting) {
         onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, submitting]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
 
@@ -54,19 +56,27 @@ export function CourseLinkModal({
       return;
     }
 
-    onSave({
-      title: trimmedTitle,
-      url: normalized.url,
-      category,
-    });
-    onClose();
+    // Espera confirmación del backend antes de cerrar para no perder los datos si falla.
+    setSubmitting(true);
+    try {
+      const ok = await onSave({
+        title: trimmedTitle,
+        url: normalized.url,
+        category,
+      });
+      if (ok) {
+        onClose();
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div
       className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && !submitting) onClose();
       }}
       role="dialog"
       aria-modal="true"
@@ -84,8 +94,11 @@ export function CourseLinkModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="text-text-muted hover:text-text transition-colors p-1 rounded-md text-sm"
+            disabled={submitting}
+            onClick={() => {
+              if (!submitting) onClose();
+            }}
+            className="text-text-muted hover:text-text transition-colors p-1 rounded-md text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Cerrar modal"
           >
             ✕
@@ -168,17 +181,20 @@ export function CourseLinkModal({
           <div className="flex gap-3 pt-3">
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 rounded-md text-sm font-medium text-text-muted hover:bg-panel-hover hover:text-text transition-colors"
+              disabled={submitting}
+              onClick={() => {
+                if (!submitting) onClose();
+              }}
+              className="flex-1 px-4 py-2 rounded-md text-sm font-medium text-text-muted hover:bg-panel-hover hover:text-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || !url.trim()}
+              disabled={submitting || !title.trim() || !url.trim()}
               className="flex-1 px-4 py-2 bg-accent-blue text-white rounded-md text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              Guardar enlace
+              {submitting ? "Guardando..." : "Guardar enlace"}
             </button>
           </div>
         </form>

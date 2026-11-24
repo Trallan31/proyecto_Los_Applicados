@@ -106,12 +106,14 @@ export function useScrumBoard() {
     [activeProjectId, storeReorderActivities]
   );
 
-  function addCategory(name: string) {
-    if (project) storeAddCategory(project.id, name);
+  async function addCategory(name: string): Promise<boolean> {
+    if (!project) return false;
+    return storeAddCategory(project.id, name);
   }
 
-  async function deleteCategory(categoryName: string) {
-    if (project) await storeDeleteCategory(project.id, categoryName);
+  async function deleteCategory(categoryName: string): Promise<boolean> {
+    if (!project) return false;
+    return storeDeleteCategory(project.id, categoryName);
   }
 
   async function addSprint(name: string): Promise<Sprint | null> {
@@ -128,35 +130,45 @@ export function useScrumBoard() {
     return true;
   }
 
-  async function deleteProject(projectId: string) {
+  async function deleteProject(projectId: string): Promise<boolean> {
     const deleted = await storeDeleteProject(projectId);
     if (deleted && selectedProjectId === projectId) {
       setSelectedProjectId("");
     }
+    return deleted;
   }
 
-  function inviteMember(u: User) {
-    if (project) storeInviteMember(project.id, u);
+  async function inviteMember(u: User): Promise<boolean> {
+    if (!project) return false;
+    return storeInviteMember(project.id, u);
   }
 
-  async function removeMember(memberId: string) {
-    if (project) await storeRemoveMember(project.id, memberId);
+  async function removeMember(memberId: string): Promise<boolean> {
+    if (!project) return false;
+    return storeRemoveMember(project.id, memberId);
   }
 
-  function updateMemberRole(memberId: string, role: ProjectRole) {
-    if (project) storeUpdateMemberRole(project.id, memberId, role);
+  async function updateMemberRole(memberId: string, role: ProjectRole): Promise<boolean> {
+    if (!project) return false;
+    return storeUpdateMemberRole(project.id, memberId, role);
   }
 
-  function addProjectLink(link: Omit<ProjectLink, "id">) {
-    if (project) storeAddProjectLink(project.id, link);
+  async function addProjectLink(link: Omit<ProjectLink, "id">): Promise<boolean> {
+    if (!project) return false;
+    return storeAddProjectLink(project.id, link);
   }
 
-  function deleteProjectLink(linkId: string) {
-    if (project) storeDeleteProjectLink(project.id, linkId);
+  async function deleteProjectLink(linkId: string): Promise<boolean> {
+    if (!project) return false;
+    return storeDeleteProjectLink(project.id, linkId);
   }
 
-  function updateProjectLink(linkId: string, changes: Partial<Omit<ProjectLink, "id">>) {
-    if (project) storeUpdateProjectLink(project.id, linkId, changes);
+  async function updateProjectLink(
+    linkId: string,
+    changes: Partial<Omit<ProjectLink, "id">>
+  ): Promise<boolean> {
+    if (!project) return false;
+    return storeUpdateProjectLink(project.id, linkId, changes);
   }
 
   return {

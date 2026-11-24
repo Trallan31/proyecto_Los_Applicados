@@ -195,65 +195,92 @@ export function InlineSelectWithCreate({
   value: string;
   options: string[];
   labels?: Record<string, string>;
-  onCreateNew: (name: string) => void;
+  onCreateNew: (name: string) => void | Promise<boolean | void>;
   createLabel?: string;
   onCommit: (v: string) => void;
   onBlur: () => void;
 }) {
   const [isCreating, setIsCreating] = useState(false);
   const [newItemName, setNewItemName] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  function handleCreateSubmit() {
-    if (newItemName.trim()) {
-      const trimmed = newItemName.trim();
-      onCreateNew(trimmed);
-      setIsCreating(false);
-      setNewItemName("");
-      onBlur();
-    } else {
+  async function handleCreateSubmit() {
+    if (creating) return;
+    const trimmed = newItemName.trim();
+    if (!trimmed) {
       setIsCreating(false);
       onBlur();
+      return;
+    }
+
+    // Solo cierra el editor inline si la creación no devolvió false.
+    setCreating(true);
+    try {
+      const result = await onCreateNew(trimmed);
+      if (result !== false) {
+        setIsCreating(false);
+        setNewItemName("");
+        onBlur();
+      }
+    } finally {
+      setCreating(false);
     }
   }
 
   if (isCreating || options.length === 0) {
     return (
       <>
-        <div className="fixed inset-0 z-10" onClick={() => { setIsCreating(false); onBlur(); }} />
+        <div
+          className="fixed inset-0 z-10"
+          onClick={() => {
+            if (!creating) {
+              setIsCreating(false);
+              onBlur();
+            }
+          }}
+        />
         <div
           className="relative z-20 flex items-center gap-1 w-full bg-background border border-accent-blue rounded p-1"
         >
         <input
           autoFocus
+          disabled={creating}
           value={newItemName}
           onChange={(e) => setNewItemName(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleCreateSubmit();
-            if (e.key === "Escape") {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void handleCreateSubmit();
+            }
+            if (e.key === "Escape" && !creating) {
               setIsCreating(false);
               onBlur();
             }
           }}
           placeholder="Nombre..."
-          className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none"
+          className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none disabled:opacity-50"
         />
         <button
           type="button"
+          disabled={creating}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={handleCreateSubmit}
-          className="text-[10px] text-accent-blue hover:text-accent-green font-bold px-1"
+          onClick={() => void handleCreateSubmit()}
+          className="text-[10px] text-accent-blue hover:text-accent-green font-bold px-1 disabled:opacity-40 disabled:cursor-not-allowed"
           title="Guardar"
         >
           ✓
         </button>
         <button
           type="button"
+          disabled={creating}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
-            setIsCreating(false);
-            onBlur();
+            if (!creating) {
+              setIsCreating(false);
+              onBlur();
+            }
           }}
-          className="text-[10px] text-text-muted hover:text-accent-red font-bold px-1"
+          className="text-[10px] text-text-muted hover:text-accent-red font-bold px-1 disabled:opacity-40 disabled:cursor-not-allowed"
           title="Cancelar"
         >
           ✕

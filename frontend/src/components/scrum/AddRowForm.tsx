@@ -16,7 +16,7 @@ export function AddRowForm({
   members: Member[];
   categories: string[];
   onAdd: (t: Omit<Activity, "id" | "projectId">) => Promise<Activity | null>;
-  onCreateCategory?: (name: string) => void;
+  onCreateCategory?: (name: string) => Promise<boolean> | boolean;
   onCreateSprint?: (name: string) => Promise<Sprint | null>;
   onCancel: () => void;
 }) {
@@ -34,11 +34,13 @@ export function AddRowForm({
 
   const [isCreatingCategory, setIsCreatingCategory] = useState(categories.length === 0);
   const [newCatName, setNewCatName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
   const [isCreatingSprint, setIsCreatingSprint] = useState(projectSprints.length === 0);
   const [newSprintName, setNewSprintName] = useState("");
+  const [creatingSprint, setCreatingSprint] = useState(false);
 
   async function handleSubmit() {
-    if (submitting) return;
+    if (submitting || creatingCategory || creatingSprint) return;
     setValidationError("");
 
     const trimmedTitle = title.trim();
@@ -57,32 +59,38 @@ export function AddRowForm({
       ? Math.min(10000, Math.max(0, hours))
       : 0;
 
-    let finalCat = category || categories[0] || "";
-    if ((isCreatingCategory || categories.length === 0) && newCatName.trim() && onCreateCategory) {
-      finalCat = newCatName.trim();
-      onCreateCategory(finalCat);
-      setCategory(finalCat);
-      setNewCatName("");
-      setIsCreatingCategory(false);
-    }
-
-    let finalSprintId = sprintId;
-    if ((isCreatingSprint || projectSprints.length === 0) && newSprintName.trim() && onCreateSprint) {
-      setSubmitting(true);
-      const createdSprint = await onCreateSprint(newSprintName.trim());
-      if (!createdSprint) {
-        setSubmitting(false);
-        setValidationError("No se pudo crear el sprint. Intenta nuevamente.");
-        return;
-      }
-      finalSprintId = createdSprint.id;
-      setSprintId(finalSprintId);
-      setNewSprintName("");
-      setIsCreatingSprint(false);
-    }
-
     setSubmitting(true);
     try {
+      let finalCat = category || categories[0] || "";
+      if ((isCreatingCategory || categories.length === 0) && newCatName.trim()) {
+        const trimmedCat = newCatName.trim();
+        if (onCreateCategory) {
+          // Espera a que la categoría quede persistida antes de crear la actividad.
+          const ok = await onCreateCategory(trimmedCat);
+          if (!ok) {
+            setValidationError("No se pudo crear la categoría. Intenta nuevamente.");
+            return;
+          }
+        }
+        finalCat = trimmedCat;
+        setCategory(finalCat);
+        setNewCatName("");
+        setIsCreatingCategory(false);
+      }
+
+      let finalSprintId = sprintId;
+      if ((isCreatingSprint || projectSprints.length === 0) && newSprintName.trim() && onCreateSprint) {
+        const createdSprint = await onCreateSprint(newSprintName.trim());
+        if (!createdSprint) {
+          setValidationError("No se pudo crear el sprint. Intenta nuevamente.");
+          return;
+        }
+        finalSprintId = createdSprint.id;
+        setSprintId(finalSprintId);
+        setNewSprintName("");
+        setIsCreatingSprint(false);
+      }
+
       const createdTask = await onAdd({
         title: trimmedTitle,
         description: description.trim(),
@@ -102,27 +110,43 @@ export function AddRowForm({
     }
   }
 
-  function handleCreateCategorySubmit() {
-    if (newCatName.trim() && onCreateCategory) {
-      const trimmed = newCatName.trim();
-      onCreateCategory(trimmed);
+  async function handleCreateCategorySubmit() {
+    if (creatingCategory || submitting) return;
+    const trimmed = newCatName.trim();
+    if (!trimmed) return;
+
+    setValidationError("");
+    setCreatingCategory(true);
+    try {
+      const ok = onCreateCategory ? await onCreateCategory(trimmed) : true;
+      if (!ok) {
+        setValidationError("No se pudo crear la categoría. Intenta nuevamente.");
+        return;
+      }
       setCategory(trimmed);
       setNewCatName("");
       setIsCreatingCategory(false);
+    } finally {
+      setCreatingCategory(false);
     }
   }
 
   async function handleCreateSprintSubmit() {
-    if (!newSprintName.trim() || !onCreateSprint) return;
+    if (creatingSprint || submitting || !newSprintName.trim() || !onCreateSprint) return;
     setValidationError("");
-    const created = await onCreateSprint(newSprintName.trim());
-    if (!created) {
-      setValidationError("No se pudo crear el sprint. Intenta nuevamente.");
-      return;
+    setCreatingSprint(true);
+    try {
+      const created = await onCreateSprint(newSprintName.trim());
+      if (!created) {
+        setValidationError("No se pudo crear el sprint. Intenta nuevamente.");
+        return;
+      }
+      setSprintId(created.id);
+      setNewSprintName("");
+      setIsCreatingSprint(false);
+    } finally {
+      setCreatingSprint(false);
     }
-    setSprintId(created.id);
-    setNewSprintName("");
-    setIsCreatingSprint(false);
   }
 
   return (
@@ -159,6 +183,7 @@ export function AddRowForm({
             <div className="flex items-center gap-1">
               <input
                 autoFocus={isCreatingSprint}
+                disabled={creatingSprint || submitting}
                 value={newSprintName}
                 onChange={(e) => {
                   setNewSprintName(e.target.value);
@@ -169,17 +194,18 @@ export function AddRowForm({
                     e.preventDefault();
                     void handleCreateSprintSubmit();
                   }
-                  if (e.key === "Escape") setIsCreatingSprint(false);
+                  if (e.key === "Escape" && !creatingSprint) setIsCreatingSprint(false);
                 }}
                 placeholder="Nombre Sprint..."
                 aria-label="Nombre del nuevo sprint"
-                className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none"
+                className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none disabled:opacity-50"
               />
               {projectSprints.length > 0 && (
                 <button
                   type="button"
+                  disabled={creatingSprint || submitting}
                   onClick={() => setIsCreatingSprint(false)}
-                  className="text-[10px] text-text-muted"
+                  className="text-[10px] text-text-muted disabled:opacity-40"
                   aria-label="Cancelar nuevo sprint"
                 >
                   ✕
@@ -217,24 +243,29 @@ export function AddRowForm({
             <div className="flex items-center gap-1">
               <input
                 autoFocus={isCreatingCategory}
+                disabled={creatingCategory || submitting}
                 value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
+                onChange={(e) => {
+                  setNewCatName(e.target.value);
+                  if (validationError) setValidationError("");
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleCreateCategorySubmit();
+                    void handleCreateCategorySubmit();
                   }
-                  if (e.key === "Escape") setIsCreatingCategory(false);
+                  if (e.key === "Escape" && !creatingCategory) setIsCreatingCategory(false);
                 }}
                 placeholder="Categoría..."
                 aria-label="Nombre de la nueva categoría"
-                className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none"
+                className="w-full bg-transparent text-[11px] font-mono text-text placeholder-text-muted focus:outline-none disabled:opacity-50"
               />
               {categories.length > 0 && (
                 <button
                   type="button"
+                  disabled={creatingCategory || submitting}
                   onClick={() => setIsCreatingCategory(false)}
-                  className="text-[10px] text-text-muted"
+                  className="text-[10px] text-text-muted disabled:opacity-40"
                   aria-label="Cancelar nueva categoría"
                 >
                   ✕

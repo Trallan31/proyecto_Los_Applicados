@@ -181,7 +181,12 @@ export function ScrumView() {
         >
           + Crear Proyecto
         </button>
-        {showNewProject && (<NewProjectModal onCreate={(projectData) => {void createProject(projectData).then((created) => {if (created) {setShowNewProject(false);}});}} onClose={() => setShowNewProject(false)}/>)}
+        {showNewProject && (
+          <NewProjectModal
+            onCreate={createProject}
+            onClose={() => setShowNewProject(false)}
+          />
+        )}
       </div>
     );
   }
@@ -273,7 +278,7 @@ export function ScrumView() {
               setShowLinkModal(true);
             }}
             onDeleteLink={(linkId) => {
-              deleteProjectLink(linkId);
+              void deleteProjectLink(linkId);
             }}
           />
         </div>
@@ -366,15 +371,22 @@ export function ScrumView() {
 
       {showNewProject && (
         <NewProjectModal
-          onCreate={(proj) => {
-            void createProject(proj).then((created) => {
-              if (created) setShowNewProject(false);
-            });
-          }}
+          onCreate={createProject}
           onClose={() => setShowNewProject(false)}
         />
       )}
-      {showInvite && <InviteModal users={users} members={projectMembers} onInvite={(u) => { inviteMember(u); setShowInvite(false); }} onClose={() => setShowInvite(false)} />}
+      {showInvite && (
+        <InviteModal
+          users={users}
+          members={projectMembers}
+          onInvite={async (u) => {
+            const ok = await inviteMember(u);
+            if (ok) setShowInvite(false);
+            return ok;
+          }}
+          onClose={() => setShowInvite(false)}
+        />
+      )}
       {showStats && <StatsModal project={project} tasks={projectTasks} members={projectMembers} onClose={() => setShowStats(false)} />}
       {showSettings && (
         <SettingsModal
@@ -384,8 +396,8 @@ export function ScrumView() {
           onClose={() => setShowSettings(false)}
           onRemove={removeMember}
           onUpdateRole={updateMemberRole}
-          onDeleteCategory={(c) => void deleteCategory(c)}
-          onDeleteSprint={(s) => void deleteSprint(s)}
+          onDeleteCategory={deleteCategory}
+          onDeleteSprint={deleteSprint}
           onDeleteProject={() => setConfirmDelete({ type: 'project', id: project.id })}
         />
       )}
@@ -394,14 +406,17 @@ export function ScrumView() {
           title={confirmDelete.type === 'task' ? "Eliminar tarea" : "Eliminar proyecto"}
           message="Esta acción no se puede deshacer."
           confirmLabel="Sí, eliminar"
-          onConfirm={() => {
-            if (confirmDelete.type === 'task') {
-              deleteTask(confirmDelete.id);
-            } else {
-              void deleteProject(confirmDelete.id);
-              setShowSettings(false);
+          onConfirm={async () => {
+            if (confirmDelete.type === "task") {
+              const ok = await deleteTask(confirmDelete.id);
+              if (ok) setConfirmDelete(null);
+              return;
             }
-            setConfirmDelete(null);
+            const ok = await deleteProject(confirmDelete.id);
+            if (ok) {
+              setShowSettings(false);
+              setConfirmDelete(null);
+            }
           }}
           onCancel={() => setConfirmDelete(null)}
         />
@@ -417,10 +432,9 @@ export function ScrumView() {
           }}
           onSave={(link) => {
             if (editingLink) {
-              updateProjectLink(editingLink.id, link);
-            } else {
-              addProjectLink(link);
+              return updateProjectLink(editingLink.id, link);
             }
+            return addProjectLink(link);
           }}
         />
       )}

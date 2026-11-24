@@ -13,6 +13,7 @@ import type {
 import type { TimeFilter, ViewTab } from "../utils/dateUtils";
 import { activityIdOf, assignedActivitiesAsTasks } from "../utils/scrumSync";
 import { useAuthStore } from "./useAuthStore";
+import { useScrumStore } from "./useScrumStore";
 
 interface OrganizerState {
   // Datos: colecciones REST compartidas entre vistas.
@@ -48,9 +49,9 @@ interface OrganizerState {
   setTab: (value: ViewTab) => void;
 
   // Tareas.
-  addTask: (task: Omit<OrganizerTask, "id" | "userId">) => void;
-  updateTask: (id: string, changes: Partial<Omit<OrganizerTask, "id" | "userId">>) => void;
-  deleteTask: (id: string) => void;
+  addTask: (task: Omit<OrganizerTask, "id" | "userId">) => Promise<boolean>;
+  updateTask: (id: string, changes: Partial<Omit<OrganizerTask, "id" | "userId">>) => Promise<boolean>;
+  deleteTask: (id: string) => Promise<boolean>;
   toggleTaskStatus: (id: string) => Promise<OrganizerTask["status"] | null>;
   setTaskStatus: (
     id: string,
@@ -59,17 +60,17 @@ interface OrganizerState {
   ) => Promise<boolean>;
 
   // Ramos, sesiones y enlaces.
-  addCourse: (course: Omit<Course, "id" | "userId">) => void;
-  deleteCourse: (courseId: string) => Promise<void>;
-  addSession: (session: Omit<CourseSession, "id">) => void;
-  deleteSession: (id: string) => void;
-  addCourseLink: (courseId: string, link: Omit<CourseLink, "id">) => void;
-  deleteCourseLink: (courseId: string, linkId: string) => void;
+  addCourse: (course: Omit<Course, "id" | "userId">) => Promise<boolean>;
+  deleteCourse: (courseId: string) => Promise<boolean>;
+  addSession: (session: Omit<CourseSession, "id">) => Promise<boolean>;
+  deleteSession: (id: string) => Promise<boolean>;
+  addCourseLink: (courseId: string, link: Omit<CourseLink, "id">) => Promise<boolean>;
+  deleteCourseLink: (courseId: string, linkId: string) => Promise<boolean>;
   updateCourseLink: (
     courseId: string,
     linkId: string,
     changes: Partial<Omit<CourseLink, "id">>
-  ) => void;
+  ) => Promise<boolean>;
 }
 
 const initialData = {
@@ -91,11 +92,30 @@ const initialData = {
 
 // Evita cargas duplicadas (p. ej. StrictMode monta dos veces en dev).
 let inflightLoad: Promise<void> | null = null;
+// Se incrementa al cambiar de usuario para descartar cargas obsoletas en vuelo.
+let sessionEpoch = 0;
+// Identificador secuencial para que un refetch() posterior invalide cargas previas.
+let latestLoadId = 0;
 
 export const useOrganizerStore = create<OrganizerState>((set, get) => {
-  async function loadAll(): Promise<void> {
+  async function loadAll(force: boolean): Promise<void> {
+    const epoch = sessionEpoch;
+    const loadId = ++latestLoadId;
     set({ loading: true, loadError: null });
     try {
+      // Si Scrum ya cargó y no es refetch forzado, reutilizamos projects y activities.
+      if (!force && useScrumStore.getState().loaded) {
+        const [courses, sessions, tasks] = await Promise.all([
+          api.list<Course>("courses"),
+          api.list<CourseSession>("sessions"),
+          api.list<OrganizerTask>("tasks"),
+        ]);
+        if (epoch !== sessionEpoch || loadId !== latestLoadId) return;
+        const { projects, activities } = useScrumStore.getState();
+        set({ courses, sessions, tasks, activities, projects, loaded: true, loading: false });
+        return;
+      }
+
       const [courses, sessions, tasks, activities, projects] = await Promise.all([
         api.list<Course>("courses"),
         api.list<CourseSession>("sessions"),
@@ -103,18 +123,23 @@ export const useOrganizerStore = create<OrganizerState>((set, get) => {
         api.list<Activity>("activities"),
         api.list<Project>("projects"),
       ]);
+      if (epoch !== sessionEpoch || loadId !== latestLoadId) return;
       set({ courses, sessions, tasks, activities, projects, loaded: true, loading: false });
     } catch (error: unknown) {
+      if (epoch !== sessionEpoch || loadId !== latestLoadId) return;
       set({ loadError: api.describeError(error), loading: false });
     }
   }
 
   function load(force: boolean): Promise<void> {
     if (!force && get().loaded) return Promise.resolve();
-    if (!inflightLoad) {
-      inflightLoad = loadAll().finally(() => {
-        inflightLoad = null;
+    if (force || !inflightLoad) {
+      const currentLoad = loadAll(force).finally(() => {
+        if (inflightLoad === currentLoad) {
+          inflightLoad = null;
+        }
       });
+      inflightLoad = currentLoad;
     }
     return inflightLoad;
   }
@@ -167,6 +192,12 @@ export const useOrganizerStore = create<OrganizerState>((set, get) => {
     }
   }
 
+  const applyCourse = (updated: Course) =>
+    set((state) => ({
+      courses: state.courses.map((c) => (c.id === updated.id ? updated : c)),
+      mutationError: null,
+    }));
+
   return {
     ...initialData,
 
@@ -180,18 +211,19 @@ export const useOrganizerStore = create<OrganizerState>((set, get) => {
     setStatusFilter: (value) => set({ statusFilter: value }),
     setTab: (value) => set({ tab: value }),
 
-    addTask: (task) => {
+    addTask: async (task) => {
       const user = useAuthStore.getState().user;
-      if (!user) return;
-      void addItem<OrganizerTask>("tasks", { ...task, userId: user.id }, (created) =>
-        set((state) => ({ tasks: [...state.tasks, created], mutationError: null }))
+      if (!user) return false;
+      const created = await addItem<OrganizerTask>("tasks", { ...task, userId: user.id }, (item) =>
+        set((state) => ({ tasks: [...state.tasks, item], mutationError: null }))
       );
+      return created !== null;
     },
 
     /** Las derivadas no se editan desde acá: se editan en el tablero. */
-    updateTask: (id, changes) => {
-      if (activityIdOf(id) !== null) return;
-      void editItem<OrganizerTask>("tasks", id, changes, (updated) =>
+    updateTask: async (id, changes) => {
+      if (activityIdOf(id) !== null) return false;
+      return editItem<OrganizerTask>("tasks", id, changes, (updated) =>
         set((state) => ({
           tasks: state.tasks.map((t) => (t.id === updated.id ? updated : t)),
           mutationError: null,
@@ -200,9 +232,9 @@ export const useOrganizerStore = create<OrganizerState>((set, get) => {
     },
 
     /** Las derivadas no se borran desde acá: se borran en el tablero. */
-    deleteTask: (id) => {
-      if (activityIdOf(id) !== null) return;
-      void removeItem("tasks", id, () =>
+    deleteTask: async (id) => {
+      if (activityIdOf(id) !== null) return false;
+      return removeItem("tasks", id, () =>
         set((state) => ({
           tasks: state.tasks.filter((t) => t.id !== id),
           mutationError: null,
@@ -252,79 +284,71 @@ export const useOrganizerStore = create<OrganizerState>((set, get) => {
       );
     },
 
-    addCourse: (course) => {
+    addCourse: async (course) => {
       const user = useAuthStore.getState().user;
-      if (!user) return;
-      void addItem<Course>("courses", { ...course, userId: user.id }, (created) =>
-        set((state) => ({ courses: [...state.courses, created], mutationError: null }))
+      if (!user) return false;
+      const created = await addItem<Course>("courses", { ...course, userId: user.id }, (item) =>
+        set((state) => ({ courses: [...state.courses, item], mutationError: null }))
       );
+      return created !== null;
     },
 
-    /** Borra el ramo y, en cascada, sus sesiones. Las tareas quedan personales. */
-    deleteCourse: async (courseId) => {
-      const deleted = await removeItem("courses", courseId, () =>
+    /** Borra el ramo y, en memoria, sus sesiones. Las tareas quedan personales. */
+    deleteCourse: (courseId) =>
+      removeItem("courses", courseId, () =>
         set((state) => ({
           courses: state.courses.filter((c) => c.id !== courseId),
+          sessions: state.sessions.filter((s) => s.courseId !== courseId),
+          tasks: state.tasks.map((t) =>
+            t.courseId === courseId ? { ...t, courseId: null, scope: "Personal" } : t
+          ),
+          activeCourse: state.activeCourse === courseId ? "all" : state.activeCourse,
           mutationError: null,
         }))
+      ),
+
+    addSession: async (session) => {
+      const created = await addItem<CourseSession>("sessions", session, (item) =>
+        set((state) => ({ sessions: [...state.sessions, item], mutationError: null }))
       );
-      if (!deleted) return;
-      if (get().activeCourse === courseId) {
-        set({ activeCourse: "all" });
-      }
-      await get().refetch();
+      return created !== null;
     },
 
-    addSession: (session) => {
-      void addItem<CourseSession>("sessions", session, (created) =>
-        set((state) => ({ sessions: [...state.sessions, created], mutationError: null }))
-      );
-    },
-
-    deleteSession: (id) => {
-      void removeItem("sessions", id, () =>
+    deleteSession: (id) =>
+      removeItem("sessions", id, () =>
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== id),
           mutationError: null,
         }))
-      );
-    },
+      ),
 
-    addCourseLink: (courseId, link) => {
+    addCourseLink: async (courseId, link) => {
       const course = get().courses.find((c) => c.id === courseId);
-      if (!course) return;
+      if (!course) return false;
       const newLink: CourseLink = { ...link, id: `clink-${Date.now()}` };
-      void editItem<Course>(
+      return editItem<Course>(
         "courses",
         course.id,
         { links: [...(course.links || []), newLink] },
-        (updated) =>
-          set((state) => ({
-            courses: state.courses.map((c) => (c.id === updated.id ? updated : c)),
-            mutationError: null,
-          }))
+        applyCourse
       );
     },
 
-    deleteCourseLink: (courseId, linkId) => {
+    deleteCourseLink: async (courseId, linkId) => {
       const course = get().courses.find((c) => c.id === courseId);
-      if (!course) return;
-      void editItem<Course>(
+      if (!course) return false;
+      return editItem<Course>(
         "courses",
         course.id,
         { links: (course.links || []).filter((l) => l.id !== linkId) },
-        (updated) =>
-          set((state) => ({
-            courses: state.courses.map((c) => (c.id === updated.id ? updated : c)),
-            mutationError: null,
-          }))
+        applyCourse
       );
     },
 
-    updateCourseLink: (courseId, linkId, changes) => {
+    updateCourseLink: async (courseId, linkId, changes) => {
       const course = get().courses.find((c) => c.id === courseId);
-      if (!course) return;
-      void editItem<Course>(
+      if (!course) return false;
+      return editItem<Course>(
         "courses",
         course.id,
         {
@@ -332,19 +356,29 @@ export const useOrganizerStore = create<OrganizerState>((set, get) => {
             l.id === linkId ? { ...l, ...changes } : l
           ),
         },
-        (updated) =>
-          set((state) => ({
-            courses: state.courses.map((c) => (c.id === updated.id ? updated : c)),
-            mutationError: null,
-          }))
+        applyCourse
       );
     },
   };
 });
 
+// Sincroniza cambios de proyectos y actividades hacia useScrumStore.
+// Esta dirección vive aquí (y la inversa en useScrumStore.ts) para evitar
+// evaluar el módulo circular a nivel superior durante la carga inicial.
+useOrganizerStore.subscribe((state, prev) => {
+  if (state.projects !== prev.projects) {
+    useScrumStore.setState({ projects: state.projects });
+  }
+  if (state.activities !== prev.activities) {
+    useScrumStore.setState({ activities: state.activities });
+  }
+});
+
 // Si cambia el usuario (logout/login), se descartan los datos del anterior.
 useAuthStore.subscribe((state, previous) => {
   if (state.user?.id !== previous.user?.id) {
+    sessionEpoch += 1;
+    inflightLoad = null;
     useOrganizerStore.setState({ ...initialData });
   }
 });

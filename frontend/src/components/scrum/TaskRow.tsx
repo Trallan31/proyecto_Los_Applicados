@@ -29,9 +29,9 @@ export function TaskRow({
   sprints: Sprint[];
   members: Member[];
   categories: string[];
-  onUpdate: <K extends keyof Activity>(id: string, field: K, value: Activity[K]) => void;
+  onUpdate: <K extends keyof Activity>(taskId: string, field: K, value: Activity[K]) => Promise<boolean> | void;
   onDeleteTask?: (id: string) => void;
-  onCreateCategory?: (name: string) => void;
+  onCreateCategory?: (name: string) => Promise<boolean> | boolean;
   onCreateSprint?: (name: string) => Promise<Sprint | null>;
   /** La fila es la que se esta arrastrando. */
   isDragging?: boolean;
@@ -198,12 +198,14 @@ export function TaskRow({
             options={sprints.map((s) => s.id)}
             labels={Object.fromEntries(sprints.map((s) => [s.id, s.name]))}
             createLabel="+ Nuevo Sprint..."
-            onCreateNew={(name) => {
-              if (!onCreateSprint) return;
+            onCreateNew={async (name) => {
+              if (!onCreateSprint) return false;
+              const created = await onCreateSprint(name);
+              if (!created) return false;
+              const updated = await onUpdate(task.id, "sprintId", created.id);
+              if (updated === false) return false;
               setEditingCell(null);
-              void onCreateSprint(name).then((created) => {
-                if (created) onUpdate(task.id, "sprintId", created.id);
-              });
+              return true;
             }}
             onCommit={(v) => { onUpdate(task.id, "sprintId", v); setEditingCell(null); }}
             onBlur={() => setEditingCell(null)}
@@ -234,10 +236,14 @@ export function TaskRow({
             value={task.category || ""}
             options={categories}
             createLabel="+ Nueva categoría..."
-            onCreateNew={(name) => {
-              if (onCreateCategory) onCreateCategory(name);
-              onUpdate(task.id, "category", name);
+            onCreateNew={async (name) => {
+              // Serializa la creación de la categoría antes de actualizar la actividad.
+              const createdOk = onCreateCategory ? await onCreateCategory(name) : true;
+              if (!createdOk) return false;
+              const updated = await onUpdate(task.id, "category", name);
+              if (updated === false) return false;
               setEditingCell(null);
+              return true;
             }}
             onCommit={(v) => { onUpdate(task.id, "category", v); setEditingCell(null); }}
             onBlur={() => setEditingCell(null)}

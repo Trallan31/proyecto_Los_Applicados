@@ -455,7 +455,7 @@ export default function OrganizerView() {
                   setShowCourseLinkModal(true);
                 }}
                 onDeleteLink={(linkId) => {
-                  deleteCourseLink(activeCourseObj.id, linkId);
+                  void deleteCourseLink(activeCourseObj.id, linkId);
                 }}
               />
             </div>
@@ -630,7 +630,7 @@ export default function OrganizerView() {
           courses={courses}
           sessions={sessions}
           onAddCourse={addCourse}
-          onDeleteCourse={(id) => void deleteCourse(id)}
+          onDeleteCourse={deleteCourse}
           onAddSession={addSession}
           onDeleteSession={deleteSession}
           onClose={() => setShowManageCourses(false)}
@@ -649,10 +649,7 @@ export default function OrganizerView() {
               : activeCourse
           }
           onClose={() => setShowAddModal(false)}
-          onAdd={(t) => {
-            addTask(t);
-            setShowAddModal(false);
-          }}
+          onAdd={(t) => addTask(t)}
         />
       )}
       {editingTask !== null && (
@@ -661,10 +658,12 @@ export default function OrganizerView() {
           courses={courses}
           defaultCourseId={editingTask.courseId}
           onClose={() => setEditingTask(null)}
-          onEdit={(id, changes) => {
-            updateTask(id, changes);
-            removeByTag(taskToastTag(id));
-            setEditingTask(null);
+          onEdit={async (id, changes) => {
+            const ok = await updateTask(id, changes);
+            if (ok) {
+              removeByTag(taskToastTag(id));
+            }
+            return ok;
           }}
         />
       )}
@@ -673,13 +672,15 @@ export default function OrganizerView() {
           title="Eliminar actividad"
           message="¿Seguro que deseas eliminar esta actividad?"
           confirmLabel="Sí, eliminar"
-          onConfirm={() => {
-            deleteTask(confirmDeleteId);
-            if (confirmDeleteId === selectedTaskId) {
-              setSelectedTaskId(null);
+          onConfirm={async () => {
+            const ok = await deleteTask(confirmDeleteId);
+            if (ok) {
+              removeByTag(taskToastTag(confirmDeleteId));
+              if (selectedTaskId === confirmDeleteId) {
+                setSelectedTaskId(null);
+              }
+              setConfirmDeleteId(null);
             }
-            removeByTag(taskToastTag(confirmDeleteId));
-            setConfirmDeleteId(null);
           }}
           onCancel={() => setConfirmDeleteId(null)}
         />
@@ -696,10 +697,9 @@ export default function OrganizerView() {
           }}
           onSave={(link) => {
             if (editingCourseLink) {
-              updateCourseLink(activeCourseObj.id, editingCourseLink.id, link);
-            } else {
-              addCourseLink(activeCourseObj.id, link);
+              return updateCourseLink(activeCourseObj.id, editingCourseLink.id, link);
             }
+            return addCourseLink(activeCourseObj.id, link);
           }}
         />
       )}
