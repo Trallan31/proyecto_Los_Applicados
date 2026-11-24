@@ -1,6 +1,6 @@
-import type React from "react";
 import type { OrganizerTask, Course, Project } from "../../types";
-import { CATEGORY_COLORS, PRIORITY_META } from "../../constants/ui";
+import { getAccessibleColor, getCategoryColor, getPriorityMeta } from "../../constants/ui";
+import { useIsDark } from "../../context/ThemeContext";
 import { formatDisplayDate } from "../../utils/dateUtils";
 import { activityIdOf, isScrumTask } from "../../utils/scrumSync";
 import { Check, Pencil, Trash2, TrashOff, Users } from "lucide-react";
@@ -29,33 +29,23 @@ export function OrganizerTaskRow({
   onDelete: () => void;
 }) {
   const navigate = useNavigate();
+  const isDark = useIsDark();
   const isDone = task.status === "Completada";
-  // Las tareas que vienen del tablero se editan y se borran alla.
+  // Las tareas que vienen del tablero se editan y se borran allá.
   const fromScrum = isScrumTask(task);
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.target !== e.currentTarget) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onSelect();
-    } else if ((e.key === "e" || e.key === "E") && !fromScrum) {
-      e.preventDefault();
-      onEdit();
-    }
-  }
+  const priorityMeta = getPriorityMeta(task.priority, isDark);
+  const categoryColor = getCategoryColor(task.type, isDark);
+  const projectColor = getAccessibleColor(project?.color ?? "#9b6dff", isDark);
+  const courseColor = course ? getAccessibleColor(course.color, isDark) : "";
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-selected={isSelected}
-      onClick={onSelect}
       onDoubleClick={(e) => {
         e.stopPropagation();
         if (!fromScrum) onEdit();
       }}
-      onKeyDown={handleKeyDown}
-      className={`group relative p-3.5 rounded-xl border transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
+      className={`group relative p-3.5 rounded-xl border transition-all duration-200 ${
         isSelected
           ? "border-accent-blue bg-accent-blue/[0.04] dark:bg-accent-blue/[0.08] shadow-sm shadow-accent-blue/10 ring-1 ring-accent-blue/30"
           : isDone
@@ -63,30 +53,40 @@ export function OrganizerTaskRow({
             : "bg-surface border-border hover:border-border-bright hover:bg-panel/20 hover:shadow-xs"
       }`}
     >
-      <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStatus();
-            }}
-            type="button"
-            aria-label={isDone ? "Marcar como pendiente" : "Marcar como completada"}
-            title={isDone ? "Marcar como pendiente" : "Marcar como completada"}
-            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-200 transform active:scale-75 flex-shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
-              isDone
-                ? "bg-accent-green border-accent-green text-white shadow-sm shadow-accent-green/30 scale-100"
-                : "border-border-bright hover:border-accent-blue hover:bg-accent-blue/10 text-transparent"
+      <div className="flex items-center justify-between gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
+        <button
+          onClick={onToggleStatus}
+          type="button"
+          aria-label={isDone ? "Marcar como pendiente" : "Marcar como completada"}
+          title={isDone ? "Marcar como pendiente" : "Marcar como completada"}
+          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-200 transform active:scale-75 flex-shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
+            isDone
+              ? "bg-accent-green border-accent-green text-white shadow-sm shadow-accent-green/30 scale-100"
+              : "border-border-bright hover:border-accent-blue hover:bg-accent-blue/10 text-transparent"
+          }`}
+        >
+          <Check
+            className={`w-3.5 h-3.5 stroke-[3] transition-all duration-200 ${
+              isDone ? "scale-100 opacity-100" : "scale-0 opacity-0"
             }`}
-          >
-            <Check
-              className={`w-3.5 h-3.5 stroke-[3] transition-all duration-200 ${
-                isDone ? "scale-100 opacity-100" : "scale-0 opacity-0"
-              }`}
-            />
-          </button>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
+          />
+        </button>
+
+        {/* Área interactiva principal para seleccionar la fila (hermana de los botones de acción) */}
+        <button
+          type="button"
+          onClick={onSelect}
+          onKeyDown={(e) => {
+            if ((e.key === "e" || e.key === "E") && !fromScrum) {
+              e.preventDefault();
+              onEdit();
+            }
+          }}
+          aria-pressed={isSelected}
+          className="flex-1 min-w-0 flex items-center justify-between gap-3 sm:gap-4 flex-wrap sm:flex-nowrap text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+        >
+          <span className="min-w-0 flex-1 block">
+            <span className="flex items-center gap-2">
               <span
                 className={`text-[13px] font-semibold transition-all duration-200 truncate ${
                   isDone ? "line-through text-text-muted" : "text-text"
@@ -98,9 +98,9 @@ export function OrganizerTaskRow({
                 <span
                   className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0 inline-flex items-center gap-1"
                   style={{
-                    backgroundColor: `${project?.color ?? "#9b6dff"}20`,
-                    color: project?.color ?? "#9b6dff",
-                    border: `1px solid ${project?.color ?? "#9b6dff"}40`,
+                    backgroundColor: `${projectColor}20`,
+                    color: projectColor,
+                    border: `1px solid ${projectColor}40`,
                   }}
                   title={
                     project
@@ -108,7 +108,7 @@ export function OrganizerTaskRow({
                       : "Asignada en un proyecto de equipo"
                   }
                 >
-                  <Users className="w-2.5 h-2.5" />
+                  <Users className="w-2.5 h-2.5" aria-hidden="true" />
                   {project?.name ?? "Equipo"}
                 </span>
               )}
@@ -116,57 +116,58 @@ export function OrganizerTaskRow({
                 <span
                   className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
                   style={{
-                    backgroundColor: `${course.color}20`,
-                    color: course.color,
-                    border: `1px solid ${course.color}40`,
+                    backgroundColor: `${courseColor}20`,
+                    color: courseColor,
+                    border: `1px solid ${courseColor}40`,
                   }}
                 >
                   {course.code}
                 </span>
               )}
-            </div>
+            </span>
             {task.notes && (
-              <p className="text-[12px] text-text-muted mt-0.5 line-clamp-1">
+              <span className="block text-[12px] text-text-muted mt-0.5 line-clamp-1">
                 {task.notes}
-              </p>
+              </span>
             )}
-          </div>
-        </div>
+          </span>
 
-        <div className="flex items-center gap-3 flex-shrink-0 ml-auto sm:ml-0">
-          <span
-            className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded"
-            style={{
-              backgroundColor: PRIORITY_META[task.priority].bg,
-              color: PRIORITY_META[task.priority].color,
-            }}
-          >
-            {task.priority}
+          <span className="flex items-center gap-3 flex-shrink-0 ml-auto sm:ml-0">
+            <span
+              className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded"
+              style={{
+                backgroundColor: priorityMeta.bg,
+                color: priorityMeta.color,
+              }}
+            >
+              {task.priority}
+            </span>
+            <span
+              className="text-[10px] font-mono font-medium px-2 py-0.5 rounded"
+              style={{
+                backgroundColor: `${categoryColor}20`,
+                color: categoryColor,
+              }}
+            >
+              {task.type}
+            </span>
+            <span className="text-right flex flex-col items-end gap-1">
+              <CountdownBadge dateStr={task.endDate} isDone={isDone} />
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted">
+                <span>{formatDisplayDate(task.endDate)}</span>
+                {task.dueTime && <span>• {task.dueTime}</span>}
+              </span>
+            </span>
           </span>
-          <span
-            className="text-[10px] font-mono font-medium px-2 py-0.5 rounded"
-            style={{
-              backgroundColor: `${CATEGORY_COLORS[task.type]}20`,
-              color: CATEGORY_COLORS[task.type],
-            }}
-          >
-            {task.type}
-          </span>
-          <div className="text-right flex flex-col items-end gap-1">
-            <CountdownBadge dateStr={task.endDate} isDone={isDone} />
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted">
-              <span>{formatDisplayDate(task.endDate)}</span>
-              {task.dueTime && <span>• {task.dueTime}</span>}
-            </div>
-          </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-            {fromScrum ? (
-              <>
+        </button>
+
+        <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+          {fromScrum ? (
+            <>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/scrum?project=${task.projectId}`, { state: { taskId: activityIdOf(task.id) }});
+                onClick={() => {
+                  navigate(`/scrum?project=${task.projectId}`, { state: { taskId: activityIdOf(task.id) } });
                 }}
                 title="Editar desde proyecto"
                 aria-label="Editar desde proyecto"
@@ -176,23 +177,16 @@ export function OrganizerTaskRow({
               </button>
               <span
                 title="Eliminable desde el proyecto"
-                aria-label="Eliminable desde el proyecto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-                className="text-text-muted hover:text-accent-red transition-colors p-1.5 rounded-lg cursor-not-allowed hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-red"
+                className="text-text-muted p-1.5 rounded-lg cursor-not-allowed inline-flex items-center"
               >
-                <TrashOff className="w-3.5 h-3.5" />
+                <TrashOff className="w-3.5 h-3.5" aria-hidden="true" />
               </span>
-              </>
-            ) : (
-              <>
+            </>
+          ) : (
+            <>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
+                onClick={onEdit}
                 title="Editar actividad"
                 aria-label="Editar actividad"
                 className="text-text-muted hover:text-accent-blue transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue"
@@ -201,19 +195,15 @@ export function OrganizerTaskRow({
               </button>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
+                onClick={onDelete}
                 title="Eliminar actividad"
                 aria-label="Eliminar actividad"
                 className="text-text-muted hover:text-accent-red transition-colors p-1.5 rounded-lg cursor-pointer hover:bg-panel focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-red"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
-              </>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

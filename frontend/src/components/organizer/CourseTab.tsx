@@ -3,6 +3,8 @@
 
 import type { ComponentType, CSSProperties } from "react";
 import { ChevronDown, ChevronRight, ArrowUpRight } from "lucide-react";
+import { getAccessibleColor } from "../../constants/ui";
+import { useIsDark } from "../../context/ThemeContext";
 
 export interface CourseTabProps {
   active: boolean;
@@ -37,6 +39,9 @@ export function CourseTab({
   actionTitle,
   actionIcon: ActionIcon,
 }: CourseTabProps) {
+  const isDark = useIsDark();
+  const accessibleColor = getAccessibleColor(color, isDark);
+
   return (
     <div
       className={`group w-full flex items-center justify-between rounded-lg transition-all ${
@@ -54,11 +59,11 @@ export function CourseTab({
         className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer focus-visible:outline-none"
       >
         {Icon ? (
-          <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color }} />
+          <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: accessibleColor }} />
         ) : (
           <span
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-            style={{ backgroundColor: color }}
+            style={{ backgroundColor: accessibleColor }}
           />
         )}
         <div className="truncate">

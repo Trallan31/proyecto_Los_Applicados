@@ -3,7 +3,8 @@ import { GripVertical } from "lucide-react";
 import type { Activity, Member, Sprint, Priority, Status } from "../../types";
 import { InlineText, InlineDate, InlineSelect, InlineSelectWithCreate, MultiMemberSelect } from "./InlineEditors";
 import { parseLocalDate, isOverdue } from "../../utils/dateUtils";
-import { PRIORITY_META, STATUS_META } from "../../constants/ui";
+import { PRIORITY_META, STATUS_META, getAccessibleColor, getPriorityMeta, getStatusMeta } from "../../constants/ui";
+import { useIsDark } from "../../context/ThemeContext";
 import { CountdownBadge } from "../shared/CountdownBadge";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -52,12 +53,13 @@ export function TaskRow({
   // celdas o seleccionar texto sigue funcionando igual que antes.
   const [dragEnabled, setDragEnabled] = useState(false);
 
+  const isDark = useIsDark();
   const isEditing = (field: string) => editingCell === field;
   const overdue = isOverdue(task.dueDate, task.status === "Completada");
   const sprint = sprints.find((s) => s.id === task.sprintId);
 
-  const pMeta = PRIORITY_META[task.priority] || PRIORITY_META["Media"];
-  const sMeta = STATUS_META[task.status] || STATUS_META["Pendiente"];
+  const pMeta = getPriorityMeta(task.priority, isDark);
+  const sMeta = getStatusMeta(task.status, isDark);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -78,7 +80,7 @@ export function TaskRow({
   };
 
   const handleCellKeyDown = (e: React.KeyboardEvent, field: string) => {
-    if (editingCell) return;
+    if (e.target !== e.currentTarget || editingCell) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       setEditingCell(field);
@@ -295,7 +297,7 @@ export function TaskRow({
                   <div
                     key={member.id}
                     className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-surface"
-                    style={{ backgroundColor: member.avatarColor }}
+                    style={{ backgroundColor: getAccessibleColor(member.avatarColor, isDark) }}
                     title={member.name}
                   >
                     {member.initials}
@@ -458,11 +460,12 @@ export function TaskRow({
           )}
           {onDeleteTask && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteTask(task.id);
               }}
-              className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-accent-red transition-all text-xs font-bold px-1"
+              className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 text-text-muted hover:text-accent-red transition-all text-xs font-bold px-1 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red"
               title="Eliminar tarea"
               aria-label="Eliminar tarea"
             >

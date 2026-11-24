@@ -115,16 +115,16 @@ describe("RBAC UI en componentes Scrum", () => {
       />
     );
 
-    expect(screen.queryByRole("button", { name: "Zona de Peligro" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Zona de Peligro" })).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.getByText("Admin")).toBeInTheDocument();
     expect(screen.getByText("Miembro")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Categorías/i }));
-    expect(screen.queryByRole("button", { name: "Eliminar" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /Categorías/i }));
+    expect(screen.queryByRole("button", { name: /Eliminar/i })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Sprints/i }));
-    expect(screen.queryByRole("button", { name: "Eliminar" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /Sprints/i }));
+    expect(screen.queryByRole("button", { name: /Eliminar/i })).not.toBeInTheDocument();
   });
 
   it("InlineSelectWithCreate no ofrece creación ni entra en input si falta onCreateNew", () => {
@@ -331,7 +331,7 @@ describe("ScrumView — RBAC integrado (Admin vs Miembro)", () => {
 
     await user.click(screen.getByTitle("Ajustes del proyecto"));
     expect(screen.getByText("Ajustes del Proyecto")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Zona de Peligro" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Zona de Peligro" })).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 

@@ -67,7 +67,7 @@ export default function LoginPage() {
           Proyectos de Equipo.
         </p>
 
-        {error && <p role="alert" className="mb-4 text-sm text-red-500">{error}</p>}
+        {error && <p role="alert" className="mb-4 text-sm text-accent-red">{error}</p>}
         <form onSubmit={submit} className="space-y-4">
           <label className="block text-sm">
             Usuario o correo

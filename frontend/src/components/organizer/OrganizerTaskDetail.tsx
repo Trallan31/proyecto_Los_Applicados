@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { OrganizerTask, Course, Project } from "../../types";
-import { CATEGORY_COLORS, PRIORITY_META, STATUS_META } from "../../constants/ui";
+import { getAccessibleColor, getCategoryColor, getPriorityMeta, getStatusMeta } from "../../constants/ui";
+import { useIsDark } from "../../context/ThemeContext";
 import { formatDisplayDate } from "../../utils/dateUtils";
 import { isScrumTask } from "../../utils/scrumSync";
 import { CountdownBadge } from "../shared/CountdownBadge";
@@ -59,9 +60,14 @@ export function OrganizerTaskDetail({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose, isModalOpen]);
 
+  const isDark = useIsDark();
   const isDone = task.status === "Completada";
   // Las tareas que vienen del tablero solo aceptan cambios de estado.
   const fromScrum = isScrumTask(task);
+  const projectColor = getAccessibleColor(project?.color ?? "#9b6dff", isDark);
+  const courseColor = course ? getAccessibleColor(course.color, isDark) : "";
+  const categoryColor = getCategoryColor(task.type, isDark);
+  const priorityMeta = getPriorityMeta(task.priority, isDark);
   const formattedDate = formatDisplayDate(task.endDate, "Sin fecha", {
     weekday: "short",
     day: "numeric",
@@ -132,7 +138,7 @@ export function OrganizerTaskDetail({
             <div className="min-w-0 flex-1">
               <h2
                 className={`text-[15px] font-display font-bold leading-snug break-words transition-colors ${
-                  isDone ? "line-through text-text-muted/80 opacity-75" : "text-text"
+                  isDone ? "line-through text-text-muted" : "text-text"
                 }`}
               >
                 {task.title}
@@ -145,7 +151,7 @@ export function OrganizerTaskDetail({
             <div className="flex p-0.5 bg-panel/70 border border-border/70 rounded-lg gap-0.5">
               {AVAILABLE_STATUSES.map((st) => {
                 const isCurrent = task.status === st;
-                const meta = STATUS_META[st];
+                const meta = getStatusMeta(st, isDark);
                 return (
                   <button
                     key={st}
@@ -188,15 +194,15 @@ export function OrganizerTaskDetail({
                 <div
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-medium max-w-[210px] truncate"
                   style={{
-                    backgroundColor: `${project?.color ?? "#9b6dff"}15`,
-                    color: project?.color ?? "#9b6dff",
-                    border: `1px solid ${project?.color ?? "#9b6dff"}35`,
+                    backgroundColor: `${projectColor}15`,
+                    color: projectColor,
+                    border: `1px solid ${projectColor}35`,
                   }}
                   title="Actividad asignada en un proyecto de equipo"
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: project?.color ?? "#9b6dff" }}
+                    style={{ backgroundColor: projectColor }}
                   />
                   <span className="truncate">
                     {project?.name ?? "Proyecto de equipo"}
@@ -206,15 +212,15 @@ export function OrganizerTaskDetail({
                 <div
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-medium max-w-[210px] truncate"
                   style={{
-                    backgroundColor: `${course.color}15`,
-                    color: course.color,
-                    border: `1px solid ${course.color}35`,
+                    backgroundColor: `${courseColor}15`,
+                    color: courseColor,
+                    border: `1px solid ${courseColor}35`,
                   }}
                   title={`${course.code} - ${course.name}`}
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: course.color }}
+                    style={{ backgroundColor: courseColor }}
                   />
                   <span className="truncate">{course.name}</span>
                 </div>
@@ -237,9 +243,9 @@ export function OrganizerTaskDetail({
                 <span
                   className="inline-block px-2 py-0.5 rounded-md font-mono font-semibold"
                   style={{
-                    backgroundColor: `${course.color}15`,
-                    color: course.color,
-                    border: `1px solid ${course.color}35`,
+                    backgroundColor: `${courseColor}15`,
+                    color: courseColor,
+                    border: `1px solid ${courseColor}35`,
                   }}
                 >
                   {course.code}
@@ -258,9 +264,9 @@ export function OrganizerTaskDetail({
               <span
                 className="inline-block px-2 py-0.5 rounded-md font-mono font-medium"
                 style={{
-                  backgroundColor: `${CATEGORY_COLORS[task.type]}15`,
-                  color: CATEGORY_COLORS[task.type],
-                  border: `1px solid ${CATEGORY_COLORS[task.type]}35`,
+                  backgroundColor: `${categoryColor}15`,
+                  color: categoryColor,
+                  border: `1px solid ${categoryColor}35`,
                 }}
               >
                 {task.type}
@@ -278,9 +284,9 @@ export function OrganizerTaskDetail({
               <span
                 className="inline-block px-2 py-0.5 rounded-md font-mono font-medium"
                 style={{
-                  backgroundColor: PRIORITY_META[task.priority].bg,
-                  color: PRIORITY_META[task.priority].color,
-                  border: `1px solid ${PRIORITY_META[task.priority].color}35`,
+                  backgroundColor: priorityMeta.bg,
+                  color: priorityMeta.color,
+                  border: `1px solid ${priorityMeta.color}35`,
                 }}
               >
                 {task.priority}

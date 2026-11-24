@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Modal } from "./Modal";
 
 interface ConfirmModalProps {
   title: string;
@@ -33,33 +34,46 @@ export function ConfirmModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-      <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-[380px] shadow-2xl">
-        <h3 className="text-base font-bold text-text mb-2">{title}</h3>
-        <p className="text-sm text-text-muted mb-6">{message}</p>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => {
-              if (!submitting) onCancel();
-            }}
-            className="flex-1 py-2 rounded-md text-sm text-text-muted hover:bg-panel-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => void handleConfirm()}
-            className={`flex-1 py-2 rounded-md text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-              variant === "danger" ? "bg-accent-red hover:opacity-90 text-white" : "bg-accent-yellow hover:opacity-90 text-black"
-            }`}
-          >
-            {submitting ? "Procesando..." : confirmLabel}
-          </button>
-        </div>
+    <Modal
+      isOpen={true}
+      onClose={() => {
+        if (!submitting) onCancel();
+      }}
+      titleId="confirm-modal-title"
+      maxWidthClass="max-w-[380px]"
+      zIndexClass="z-[60]"
+      closeOnBackdropClick={!submitting}
+      closeOnEscape={!submitting}
+      className="p-6"
+    >
+      <h3 id="confirm-modal-title" className="text-base font-bold text-text mb-2">
+        {title}
+      </h3>
+      <p className="text-sm text-text-muted mb-6">{message}</p>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={() => {
+            if (!submitting) onCancel();
+          }}
+          className="flex-1 py-2 rounded-md text-sm text-text-muted hover:bg-panel-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={() => void handleConfirm()}
+          className={`flex-1 py-2 rounded-md text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+            variant === "danger"
+              ? "bg-accent-red hover:opacity-90 text-white"
+              : "bg-accent-yellow hover:opacity-90 text-white dark:text-black"
+          }`}
+        >
+          {submitting ? "Procesando..." : confirmLabel}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

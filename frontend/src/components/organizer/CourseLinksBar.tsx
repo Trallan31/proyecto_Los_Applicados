@@ -50,7 +50,7 @@ export function CourseLinksBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted/70 mr-0.5 flex items-center gap-1.5 select-none">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted mr-0.5 flex items-center gap-1.5 select-none">
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: courseColor }} />
         Enlaces
       </span>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, ListTodo, CalendarDays, Calendar, Layers, ChevronDown, ChevronRight, ArrowUpRight, Menu, X } from "lucide-react";
-import { CATEGORY_COLORS, TASK_TYPES } from "./constants/ui";
+import { TASK_TYPES, getAccessibleColor, getCategoryColor } from "./constants/ui";
+import { useIsDark } from "./context/ThemeContext";
 import type { OrganizerTask, TaskType, CourseLink, Status } from "./types";
 import { getToday, type ViewTab, type TimeFilter } from "./utils/dateUtils";
 import { useOrganizerBoard } from "./hooks/useOrganizerBoard";
@@ -71,6 +72,7 @@ export default function OrganizerView() {
   } = useOrganizerBoard();
 
   const navigate = useNavigate();
+  const isDark = useIsDark();
   const today = getToday();
   // En movil y tablet la lista de ramos se oculta y se abre como cajon.
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -363,7 +365,7 @@ export default function OrganizerView() {
         <div className="px-4 py-3 border-t border-border space-y-1">
           {TASK_TYPES.map((c) => (
             <div key={c} className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[c] }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getCategoryColor(c, isDark) }} />
               <span className="text-[10px] font-mono text-text-muted">{c}</span>
             </div>
           ))}
@@ -388,7 +390,7 @@ export default function OrganizerView() {
               </button>
               {activeCourseObj && (
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeCourseObj.color }} />
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getAccessibleColor(activeCourseObj.color, isDark) }} />
                   <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-panel text-text border border-border">
                     {activeCourseObj.code}
                   </span>
@@ -396,7 +398,7 @@ export default function OrganizerView() {
               )}
               {activeProjectObj && (
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeProjectObj.color }} />
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getAccessibleColor(activeProjectObj.color, isDark) }} />
                   <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-panel text-text border border-border">
                     {activeProjectObj.course || "PROYECTO"}
                   </span>
@@ -502,7 +504,10 @@ export default function OrganizerView() {
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${totalCount > 0 ? (doneCount / totalCount) * 100 : 0}%`,
-                    backgroundColor: activeCourseObj?.color ?? activeProjectObj?.color ?? "var(--color-accent-blue)",
+                    backgroundColor: getAccessibleColor(
+                      activeCourseObj?.color ?? activeProjectObj?.color ?? "var(--color-accent-blue)",
+                      isDark
+                    ),
                   }}
                 />
               </div>

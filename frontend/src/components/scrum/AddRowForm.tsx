@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Activity, Priority, Status, Member, Sprint } from "../../types";
-import { PRIORITIES, STATUSES } from "../../constants/ui";
+import { PRIORITIES, STATUSES, getAccessibleColor } from "../../constants/ui";
+import { useIsDark } from "../../context/ThemeContext";
 import { formatLocalDate, getToday, parseLocalDate } from "../../utils/dateUtils";
 
 export function AddRowForm({
@@ -44,6 +45,7 @@ export function AddRowForm({
   );
   const [newSprintName, setNewSprintName] = useState("");
   const [creatingSprint, setCreatingSprint] = useState(false);
+  const isDark = useIsDark();
 
   async function handleSubmit() {
     if (submitting || creatingCategory || creatingSprint) return;
@@ -344,7 +346,7 @@ export function AddRowForm({
                       ? "text-white"
                       : "bg-panel text-text border border-border opacity-75 hover:opacity-100"
                   }`}
-                  style={selected ? { backgroundColor: m.avatarColor } : undefined}
+                  style={selected ? { backgroundColor: getAccessibleColor(m.avatarColor, isDark) } : undefined}
                   title={m.name}
                   aria-label={`Asignar a ${m.name}`}
                   aria-pressed={selected}

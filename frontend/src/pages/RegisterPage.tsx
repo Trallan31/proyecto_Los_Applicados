@@ -100,7 +100,7 @@ export default function RegisterPage() {
           Proyectos de Equipo.
         </p>
 
-        {error && <p role="alert" className="mb-4 text-sm text-red-500">{error}</p>}
+        {error && <p role="alert" className="mb-4 text-sm text-accent-red">{error}</p>}
         <form onSubmit={submit} className="space-y-3">
           <div className="flex gap-3">
             <label className="block text-sm flex-1">

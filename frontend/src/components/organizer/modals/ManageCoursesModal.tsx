@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import type { Course, CourseSession, SessionType } from "../../../types";
 import { FULL_DAYS, HOURS } from "../../../utils/dateUtils";
-import { PALETTE } from "../../../constants/ui";
+import { PALETTE, getAccessibleColor } from "../../../constants/ui";
+import { useIsDark } from "../../../context/ThemeContext";
 import { ConfirmModal } from "../../shared/ConfirmModal";
+import { Modal } from "../../shared/Modal";
 
 export function ManageCoursesModal({
   courses,
@@ -21,10 +23,11 @@ export function ManageCoursesModal({
   onDeleteSession: (id: string) => Promise<boolean> | boolean;
   onClose: () => void;
 }) {
-  // El ramo seleccionado es lo unico que el modal guarda: el resto son los
+  // El ramo seleccionado es lo único que el modal guarda: el resto son los
   // datos que vienen de la API, que se actualizan solos al escribir.
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'course' | 'session'; id: string } | null>(null);
+  const isDark = useIsDark();
 
   // Entradas para nuevo ramo
   const [newName, setNewName] = useState("");
@@ -76,53 +79,80 @@ export function ManageCoursesModal({
     }
   }
 
-  // Si no hay seleccion explicita, o el ramo elegido se borro, cae al primero.
+  // Si no hay selección explícita, o el ramo elegido se borró, cae al primero.
   const selectedCourse = courses.find((c) => c.id === selectedCourseId) ?? courses[0];
   const courseSessions = sessions.filter((s) => s.courseId === selectedCourse?.id);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-panel border border-border rounded-xl w-full max-w-2xl mx-4 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+    <>
+      <Modal
+        isOpen={true}
+        onClose={onClose}
+        titleId="manage-courses-modal-title"
+        maxWidthClass="max-w-2xl"
+        className="bg-panel overflow-hidden flex flex-col max-h-[85vh]"
+      >
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-surface">
-          <h2 className="font-display font-bold text-[15px] text-text">Gestionar Ramos y Horarios de Clases</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text text-lg">✕</button>
+          <h2 id="manage-courses-modal-title" className="font-display font-bold text-[15px] text-text">
+            Gestionar Ramos y Horarios de Clases
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar gestión de ramos"
+            title="Cerrar"
+            className="text-text-muted hover:text-text text-lg leading-none p-1 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+          >
+            ✕
+          </button>
         </div>
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Left Course List */}
+          {/* Lista izquierda de ramos */}
           <div className="w-1/2 border-r border-border flex flex-col p-4 bg-surface">
-            <h3 className="text-xs font-mono font-bold text-text-muted uppercase mb-3">Mis Ramos ({courses.length})</h3>
+            <h3 className="text-xs font-mono font-bold text-text-muted uppercase mb-3">
+              Mis Ramos ({courses.length})
+            </h3>
             <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2 pr-1">
-              {courses.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => setSelectedCourseId(c.id)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedCourse?.id === c.id ? "bg-panel border-accent-blue" : "bg-background border-border hover:border-border-bright"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
-                    <div className="truncate">
-                      <p className="text-xs font-bold text-text truncate">{c.name}</p>
-                      <p className="text-[10px] font-mono text-accent-blue font-semibold">{c.code || c.shortName}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDelete({ type: 'course', id: c.id });
-                    }}
-                    className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold p-1 ml-2"
-                    title="Eliminar ramo"
+              {courses.map((c) => {
+                const isSelected = selectedCourse?.id === c.id;
+                const dotColor = getAccessibleColor(c.color, isDark);
+                return (
+                  <div
+                    key={c.id}
+                    className={`rounded-lg border transition-all flex items-center justify-between ${
+                      isSelected ? "bg-panel border-accent-blue" : "bg-background border-border hover:border-border-bright"
+                    }`}
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCourseId(c.id)}
+                      aria-pressed={isSelected}
+                      className="flex-1 min-w-0 flex items-center gap-2.5 p-3 text-left cursor-pointer rounded-l-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+                    >
+                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
+                      <span className="truncate block min-w-0">
+                        <span className="block text-xs font-bold text-text truncate">{c.name}</span>
+                        <span className="block text-[10px] font-mono text-accent-blue font-semibold">
+                          {c.code || c.shortName}
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete({ type: 'course', id: c.id })}
+                      className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold p-2 mr-1 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red"
+                      title={`Eliminar ramo ${c.name}`}
+                      aria-label={`Eliminar ramo ${c.name}`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Form to add new Course */}
+            {/* Formulario para agregar nuevo ramo */}
             <div className="mt-4 pt-3 border-t border-border space-y-2">
               <span className="text-[10px] font-mono text-text-muted uppercase font-bold">Agregar nuevo ramo</span>
               <div className="grid grid-cols-2 gap-2">
@@ -130,25 +160,37 @@ export function ManageCoursesModal({
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Nombre ramo..."
+                  aria-label="Nombre del nuevo ramo"
                   className="bg-background border border-border rounded px-2.5 py-1 text-xs text-text placeholder-text-muted focus:outline-none focus:border-accent-blue"
                 />
                 <input
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value)}
                   placeholder="Código (ej: IIC2143)..."
+                  aria-label="Código del nuevo ramo"
                   className="bg-background border border-border rounded px-2.5 py-1 text-xs text-text placeholder-text-muted focus:outline-none focus:border-accent-blue"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <div className="flex gap-1">
-                  {PALETTE.slice(0, 6).map((pc: string) => (
-                    <button
-                      key={pc}
-                      onClick={() => setNewColor(pc)}
-                      className="w-4 h-4 rounded-full transition-transform hover:scale-110"
-                      style={{ backgroundColor: pc, outline: newColor === pc ? `2px solid ${pc}` : "none", outlineOffset: 1 }}
-                    />
-                  ))}
+                <div className="flex gap-1" role="group" aria-label="Color del ramo">
+                  {PALETTE.slice(0, 6).map((pc: string) => {
+                    const swatchColor = getAccessibleColor(pc, isDark);
+                    return (
+                      <button
+                        key={pc}
+                        type="button"
+                        onClick={() => setNewColor(pc)}
+                        aria-label={`Color ${pc}`}
+                        aria-pressed={newColor === pc}
+                        className="w-4 h-4 rounded-full transition-transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+                        style={{
+                          backgroundColor: swatchColor,
+                          outline: newColor === pc ? `2px solid ${swatchColor}` : "none",
+                          outlineOffset: 1,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
                 <button
                   type="button"
@@ -162,14 +204,17 @@ export function ManageCoursesModal({
             </div>
           </div>
 
-          {/* Right Session Schedule Manager for Selected Course */}
+          {/* Gestor derecho de horarios del ramo seleccionado */}
           <div className="w-1/2 flex flex-col p-4 bg-panel overflow-y-auto scrollbar-hide">
             {selectedCourse ? (
               <>
                 <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
                   <div>
                     <h3 className="text-sm font-bold text-text flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedCourse.color }} />
+                      <span
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: getAccessibleColor(selectedCourse.color, isDark) }}
+                      />
                       {selectedCourse.name}
                     </h3>
                     <p className="text-[10px] font-mono text-accent-blue font-semibold">{selectedCourse.code}</p>
@@ -177,9 +222,11 @@ export function ManageCoursesModal({
                 </div>
 
                 <div className="space-y-3 flex-1">
-                  <h4 className="text-xs font-mono font-bold text-text-muted uppercase">Horarios de Clases / Cátedras / Labs</h4>
-                  
-                  {/* List of sessions for this course */}
+                  <h4 className="text-xs font-mono font-bold text-text-muted uppercase">
+                    Horarios de Clases / Cátedras / Labs
+                  </h4>
+
+                  {/* Lista de horarios del ramo */}
                   <div className="space-y-2">
                     {courseSessions.map((s) => (
                       <div key={s.id} className="flex items-center justify-between p-2.5 rounded bg-background border border-border">
@@ -189,7 +236,13 @@ export function ManageCoursesModal({
                             {s.startHour}:00 - {s.startHour + s.duration}:00 ({s.type})
                           </p>
                         </div>
-                        <button onClick={() => setConfirmDelete({ type: 'session', id: s.id })} className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete({ type: 'session', id: s.id })}
+                          aria-label={`Eliminar horario de ${FULL_DAYS[s.dayOfWeek]} ${s.startHour}:00`}
+                          title="Eliminar horario"
+                          className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold p-1 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red"
+                        >
                           ✕
                         </button>
                       </div>
@@ -199,7 +252,7 @@ export function ManageCoursesModal({
                     )}
                   </div>
 
-                  {/* Add Session Form */}
+                  {/* Formulario para agregar horario */}
                   <div className="mt-4 pt-3 border-t border-border space-y-3">
                     <h5 className="text-[10px] font-mono font-bold text-accent-blue uppercase">+ Añadir Horario de Clase</h5>
                     <div className="grid grid-cols-2 gap-2">
@@ -240,7 +293,7 @@ export function ManageCoursesModal({
                       type="button"
                       disabled={submittingSession}
                       onClick={() => void handleAddSession()}
-                      className="w-full py-1.5 bg-accent-green text-black font-bold text-xs rounded hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      className="w-full py-1.5 bg-accent-green text-white dark:text-black font-bold text-xs rounded hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {submittingSession
                         ? "Guardando..."
@@ -255,14 +308,19 @@ export function ManageCoursesModal({
           </div>
         </div>
 
-        {/* Footer: cada cambio ya quedo guardado en la API al hacerlo. */}
+        {/* Pie: cada cambio ya quedó guardado en la API al hacerlo. */}
         <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface">
           <span className="text-[10px] font-mono text-text-muted">Los cambios se guardan al instante</span>
-          <button onClick={onClose} className="px-4 py-1.5 text-xs font-bold bg-accent-blue hover:opacity-90 text-white rounded transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1.5 text-xs font-bold bg-accent-blue hover:opacity-90 text-white rounded transition-colors cursor-pointer"
+          >
             Listo
           </button>
         </div>
-      </div>
+      </Modal>
+
       {confirmDelete && (
         <ConfirmModal
           title={confirmDelete.type === 'course' ? "Eliminar ramo" : "Eliminar horario"}
@@ -278,6 +336,6 @@ export function ManageCoursesModal({
           onCancel={() => setConfirmDelete(null)}
         />
       )}
-    </div>
+    </>
   );
 }

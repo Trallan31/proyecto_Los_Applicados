@@ -1,6 +1,7 @@
 import { Clock, BookOpen } from "lucide-react";
 import type { OrganizerTask, Course, CourseSession, Project } from "../../types";
-import { CATEGORY_COLORS } from "../../constants/ui";
+import { CATEGORY_COLORS, getAccessibleColor } from "../../constants/ui";
+import { useIsDark } from "../../context/ThemeContext";
 import { formatLocalDate, getWeekBounds, getToday, WEEK_DAYS, type TimeFilter } from "../../utils/dateUtils";
 
 export function MonthScheduleView({
@@ -18,6 +19,7 @@ export function MonthScheduleView({
   activeCourse: string | "all";
   timeFilter: TimeFilter;
 }) {
+  const isDark = useIsDark();
   const today = getToday();
   const year = today.getFullYear();
   const month = today.getMonth(); // 0-indexed
@@ -117,7 +119,10 @@ export function MonthScheduleView({
                     .map((t) => {
                       const course = courses.find((c) => c.id === t.courseId);
                       const project = projects.find((p) => p.id === t.projectId);
-                      const color = course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
+                      const color = getAccessibleColor(
+                        course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff",
+                        isDark
+                      );
                       return (
                         <div
                           key={`task-${t.id}`}
@@ -137,7 +142,10 @@ export function MonthScheduleView({
                     .map((t) => {
                       const course = courses.find((c) => c.id === t.courseId);
                       const project = projects.find((p) => p.id === t.projectId);
-                      const color = course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
+                      const color = getAccessibleColor(
+                        course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff",
+                        isDark
+                      );
                       return (
                         <div
                           key={`task-time-${t.id}`}
@@ -155,7 +163,7 @@ export function MonthScheduleView({
                   {/* Course Sessions (Classes/Labs) */}
                   {daySessions.map((s) => {
                     const course = courses.find((c) => c.id === s.courseId);
-                    const color = course?.color ?? "#9b6dff";
+                    const color = getAccessibleColor(course?.color ?? "#9b6dff", isDark);
                     return (
                       <div
                         key={`session-${s.id}`}

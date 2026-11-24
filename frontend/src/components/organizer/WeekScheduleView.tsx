@@ -1,5 +1,6 @@
 import type { OrganizerTask, Course, CourseSession, Project } from "../../types";
-import { CATEGORY_COLORS } from "../../constants/ui";
+import { CATEGORY_COLORS, getAccessibleColor } from "../../constants/ui";
+import { useIsDark } from "../../context/ThemeContext";
 import { FULL_DAYS, WEEK_DAYS, HOURS, formatLocalDate, getToday, type DayScheduleItem } from "../../utils/dateUtils";
 
 export function WeekScheduleView({
@@ -15,6 +16,7 @@ export function WeekScheduleView({
   tasks: OrganizerTask[];
   activeCourse: string | "all";
 }) {
+  const isDark = useIsDark();
   const today = getToday();
   const CELL_HEIGHT = 56;
   const visibleSessions =
@@ -76,7 +78,7 @@ export function WeekScheduleView({
 
               daySessions.forEach((s) => {
                 const course = courses.find((c) => c.id === s.courseId);
-                const color = course?.color ?? "#4f7cff";
+                const color = getAccessibleColor(course?.color ?? "#4f7cff", isDark);
                 const startHour = s.startHour;
                 const duration = Math.max(0.5, s.duration);
                 dayItems.push({
@@ -97,7 +99,10 @@ export function WeekScheduleView({
               dayTasks.forEach((t) => {
                 const course = courses.find((c) => c.id === t.courseId);
                 const project = projects.find((p) => p.id === t.projectId);
-                const color = course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff";
+                const color = getAccessibleColor(
+                  course?.color ?? project?.color ?? CATEGORY_COLORS[t.type] ?? "#4f7cff",
+                  isDark
+                );
                 let startHour = 8;
                 let hasTime = false;
                 if (t.dueTime) {

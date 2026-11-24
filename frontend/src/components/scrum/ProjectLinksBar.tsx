@@ -51,7 +51,7 @@ export function ProjectLinksBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted/70 mr-0.5 select-none">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted mr-0.5 select-none">
         Links
       </span>
       {links.map((link) => {

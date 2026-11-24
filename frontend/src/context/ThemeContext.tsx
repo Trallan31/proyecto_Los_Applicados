@@ -77,3 +77,19 @@ export function useTheme(): ThemeContextType {
   }
   return context
 }
+
+/**
+ * Devuelve true si el tema activo es oscuro.
+ * A diferencia de useTheme, no falla si el componente se renderiza sin ThemeProvider (ej. tests aislados).
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useIsDark(): boolean {
+  const context = useContext(ThemeContext)
+  if (context) {
+    return context.theme === 'dark'
+  }
+  if (typeof document !== 'undefined') {
+    return document.documentElement.classList.contains('dark')
+  }
+  return false
+}

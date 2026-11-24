@@ -375,6 +375,9 @@ export function MultiMemberSelect({
           onBlur();
           return;
         }
+        if (target?.closest("[data-member-option='true']")) {
+          return;
+        }
         e.preventDefault();
         onCommit(sel);
         onBlur();
@@ -433,14 +436,17 @@ export function MultiMemberSelect({
                   key={m.id}
                   role="button"
                   tabIndex={0}
+                  aria-pressed={isSelected}
+                  data-member-option="true"
                   onClick={() => toggleMember(m.id)}
                   onKeyDown={(e) => {
-                    if (e.key === " " || e.key === "Spacebar") {
+                    if (e.key === " " || e.key === "Spacebar" || e.key === "Enter") {
                       e.preventDefault();
+                      e.stopPropagation();
                       toggleMember(m.id);
                     }
                   }}
-                  className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md cursor-pointer transition-colors select-none ${
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-md cursor-pointer transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
                     isSelected
                       ? "bg-accent-blue/10 hover:bg-accent-blue/15"
                       : "hover:bg-panel-hover"
