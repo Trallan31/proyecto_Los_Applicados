@@ -3,29 +3,62 @@ import type { Project, Activity, Member, Status } from "../../types";
 import { STATUS_META, PRIORITY_META } from "../../constants/ui";
 import { isOverdue } from "../../utils/dateUtils";
 
+/**
+ * Distribuye porcentajes enteros usando el método de resto mayor (Hamilton)
+ * para que la suma sea exactamente 100 cuando total > 0.
+ */
+function computeHamiltonPercents(counts: number[], total: number): number[] {
+  const result = new Array<number>(counts.length).fill(0);
+  if (total <= 0 || counts.length === 0) return result;
+
+  const floors = counts.map((count) => Math.floor((count * 100) / total));
+  const remainders = counts.map((count, index) => ({
+    index,
+    remainder: (count * 100) % total,
+  }));
+  const missing = 100 - floors.reduce((acc, val) => acc + val, 0);
+
+  remainders.sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (let i = 0; i < floors.length; i++) {
+    result[i] = floors[i];
+  }
+  for (let i = 0; i < missing; i++) {
+    result[remainders[i].index] += 1;
+  }
+  return result;
+}
+
 export function StatsModal({ project, tasks, members, onClose }: {
   project: Project;
   tasks: Activity[];
   members: Member[];
   onClose: () => void;
 }) {
-  // calculate hours
+  // Calcula la carga de horas por miembro actual y las horas sin asignar o de ex-miembros.
   const memberHours: Record<string, number> = {};
+  const currentMemberIds = new Set(members.map((m) => m.id));
+  let unassignedHours = 0;
   let grandTotalHours = 0;
-  
+
   members.forEach((m) => { memberHours[m.id] = 0; });
   tasks.forEach((t) => {
     const hrs = Number(t.hours) || 0;
     grandTotalHours += hrs;
-    if (t.members && t.members.length > 0) {
-      const portion = hrs / t.members.length;
-      t.members.forEach((mid) => {
-        memberHours[mid] = (memberHours[mid] || 0) + portion;
-      });
+    if (!t.members || t.members.length === 0) {
+      unassignedHours += hrs;
+      return;
     }
+    const portion = hrs / t.members.length;
+    t.members.forEach((mid) => {
+      if (currentMemberIds.has(mid)) {
+        memberHours[mid] = (memberHours[mid] || 0) + portion;
+      } else {
+        unassignedHours += portion;
+      }
+    });
   });
 
-  // Calculate status pie chart
+  // Conteo de estados
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     tasks.forEach(t => {
@@ -43,23 +76,31 @@ export function StatsModal({ project, tasks, members, onClose }: {
   }, [tasks]);
 
   const totalTasks = tasks.length;
-  
-  // Pie chart calculation
-  let cumulativePercent = 0;
-  const pieSegments = Object.entries(statusCounts).map(([status, count]) => {
-    const percent = totalTasks === 0 ? 0 : (count / totalTasks) * 100;
-    const meta = STATUS_META[status as Status] || { color: 'var(--color-text-muted)' };
-    const segment = {
-      status,
-      count,
-      percent,
-      strokeDasharray: `${percent} 100`,
-      strokeDashoffset: -cumulativePercent,
-      color: meta.color
-    };
-    cumulativePercent += percent;
-    return segment;
-  });
+
+  // Segmentos del gráfico circular y porcentajes redondeados a 100%
+  const pieSegments = useMemo(() => {
+    const entries = Object.entries(statusCounts);
+    const roundedPercents = computeHamiltonPercents(
+      entries.map(([, count]) => count),
+      totalTasks
+    );
+    let cumulativePercent = 0;
+    return entries.map(([status, count], index) => {
+      const percent = totalTasks === 0 ? 0 : (count / totalTasks) * 100;
+      const meta = STATUS_META[status as Status] || { color: 'var(--color-text-muted)' };
+      const segment = {
+        status,
+        count,
+        percent,
+        roundedPercent: roundedPercents[index],
+        strokeDasharray: `${percent} 100`,
+        strokeDashoffset: -cumulativePercent,
+        color: meta.color,
+      };
+      cumulativePercent += percent;
+      return segment;
+    });
+  }, [statusCounts, totalTasks]);
 
   const doneCount = tasks.filter(t => t.status === "Completada").length;
   const overdueCount = tasks.filter(t => isOverdue(t.dueDate, t.status === "Completada")).length;
@@ -120,7 +161,7 @@ export function StatsModal({ project, tasks, members, onClose }: {
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: seg.color }}></span>
                         <span className="text-[11px] font-mono text-text">{seg.status}</span>
                       </div>
-                      <span className="text-[11px] font-mono text-text-muted">{seg.count} ({Math.round(seg.percent)}%)</span>
+                      <span className="text-[11px] font-mono text-text-muted">{seg.count} ({seg.roundedPercent}%)</span>
                     </div>
                   ))}
                 </div>
@@ -188,6 +229,19 @@ export function StatsModal({ project, tasks, members, onClose }: {
                         <td className="px-4 py-2 text-right font-mono text-text">{Number((memberHours[m.id] || 0).toFixed(1))}h</td>
                       </tr>
                     ))}
+                    {unassignedHours > 0 && (
+                      <tr className="border-b border-border/50">
+                        <td className="px-4 py-2 text-text-muted flex items-center gap-2 italic">
+                          <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-text-muted border border-dashed border-border bg-panel">
+                            ?
+                          </span>
+                          Sin asignar / Otros
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono text-text-muted">
+                          {Number(unassignedHours.toFixed(1))}h
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                   <tfoot className="bg-panel font-bold border-t border-border">
                     <tr>

@@ -195,17 +195,18 @@ export function InlineSelectWithCreate({
   value: string;
   options: string[];
   labels?: Record<string, string>;
-  onCreateNew: (name: string) => void | Promise<boolean | void>;
+  onCreateNew?: (name: string) => void | Promise<boolean | void>;
   createLabel?: string;
   onCommit: (v: string) => void;
   onBlur: () => void;
 }) {
+  const canCreate = Boolean(onCreateNew);
   const [isCreating, setIsCreating] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [creating, setCreating] = useState(false);
 
   async function handleCreateSubmit() {
-    if (creating) return;
+    if (creating || !onCreateNew) return;
     const trimmed = newItemName.trim();
     if (!trimmed) {
       setIsCreating(false);
@@ -227,7 +228,7 @@ export function InlineSelectWithCreate({
     }
   }
 
-  if (isCreating || options.length === 0) {
+  if (canCreate && (isCreating || options.length === 0)) {
     return (
       <>
         <div
@@ -290,31 +291,40 @@ export function InlineSelectWithCreate({
     );
   }
 
+  const hasSelectedOption = options.includes(value);
+
   return (
     <>
       <div className="fixed inset-0 z-10" onClick={onBlur} />
       <div className="relative z-20 w-full">
       <select
         autoFocus
-        value={options.includes(value) ? value : (options[0] ?? "__NEW__")}
+        value={hasSelectedOption ? value : ""}
         onChange={(e) => {
-          if (e.target.value === "__NEW__") {
+          if (e.target.value === "__NEW__" && canCreate) {
             setIsCreating(true);
-          } else {
+          } else if (e.target.value !== "") {
             onCommit(e.target.value);
           }
         }}
         onBlur={onBlur}
         className="w-full bg-background border border-accent-blue rounded px-1 py-0.5 text-[11px] font-mono text-text focus:outline-none"
       >
+        {!hasSelectedOption && (
+          <option value="" disabled className="bg-surface text-text-muted">
+            {options.length === 0 ? "Sin opciones" : "Seleccionar..."}
+          </option>
+        )}
         {options.map((o) => (
           <option key={o} value={o} className="bg-surface text-text">
             {labels ? labels[o] ?? o : o}
           </option>
         ))}
-        <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
-          {createLabel}
-        </option>
+        {canCreate && (
+          <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
+            {createLabel}
+          </option>
+        )}
         </select>
       </div>
     </>

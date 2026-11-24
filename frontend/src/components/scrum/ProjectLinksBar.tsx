@@ -4,6 +4,7 @@ import { sanitizeHttpUrl } from "../../utils/urlUtils";
 
 interface ProjectLinksBarProps {
   links: ProjectLink[];
+  canEdit?: boolean;
   onAddLink: () => void;
   onEditLink: (link: ProjectLink) => void;
   onDeleteLink: (linkId: string) => void;
@@ -27,11 +28,13 @@ function getCategoryIcon(category?: ProjectLinkCategory) {
 
 export function ProjectLinksBar({
   links,
+  canEdit = true,
   onAddLink,
   onEditLink,
   onDeleteLink,
 }: ProjectLinksBarProps) {
   if (!links || links.length === 0) {
+    if (!canEdit) return null;
     return (
       <div className="flex items-center">
         <button
@@ -56,7 +59,9 @@ export function ProjectLinksBar({
         return (
           <div
             key={link.id}
-            className="inline-flex items-center gap-1.5 pl-2.5 pr-2.5 group-hover:pr-1.5 group-focus-within:pr-1.5 py-1 rounded-full border border-border bg-panel hover:bg-panel-hover hover:border-border-bright transition-all group max-w-xs"
+            className={`inline-flex items-center gap-1.5 pl-2.5 pr-2.5 ${
+              canEdit ? "group-hover:pr-1.5 group-focus-within:pr-1.5" : ""
+            } py-1 rounded-full border border-border bg-panel hover:bg-panel-hover hover:border-border-bright transition-all group max-w-xs`}
           >
             {safeUrl ? (
               <a
@@ -78,45 +83,49 @@ export function ProjectLinksBar({
                 <span className="truncate max-w-[160px] font-medium">{link.title}</span>
               </span>
             )}
-            <div className="hidden group-hover:flex group-focus-within:flex items-center gap-0.5 ml-1 pl-1 border-l border-border">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditLink(link);
-                }}
-                className="p-0.5 text-text-muted hover:text-accent-blue transition-colors rounded cursor-pointer"
-                title="Editar enlace"
-                aria-label={`Editar ${link.title}`}
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteLink(link.id);
-                }}
-                className="p-0.5 text-text-muted hover:text-accent-red transition-colors rounded cursor-pointer"
-                title="Eliminar enlace"
-                aria-label={`Eliminar ${link.title}`}
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
+            {canEdit && (
+              <div className="hidden group-hover:flex group-focus-within:flex items-center gap-0.5 ml-1 pl-1 border-l border-border">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditLink(link);
+                  }}
+                  className="p-0.5 text-text-muted hover:text-accent-blue transition-colors rounded cursor-pointer"
+                  title="Editar enlace"
+                  aria-label={`Editar ${link.title}`}
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteLink(link.id);
+                  }}
+                  className="p-0.5 text-text-muted hover:text-accent-red transition-colors rounded cursor-pointer"
+                  title="Eliminar enlace"
+                  aria-label={`Eliminar ${link.title}`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
 
-      <button
-        type="button"
-        onClick={onAddLink}
-        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-accent-blue hover:bg-accent-blue/10 border border-dashed border-accent-blue/40 hover:border-accent-blue transition-colors cursor-pointer"
-        title="Añadir nuevo enlace"
-      >
-        <Plus className="w-3 h-3" />
-        <span>Enlace</span>
-      </button>
+      {canEdit && (
+        <button
+          type="button"
+          onClick={onAddLink}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-accent-blue hover:bg-accent-blue/10 border border-dashed border-accent-blue/40 hover:border-accent-blue transition-colors cursor-pointer"
+          title="Añadir nuevo enlace"
+        >
+          <Plus className="w-3 h-3" />
+          <span>Enlace</span>
+        </button>
+      )}
     </div>
   );
 }

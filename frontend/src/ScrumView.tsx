@@ -23,6 +23,7 @@ export function ScrumView() {
     clearMutationError,
     refetch,
     activeProjectId,
+    isAdmin,
     project,
     projectSprints,
     projectTasks,
@@ -259,29 +260,34 @@ export function ScrumView() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => setShowInvite(true)} className="w-7 h-7 rounded-full border border-dashed border-text-muted flex items-center justify-center text-text-muted hover:border-accent-blue hover:text-accent-blue transition-colors" title="Invitar al equipo">
-                +
-              </button>
+              {isAdmin && (
+                <button onClick={() => setShowInvite(true)} className="w-7 h-7 rounded-full border border-dashed border-text-muted flex items-center justify-center text-text-muted hover:border-accent-blue hover:text-accent-blue transition-colors" title="Invitar al equipo">
+                  +
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="pt-1">
-          <ProjectLinksBar
-            links={project.links || []}
-            onAddLink={() => {
-              setEditingLink(null);
-              setShowLinkModal(true);
-            }}
-            onEditLink={(link) => {
-              setEditingLink(link);
-              setShowLinkModal(true);
-            }}
-            onDeleteLink={(linkId) => {
-              void deleteProjectLink(linkId);
-            }}
-          />
-        </div>
+        {(isAdmin || (project.links && project.links.length > 0)) && (
+          <div className="pt-1">
+            <ProjectLinksBar
+              links={project.links || []}
+              canEdit={isAdmin}
+              onAddLink={() => {
+                setEditingLink(null);
+                setShowLinkModal(true);
+              }}
+              onEditLink={(link) => {
+                setEditingLink(link);
+                setShowLinkModal(true);
+              }}
+              onDeleteLink={(linkId) => {
+                void deleteProjectLink(linkId);
+              }}
+            />
+          </div>
+        )}
       </header>
 
       {/* Spreadsheet */}
@@ -322,8 +328,8 @@ export function ScrumView() {
                 categories={project.categories}
                 onUpdate={updateTask}
                 onDeleteTask={(id) => setConfirmDelete({ type: 'task', id })}
-                onCreateCategory={addCategory}
-                onCreateSprint={addSprint}
+                onCreateCategory={isAdmin ? addCategory : undefined}
+                onCreateSprint={isAdmin ? addSprint : undefined}
                 isDragging={draggingTaskId === task.id}
                 isDropTarget={dropTargetId === task.id && draggingTaskId !== task.id}
                 onDragStartTask={() => setDraggingTaskId(task.id)}
@@ -351,8 +357,8 @@ export function ScrumView() {
                   if (created) setShowNewRow(false);
                   return created;
                 }}
-                onCreateCategory={addCategory}
-                onCreateSprint={addSprint}
+                onCreateCategory={isAdmin ? addCategory : undefined}
+                onCreateSprint={isAdmin ? addSprint : undefined}
                 onCancel={() => setShowNewRow(false)}
               />
             )}
@@ -375,7 +381,7 @@ export function ScrumView() {
           onClose={() => setShowNewProject(false)}
         />
       )}
-      {showInvite && (
+      {isAdmin && showInvite && (
         <InviteModal
           users={users}
           members={projectMembers}
@@ -393,12 +399,15 @@ export function ScrumView() {
           project={project}
           members={projectMembers}
           sprints={projectSprints}
+          isAdmin={isAdmin}
           onClose={() => setShowSettings(false)}
           onRemove={removeMember}
           onUpdateRole={updateMemberRole}
           onDeleteCategory={deleteCategory}
           onDeleteSprint={deleteSprint}
-          onDeleteProject={() => setConfirmDelete({ type: 'project', id: project.id })}
+          onDeleteProject={
+            isAdmin ? () => setConfirmDelete({ type: 'project', id: project.id }) : undefined
+          }
         />
       )}
       {confirmDelete && (
@@ -421,7 +430,7 @@ export function ScrumView() {
           onCancel={() => setConfirmDelete(null)}
         />
       )}
-      {showLinkModal && (
+      {isAdmin && showLinkModal && (
         <ProjectLinkModal
           key={editingLink?.id ?? "new"}
           isOpen={showLinkModal}

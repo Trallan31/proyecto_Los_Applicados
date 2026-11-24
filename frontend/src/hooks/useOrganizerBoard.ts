@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from "react";
-import type { OrganizerTask } from "../types";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import type { OrganizerTask, TaskType } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
 import { useOrganizerStore } from "../store/useOrganizerStore";
 import { assignedActivitiesAsTasks } from "../utils/scrumSync";
@@ -9,16 +10,38 @@ import {
   getToday,
   getWeekBounds,
   getMonthBounds,
+  type TimeFilter,
+  type ViewTab,
 } from "../utils/dateUtils";
+import {
+  buildOrganizerSearchParams,
+  DEFAULT_ORGANIZER_FILTERS,
+  hasNonDefaultOrganizerFilters,
+  hasOrganizerSearchParams,
+  parseOrganizerSearchParams,
+  type OrganizerFilters,
+} from "../utils/organizerSearchParams";
+
+function readFiltersFromStore(): OrganizerFilters {
+  const state = useOrganizerStore.getState();
+  return {
+    tab: state.tab,
+    course: state.activeCourse,
+    time: state.timeFilter,
+    type: state.typeFilter,
+    status: state.statusFilter,
+  };
+}
 
 /**
  * Capa delgada sobre el store global (useOrganizerStore).
- * Los datos, filtros y acciones viven en Zustand; aquí solo se calculan
- * los derivados (filtrado, orden y estadísticas) con useMemo.
- * Mantiene la misma API pública de antes: OrganizerView y sus componentes
- * hijos quedan conectados al store global sin cambios.
+ * Los datos, filtros y acciones viven en Zustand; aquí se sincronizan los
+ * filtros con los query params de `/organizador` y se calculan los derivados.
  */
 export function useOrganizerBoard() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const lastSyncedSearchRef = useRef<string | null>(null);
+
   const courses = useOrganizerStore((s) => s.courses);
   const sessions = useOrganizerStore((s) => s.sessions);
   const ownTasks = useOrganizerStore((s) => s.tasks);
@@ -32,15 +55,15 @@ export function useOrganizerBoard() {
   const refetch = useOrganizerStore((s) => s.refetch);
 
   const activeCourse = useOrganizerStore((s) => s.activeCourse);
-  const setActiveCourse = useOrganizerStore((s) => s.setActiveCourse);
+  const storeSetActiveCourse = useOrganizerStore((s) => s.setActiveCourse);
   const timeFilter = useOrganizerStore((s) => s.timeFilter);
-  const setTimeFilter = useOrganizerStore((s) => s.setTimeFilter);
+  const storeSetTimeFilter = useOrganizerStore((s) => s.setTimeFilter);
   const typeFilter = useOrganizerStore((s) => s.typeFilter);
-  const setTypeFilter = useOrganizerStore((s) => s.setTypeFilter);
+  const storeSetTypeFilter = useOrganizerStore((s) => s.setTypeFilter);
   const statusFilter = useOrganizerStore((s) => s.statusFilter);
-  const setStatusFilter = useOrganizerStore((s) => s.setStatusFilter);
+  const storeSetStatusFilter = useOrganizerStore((s) => s.setStatusFilter);
   const tab = useOrganizerStore((s) => s.tab);
-  const setTab = useOrganizerStore((s) => s.setTab);
+  const storeSetTab = useOrganizerStore((s) => s.setTab);
 
   const toggleTaskStatus = useOrganizerStore((s) => s.toggleTaskStatus);
   const setTaskStatus = useOrganizerStore((s) => s.setTaskStatus);
@@ -48,7 +71,7 @@ export function useOrganizerBoard() {
   const addTask = useOrganizerStore((s) => s.addTask);
   const updateTask = useOrganizerStore((s) => s.updateTask);
   const addCourse = useOrganizerStore((s) => s.addCourse);
-  const deleteCourse = useOrganizerStore((s) => s.deleteCourse);
+  const storeDeleteCourse = useOrganizerStore((s) => s.deleteCourse);
   const addSession = useOrganizerStore((s) => s.addSession);
   const deleteSession = useOrganizerStore((s) => s.deleteSession);
   const addCourseLink = useOrganizerStore((s) => s.addCourseLink);
@@ -64,6 +87,111 @@ export function useOrganizerBoard() {
       void useOrganizerStore.getState().ensureLoaded();
     }
   }, [userId]);
+
+  // Sincronización bidireccional entre query params de la URL y useOrganizerStore.
+  useEffect(() => {
+    const searchKey = searchParams.toString();
+    const isInitialMount = lastSyncedSearchRef.current === null;
+
+    if (!isInitialMount && lastSyncedSearchRef.current === searchKey) {
+      return;
+    }
+
+    lastSyncedSearchRef.current = searchKey;
+
+    const syncFiltersToStore = (filters: OrganizerFilters) => {
+      const state = useOrganizerStore.getState();
+      if (state.tab !== filters.tab) state.setTab(filters.tab);
+      if (state.activeCourse !== filters.course) state.setActiveCourse(filters.course);
+      if (state.timeFilter !== filters.time) state.setTimeFilter(filters.time);
+      if (state.typeFilter !== filters.type) state.setTypeFilter(filters.type);
+      if (state.statusFilter !== filters.status) state.setStatusFilter(filters.status);
+    };
+
+    if (hasOrganizerSearchParams(searchParams)) {
+      syncFiltersToStore(parseOrganizerSearchParams(searchParams));
+      return;
+    }
+
+    if (isInitialMount) {
+      const storeFilters = readFiltersFromStore();
+      if (hasNonDefaultOrganizerFilters(storeFilters)) {
+        setSearchParams(buildOrganizerSearchParams(storeFilters, searchParams), {
+          replace: true,
+        });
+      }
+      return;
+    }
+
+    syncFiltersToStore(DEFAULT_ORGANIZER_FILTERS);
+  }, [searchParams, setSearchParams]);
+
+  const syncStoreFiltersToUrl = useCallback(
+    (replace = false) => {
+      const storeFilters = readFiltersFromStore();
+      setSearchParams(
+        (prev) => buildOrganizerSearchParams(storeFilters, prev),
+        { replace }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const setActiveCourse = useCallback(
+    (value: string | "all") => {
+      storeSetActiveCourse(value);
+      syncStoreFiltersToUrl();
+    },
+    [storeSetActiveCourse, syncStoreFiltersToUrl]
+  );
+
+  const setTimeFilter = useCallback(
+    (value: TimeFilter) => {
+      storeSetTimeFilter(value);
+      syncStoreFiltersToUrl();
+    },
+    [storeSetTimeFilter, syncStoreFiltersToUrl]
+  );
+
+  const setTypeFilter = useCallback(
+    (value: TaskType | "all") => {
+      storeSetTypeFilter(value);
+      syncStoreFiltersToUrl();
+    },
+    [storeSetTypeFilter, syncStoreFiltersToUrl]
+  );
+
+  const setStatusFilter = useCallback(
+    (value: OrganizerTask["status"] | "all") => {
+      storeSetStatusFilter(value);
+      syncStoreFiltersToUrl();
+    },
+    [storeSetStatusFilter, syncStoreFiltersToUrl]
+  );
+
+  const setTab = useCallback(
+    (value: ViewTab) => {
+      storeSetTab(value);
+      syncStoreFiltersToUrl();
+    },
+    [storeSetTab, syncStoreFiltersToUrl]
+  );
+
+  const deleteCourse = useCallback(
+    async (courseId: string): Promise<boolean> => {
+      const wasActive = activeCourse === courseId;
+      const hadUrlCourse = searchParams.get("course") === courseId;
+      const deleted = await storeDeleteCourse(courseId);
+      if (deleted && (wasActive || hadUrlCourse)) {
+        if (useOrganizerStore.getState().activeCourse === courseId) {
+          storeSetActiveCourse("all");
+        }
+        syncStoreFiltersToUrl(true);
+      }
+      return deleted;
+    },
+    [activeCourse, searchParams, storeDeleteCourse, storeSetActiveCourse, syncStoreFiltersToUrl]
+  );
 
   /**
    * Las actividades de Scrum asignadas al usuario se muestran junto a sus

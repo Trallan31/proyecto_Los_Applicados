@@ -6,6 +6,7 @@ export function SettingsModal({
   project,
   members,
   sprints,
+  isAdmin = true,
   onRemove,
   onUpdateRole,
   onDeleteCategory,
@@ -16,6 +17,7 @@ export function SettingsModal({
   project: Project;
   members: Member[];
   sprints: Sprint[];
+  isAdmin?: boolean;
   onRemove: (id: string) => Promise<boolean> | boolean;
   onUpdateRole: (id: string, role: "Admin" | "Miembro") => Promise<boolean> | boolean;
   onDeleteCategory?: (category: string) => Promise<boolean> | boolean;
@@ -26,9 +28,10 @@ export function SettingsModal({
   const [tab, setTab] = useState<"team" | "categories" | "sprints" | "danger">("team");
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'category' | 'sprint'; id: string } | null>(null);
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+  const activeTab = !isAdmin && tab === "danger" ? "team" : tab;
 
   async function handleRoleChange(memberId: string, role: Member["role"]) {
-    if (busyMemberId !== null) return;
+    if (!isAdmin || busyMemberId !== null) return;
     setBusyMemberId(memberId);
     try {
       await onUpdateRole(memberId, role);
@@ -38,7 +41,7 @@ export function SettingsModal({
   }
 
   async function handleRemoveMember(memberId: string) {
-    if (busyMemberId !== null) return;
+    if (!isAdmin || busyMemberId !== null) return;
     setBusyMemberId(memberId);
     try {
       await onRemove(memberId);
@@ -62,26 +65,26 @@ export function SettingsModal({
         <div className="flex border-b border-border bg-surface px-6 gap-2">
           <button
             onClick={() => setTab("team")}
-            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "team" ? "border-accent-blue text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
+            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${activeTab === "team" ? "border-accent-blue text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
           >
             Equipo ({members.length})
           </button>
           <button
             onClick={() => setTab("categories")}
-            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "categories" ? "border-accent-green text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
+            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${activeTab === "categories" ? "border-accent-green text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
           >
             Categorías ({project.categories.length})
           </button>
           <button
             onClick={() => setTab("sprints")}
-            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "sprints" ? "border-accent-violet text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
+            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${activeTab === "sprints" ? "border-accent-violet text-text font-bold" : "border-transparent text-text-muted hover:text-text"}`}
           >
             Sprints ({sprints.length})
           </button>
-          {onDeleteProject && (
+          {isAdmin && onDeleteProject && (
             <button
               onClick={() => setTab("danger")}
-              className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${tab === "danger" ? "border-accent-red text-accent-red" : "border-transparent text-text-muted hover:text-accent-red"}`}
+              className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${activeTab === "danger" ? "border-accent-red text-accent-red" : "border-transparent text-text-muted hover:text-accent-red"}`}
             >
               Zona de Peligro
             </button>
@@ -89,7 +92,7 @@ export function SettingsModal({
         </div>
         
         <div className="p-6 overflow-auto flex-1 min-h-[250px]">
-          {tab === "team" && (
+          {activeTab === "team" && (
             <div className="space-y-3">
               {members.map(m => {
                 const adminCount = members.filter((member) => member.role === "Admin").length;
@@ -108,23 +111,37 @@ export function SettingsModal({
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <select
-                        value={m.role}
-                        onChange={(e) => void handleRoleChange(m.id, e.target.value as Member["role"])}
-                        className="bg-transparent text-xs font-mono text-text-muted focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isOnlyAdmin || busyMemberId === m.id}
-                        title={isOnlyAdmin ? "El proyecto debe conservar al menos un Administrador." : undefined}
-                      >
-                        <option value="Admin" className="bg-surface text-text">Admin</option>
-                        <option value="Miembro" className="bg-surface text-text">Miembro</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => void handleRemoveMember(m.id)}
-                        className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin || busyMemberId === m.id ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-accent-red'} disabled:cursor-not-allowed`}
-                        title={isOnlyMember ? "No puedes eliminar al único integrante del proyecto." : isOnlyAdmin ? "No puedes eliminar al único Administrador." : "Quitar miembro"}
-                        disabled={isOnlyMember || isOnlyAdmin || busyMemberId === m.id}
-                      >✕</button>
+                      {isAdmin ? (
+                        <>
+                          <select
+                            value={m.role}
+                            onChange={(e) => void handleRoleChange(m.id, e.target.value as Member["role"])}
+                            className="bg-transparent text-xs font-mono text-text-muted focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isOnlyAdmin || busyMemberId === m.id}
+                            title={isOnlyAdmin ? "El proyecto debe conservar al menos un Administrador." : undefined}
+                          >
+                            <option value="Admin" className="bg-surface text-text">Admin</option>
+                            <option value="Miembro" className="bg-surface text-text">Miembro</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => void handleRemoveMember(m.id)}
+                            className={`text-sm transition-colors ${isOnlyMember || isOnlyAdmin || busyMemberId === m.id ? 'text-border cursor-not-allowed' : 'text-text-muted hover:text-accent-red'} disabled:cursor-not-allowed`}
+                            title={isOnlyMember ? "No puedes eliminar al único integrante del proyecto." : isOnlyAdmin ? "No puedes eliminar al único Administrador." : "Quitar miembro"}
+                            disabled={isOnlyMember || isOnlyAdmin || busyMemberId === m.id}
+                          >✕</button>
+                        </>
+                      ) : (
+                        <span
+                          className={`px-2 py-0.5 rounded text-[11px] font-mono border ${
+                            m.role === "Admin"
+                              ? "bg-accent-blue/10 text-accent-blue border-accent-blue/30"
+                              : "bg-surface text-text-muted border-border"
+                          }`}
+                        >
+                          {m.role}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -132,13 +149,15 @@ export function SettingsModal({
             </div>
           )}
 
-          {tab === "categories" && (
+          {activeTab === "categories" && (
             <div className="space-y-2">
-              <p className="text-xs text-text-muted mb-3">Gestión de categorías del proyecto:</p>
+              <p className="text-xs text-text-muted mb-3">
+                {isAdmin ? "Gestión de categorías del proyecto:" : "Categorías del proyecto:"}
+              </p>
               {project.categories.map((cat) => (
                 <div key={cat} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-panel">
                   <span className="text-xs font-mono text-text">{cat}</span>
-                  {onDeleteCategory && (
+                  {isAdmin && onDeleteCategory && (
                     <button
                       onClick={() => setConfirmDelete({ type: 'category', id: cat })}
                       className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold px-2 py-1"
@@ -152,13 +171,15 @@ export function SettingsModal({
             </div>
           )}
 
-          {tab === "sprints" && (
+          {activeTab === "sprints" && (
             <div className="space-y-2">
-              <p className="text-xs text-text-muted mb-3">Gestión de Sprints del proyecto:</p>
+              <p className="text-xs text-text-muted mb-3">
+                {isAdmin ? "Gestión de Sprints del proyecto:" : "Sprints del proyecto:"}
+              </p>
               {sprints.map((s) => (
                 <div key={s.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-panel">
                   <span className="text-xs font-mono text-text">{s.name}</span>
-                  {onDeleteSprint && (
+                  {isAdmin && onDeleteSprint && (
                     <button
                       onClick={() => setConfirmDelete({ type: 'sprint', id: s.id })}
                       className="text-text-muted hover:text-accent-red transition-colors text-xs font-bold px-2 py-1"
@@ -172,7 +193,7 @@ export function SettingsModal({
             </div>
           )}
 
-          {tab === "danger" && onDeleteProject && (
+          {activeTab === "danger" && isAdmin && onDeleteProject && (
             <div className="p-4 border border-accent-red/30 bg-accent-red/5 rounded-lg space-y-4">
               <div>
                 <h4 className="text-sm font-bold text-accent-red">Eliminar este Proyecto</h4>
@@ -189,7 +210,7 @@ export function SettingsModal({
           )}
         </div>
       </div>
-      {confirmDelete && (
+      {isAdmin && confirmDelete && (
         <ConfirmModal
           title={confirmDelete.type === 'category' ? "Eliminar categoría" : "Eliminar sprint"}
           message={confirmDelete.type === 'category' ? "Se removerá la categoría de todas las tareas. ¿Continuar?" : "Se eliminará el sprint y sus referencias. ¿Continuar?"}

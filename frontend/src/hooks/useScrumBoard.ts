@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import type {
   Activity,
@@ -14,14 +14,12 @@ import { useScrumStore } from "../store/useScrumStore";
 
 /**
  * Capa delgada sobre el store global (useScrumStore).
- * Los datos y acciones viven en Zustand; aquí solo se calculan los derivados
- * y se mantiene la selección de proyecto como estado local de UI (no es un
- * dato: se inicializa con el query param ?project=).
- * Misma API pública de antes: ScrumView y sus hijos no cambian.
+ * Los datos y acciones viven en Zustand; aquí se calculan los derivados,
+ * el rol del usuario actual y se mantiene sincronizado ?project= en la URL.
  */
 export function useScrumBoard() {
   const user = useAuthStore((state) => state.user);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const urlProjectId = searchParams.get("project") ?? "";
 
   const projects = useScrumStore((s) => s.projects);
@@ -52,9 +50,6 @@ export function useScrumBoard() {
   const storeDeleteProjectLink = useScrumStore((s) => s.deleteProjectLink);
   const storeUpdateProjectLink = useScrumStore((s) => s.updateProjectLink);
 
-  // Qué proyecto se está mirando es estado de la interfaz, no un dato.
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(urlProjectId);
-
   // Carga una sola vez por sesión; al volver desde /organizador no se re-pide.
   useEffect(() => {
     if (user) {
@@ -62,9 +57,57 @@ export function useScrumBoard() {
     }
   }, [user]);
 
-  const currentProjectId = selectedProjectId || urlProjectId;
-  const project = projects.find((p) => p.id === currentProjectId) ?? projects[0];
+  const project = projects.find((p) => p.id === urlProjectId) ?? projects[0];
   const activeProjectId = project?.id ?? "";
+  const currentUserRole =
+    project?.members.find((m) => m.userId === user?.id)?.role ?? null;
+  const isAdmin = currentUserRole === "Admin";
+
+  const updateProjectParam = useCallback(
+    (projectId: string, replace: boolean) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (projectId) {
+            next.set("project", projectId);
+          } else {
+            next.delete("project");
+          }
+          return next;
+        },
+        { replace }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const setActiveProjectId = useCallback(
+    (projectId: string) => {
+      updateProjectParam(projectId, false);
+    },
+    [updateProjectParam]
+  );
+
+  // Sincroniza ?project= en la URL una vez que los proyectos están cargados.
+  useEffect(() => {
+    if (loading || error) return;
+    if (projects.length === 0) {
+      if (urlProjectId) {
+        updateProjectParam("", true);
+      }
+      return;
+    }
+    if (activeProjectId && urlProjectId !== activeProjectId) {
+      updateProjectParam(activeProjectId, true);
+    }
+  }, [
+    loading,
+    error,
+    projects.length,
+    activeProjectId,
+    urlProjectId,
+    updateProjectParam,
+  ]);
 
   const projectSprints = useMemo(
     () => sprints.filter((s) => s.projectId === activeProjectId),
@@ -126,14 +169,15 @@ export function useScrumBoard() {
   ): Promise<boolean> {
     const created = await storeCreateProject(projectData);
     if (!created) return false;
-    setSelectedProjectId(created.id);
+    setActiveProjectId(created.id);
     return true;
   }
 
   async function deleteProject(projectId: string): Promise<boolean> {
     const deleted = await storeDeleteProject(projectId);
-    if (deleted && selectedProjectId === projectId) {
-      setSelectedProjectId("");
+    if (deleted && activeProjectId === projectId) {
+      const nextProject = projects.find((p) => p.id !== projectId);
+      updateProjectParam(nextProject?.id ?? "", true);
     }
     return deleted;
   }
@@ -181,7 +225,8 @@ export function useScrumBoard() {
     refetch,
     project,
     activeProjectId,
-    setActiveProjectId: setSelectedProjectId,
+    isAdmin,
+    setActiveProjectId,
     projectSprints,
     projectTasks,
     projectMembers,

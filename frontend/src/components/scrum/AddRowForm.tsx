@@ -32,10 +32,16 @@ export function AddRowForm({
   const [validationError, setValidationError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [isCreatingCategory, setIsCreatingCategory] = useState(categories.length === 0);
+  const canCreateCategory = Boolean(onCreateCategory);
+  const canCreateSprint = Boolean(onCreateSprint);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(
+    canCreateCategory && categories.length === 0
+  );
   const [newCatName, setNewCatName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
-  const [isCreatingSprint, setIsCreatingSprint] = useState(projectSprints.length === 0);
+  const [isCreatingSprint, setIsCreatingSprint] = useState(
+    canCreateSprint && projectSprints.length === 0
+  );
   const [newSprintName, setNewSprintName] = useState("");
   const [creatingSprint, setCreatingSprint] = useState(false);
 
@@ -62,15 +68,18 @@ export function AddRowForm({
     setSubmitting(true);
     try {
       let finalCat = category || categories[0] || "";
-      if ((isCreatingCategory || categories.length === 0) && newCatName.trim()) {
+      if (
+        canCreateCategory &&
+        (isCreatingCategory || categories.length === 0) &&
+        newCatName.trim() &&
+        onCreateCategory
+      ) {
         const trimmedCat = newCatName.trim();
-        if (onCreateCategory) {
-          // Espera a que la categoría quede persistida antes de crear la actividad.
-          const ok = await onCreateCategory(trimmedCat);
-          if (!ok) {
-            setValidationError("No se pudo crear la categoría. Intenta nuevamente.");
-            return;
-          }
+        // Espera a que la categoría quede persistida antes de crear la actividad.
+        const ok = await onCreateCategory(trimmedCat);
+        if (!ok) {
+          setValidationError("No se pudo crear la categoría. Intenta nuevamente.");
+          return;
         }
         finalCat = trimmedCat;
         setCategory(finalCat);
@@ -79,7 +88,12 @@ export function AddRowForm({
       }
 
       let finalSprintId = sprintId;
-      if ((isCreatingSprint || projectSprints.length === 0) && newSprintName.trim() && onCreateSprint) {
+      if (
+        canCreateSprint &&
+        (isCreatingSprint || projectSprints.length === 0) &&
+        newSprintName.trim() &&
+        onCreateSprint
+      ) {
         const createdSprint = await onCreateSprint(newSprintName.trim());
         if (!createdSprint) {
           setValidationError("No se pudo crear el sprint. Intenta nuevamente.");
@@ -111,14 +125,14 @@ export function AddRowForm({
   }
 
   async function handleCreateCategorySubmit() {
-    if (creatingCategory || submitting) return;
+    if (!onCreateCategory || creatingCategory || submitting) return;
     const trimmed = newCatName.trim();
     if (!trimmed) return;
 
     setValidationError("");
     setCreatingCategory(true);
     try {
-      const ok = onCreateCategory ? await onCreateCategory(trimmed) : true;
+      const ok = await onCreateCategory(trimmed);
       if (!ok) {
         setValidationError("No se pudo crear la categoría. Intenta nuevamente.");
         return;
@@ -179,7 +193,7 @@ export function AddRowForm({
 
         {/* 2. SPRINT */}
         <td className="px-1 py-0 border-r border-border h-9">
-          {isCreatingSprint || projectSprints.length === 0 ? (
+          {canCreateSprint && (isCreatingSprint || projectSprints.length === 0) ? (
             <div className="flex items-center gap-1">
               <input
                 autoFocus={isCreatingSprint}
@@ -216,7 +230,7 @@ export function AddRowForm({
             <select
               value={sprintId}
               onChange={(e) => {
-                if (e.target.value === "__NEW__") {
+                if (e.target.value === "__NEW__" && canCreateSprint) {
                   setIsCreatingSprint(true);
                 } else {
                   setSprintId(e.target.value);
@@ -225,21 +239,28 @@ export function AddRowForm({
               aria-label="Sprint"
               className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
             >
+              {projectSprints.length === 0 && (
+                <option value="" className="bg-surface text-text-muted">
+                  Sin sprint
+                </option>
+              )}
               {projectSprints.map((s) => (
                 <option key={s.id} value={s.id} className="bg-surface text-text">
                   {s.name}
                 </option>
               ))}
-              <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
-                + Nuevo Sprint...
-              </option>
+              {canCreateSprint && (
+                <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
+                  + Nuevo Sprint...
+                </option>
+              )}
             </select>
           )}
         </td>
 
         {/* 3. CATEGORIA */}
         <td className="px-1 py-0 border-r border-border h-9">
-          {isCreatingCategory || categories.length === 0 ? (
+          {canCreateCategory && (isCreatingCategory || categories.length === 0) ? (
             <div className="flex items-center gap-1">
               <input
                 autoFocus={isCreatingCategory}
@@ -276,7 +297,7 @@ export function AddRowForm({
             <select
               value={categories.includes(category) ? category : (categories[0] ?? "")}
               onChange={(e) => {
-                if (e.target.value === "__NEW__") {
+                if (e.target.value === "__NEW__" && canCreateCategory) {
                   setIsCreatingCategory(true);
                 } else {
                   setCategory(e.target.value);
@@ -285,14 +306,21 @@ export function AddRowForm({
               aria-label="Categoría"
               className="w-full bg-transparent text-[11px] font-mono text-text focus:outline-none"
             >
+              {categories.length === 0 && (
+                <option value="" className="bg-surface text-text-muted">
+                  Sin categoría
+                </option>
+              )}
               {categories.map((c) => (
                 <option key={c} value={c} className="bg-surface text-text">
                   {c}
                 </option>
               ))}
-              <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
-                + Nueva categoría...
-              </option>
+              {canCreateCategory && (
+                <option value="__NEW__" className="bg-surface text-accent-blue font-bold">
+                  + Nueva categoría...
+                </option>
+              )}
             </select>
           )}
         </td>
