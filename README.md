@@ -81,11 +81,25 @@ sobrescribirlo. Abre `backend/.env` y completa sus valores:
 | Variable | Configuración |
 |---|---|
 | `PORT` | Puerto de Express; por defecto, `3001`. |
-| `MONGODB_URI` | URI de tu MongoDB. Para el ejemplo local: `mongodb://127.0.0.1:27017/mibase`. |
-| `TEST_MONGODB_URI` | Base separada usada por las pruebas E2E: `mongodb://127.0.0.1:27017/applicate_test`. |
+| `HOST` | Interfaz donde escucha Express; por defecto, `0.0.0.0`. |
+| `MONGODB_URI` | URI de tu MongoDB, incluyendo el nombre de la base: `mongodb://127.0.0.1:27017/mibase`. |
+| `MONGODB_DBNAME` | Base de desarrollo que usa la aplicación: `mibase`. Debe coincidir con el nombre incluido en `MONGODB_URI`. |
+| `TEST_MONGODB_URI` | URI de la base separada usada por las pruebas E2E: `mongodb://127.0.0.1:27017/applicate_test`. |
+| `TEST_MONGODB_DBNAME` | Base de pruebas: `applicate_test`. Debe coincidir con el nombre incluido en `TEST_MONGODB_URI` y ser distinta de `MONGODB_DBNAME`. |
 | `JWT_SECRET` | Secreto aleatorio privado para firmar los JWT. |
 | `SEED_DEMO_USER_ID` | Conserva `user-1` para usar `mgonzalez` con los datos de presentación. |
 | `SEED_DEMO_PASSWORD` | Contraseña local de la cuenta de presentación: al menos 8 caracteres y como máximo 72 bytes UTF-8. |
+| `CLIENT_ORIGIN` | Origen del frontend permitido por CORS; en desarrollo, `http://localhost:5173`. |
+
+El nombre de la base se configura en dos lugares: la URI y la variable
+`*_DBNAME`. Mongoose se conecta usando `*_DBNAME`; el nombre se mantiene
+también en la URI porque el backend verifica que las URIs de desarrollo y de
+pruebas apunten a bases distintas. Mantén ambos valores coincidentes.
+
+Si tu `.env` viene de una versión anterior al despliegue, no lo sobrescribas:
+agrega `HOST`, `MONGODB_DBNAME`, `TEST_MONGODB_DBNAME` y `CLIENT_ORIGIN`,
+conserva tus secretos y revisa la sección
+[Actualizar una base de datos existente](#actualizar-una-base-de-datos-existente).
 
 Para generar un secreto JWT, ejecuta este comando y copia el resultado en
 `JWT_SECRET` dentro de `backend/.env`:
@@ -151,6 +165,7 @@ Si escucha en el puerto predeterminado y no requiere autenticación:
 
 ```env
 MONGODB_URI=mongodb://127.0.0.1:27017/mibase
+MONGODB_DBNAME=mibase
 ```
 
 No necesitas Docker en esta alternativa.
@@ -165,7 +180,7 @@ Con MongoDB funcionando y `backend/.env` creado con el paso de configuración in
 npm run seed --prefix backend
 ```
 
-El script `backend/src/seed.ts` lee `backend/db.json` e importa usuarios, ramos, sesiones, tareas, proyectos, sprints y actividades a la base indicada por `MONGODB_URI` en `backend/.env`.
+El script `backend/src/seed.ts` lee `backend/db.json` e importa usuarios, ramos, sesiones, tareas, proyectos, sprints y actividades a la base indicada por `MONGODB_URI` y `MONGODB_DBNAME` en `backend/.env`. Las colecciones se crean con los nombres `applicados_*` que usan los modelos; una instalación nueva no requiere ningún paso adicional.
 
 No necesita que Express ni el frontend estén ejecutándose.
 
@@ -201,6 +216,72 @@ El seed de presentación se bloquea cuando `NODE_ENV=production`.
 Si tu `.env` ya estaba configurado, puedes conservarlo: no es necesario cambiar
 el secreto JWT ni la contraseña para retirar la configuración automática.
 
+## Actualizar una base de datos existente
+
+Desde el despliegue en el servidor del curso, los modelos de Mongoose usan
+nombres de colección explícitos con el prefijo `applicados_`, y el formato de
+`backend/.env` cambió (paso 2 de la instalación). Una instalación nueva no
+necesita hacer nada especial: el seed y la aplicación crean y usan las
+colecciones nuevas directamente.
+
+Si ya tenías una base de datos creada con una versión anterior —ya sea en
+Docker o con MongoDB instalado en el PC—, tus datos siguen en las colecciones
+antiguas (`users`, `projects`, ...). La aplicación ahora lee las colecciones
+`applicados_*`, que estarán vacías. El síntoma típico es que el login responde
+"Usuario o contraseña incorrectos" con cuentas que antes funcionaban, y los
+tableros aparecen vacíos.
+
+| Colección antigua | Colección actual |
+|---|---|
+| `users` | `applicados_user` |
+| `projects` | `applicados_model` |
+| `courses` | `applicados_course` |
+| `tasks` | `applicados_task` |
+| `sessions` | `applicados_session` |
+| `sprints` | `applicados_sprint` |
+| `activities` | `applicados_activity` |
+
+`applicados_model` es el nombre definido en el código para los proyectos; no
+lo cambies por `applicados_project`.
+
+### Opción recomendada: renombrar las colecciones (conserva todos los datos)
+
+Actualiza primero tu `backend/.env` al formato nuevo y detén el backend.
+Luego revisa el estado de las colecciones (la base de desarrollo del ejemplo
+es `mibase`):
+
+```powershell
+docker exec applicate-mongo mongosh mibase --eval "db.getCollectionNames().forEach(c=>print(c+': '+db.getCollection(c).countDocuments()+' docs'))"
+```
+
+Si usas MongoDB instalado en el PC, ejecuta lo mismo reemplazando
+`docker exec applicate-mongo mongosh` por `mongosh`. Si tu contenedor tiene
+otro nombre, usa ese nombre.
+
+Si las colecciones `applicados_*` están vacías (0 docs), renombra las
+antiguas. El comando conserva documentos e índices, omite las colecciones
+antiguas que no existan y no toca las nuevas que ya tengan datos:
+
+```powershell
+docker exec applicate-mongo mongosh mibase --eval "const pares=[['users','applicados_user'],['projects','applicados_model'],['courses','applicados_course'],['tasks','applicados_task'],['sessions','applicados_session'],['sprints','applicados_sprint'],['activities','applicados_activity']]; pares.forEach(([v,n])=>{if(!db.getCollectionNames().includes(v)){print(v+': no existe, omitida');return;}const nueva=db.getCollection(n);if(nueva.countDocuments()>0){print(n+': ya tiene datos, omitida');return;}nueva.drop();db.getCollection(v).renameCollection(n);print(v+' -> '+n);})"
+```
+
+Para MongoDB instalado en el PC, usa el mismo `--eval` con
+`mongosh mibase --eval "..."`. Si tu MongoDB requiere autenticación, agrega
+`-u USUARIO -p CONTRASEÑA --authenticationDatabase admin`.
+
+Esto solo afecta a la base de desarrollo (`mibase`). La base de pruebas
+`applicate_test` no necesita migración: las pruebas E2E la reinician y crean
+sus propios datos en las colecciones nuevas.
+
+### Alternativa: volver a sembrar
+
+Si no necesitas conservar los datos locales anteriores, ejecuta de nuevo
+`npm run seed --prefix backend`: el seed pobla las colecciones `applicados_*`
+con los datos de demostración. Las cuentas creadas manualmente (por ejemplo,
+las registradas desde la interfaz) no se recrean; vuelve a registrarlas si
+las necesitas.
+
 ## Ejecutar la aplicación
 
 La aplicación necesita tres componentes activos:
@@ -224,8 +305,8 @@ npm run dev --prefix backend
 Deberías ver:
 
 ```text
-Conexión con MongoDB establecida.
-API disponible en http://localhost:3001/api
+Conexión con MongoDB establecida en mibase.
+API disponible en http://0.0.0.0:3001/
 ```
 
 El servidor espera a conectarse a MongoDB antes de empezar a escuchar solicitudes.
@@ -343,6 +424,7 @@ La fuente de datos activa es MongoDB.
 - Reiniciar Express no elimina los datos.
 - El contenedor de ejemplo utiliza un volumen para conservarlos.
 - Los IDs antiguos, como `course-1`, no equivalen a los ObjectId generados por MongoDB.
+- Los modelos usan colecciones con nombres explícitos `applicados_*`. Si vienes de una versión anterior, migra tus datos con la sección [Actualizar una base de datos existente](#actualizar-una-base-de-datos-existente).
 
 ## Comandos disponibles
 
@@ -397,9 +479,10 @@ Usan Playwright y cubren el acceso restringido y el inicio de sesion.
 También incluyen un flujo de Organizador que crea un ramo, crea una actividad
 asociada, edita la actividad y después la elimina.
 
-Antes de ejecutarlas, ten MongoDB activo y configura `TEST_MONGODB_URI`
-en `backend/.env`. La base de pruebas debe ser distinta de `MONGODB_URI`,
-porque la suite elimina sus colecciones antes de cada caso.
+Antes de ejecutarlas, ten MongoDB activo y configura `TEST_MONGODB_URI` y
+`TEST_MONGODB_DBNAME` en `backend/.env`. La base de pruebas debe ser distinta
+de la de desarrollo (tanto en la URI como entre `TEST_MONGODB_DBNAME` y
+`MONGODB_DBNAME`), porque la suite elimina sus colecciones antes de cada caso.
 
 Instala Playwright y sus navegadores desde la raiz del repositorio:
 
