@@ -37,4 +37,4 @@ const courseSchema = new Schema(
 
 courseSchema.index({ userId: 1 });
 
-export default model("Course", courseSchema);
+export default model("Course", courseSchema, 'applicados_course');

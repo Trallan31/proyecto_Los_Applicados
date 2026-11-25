@@ -91,4 +91,4 @@ const projectSchema = new Schema(
 
 projectSchema.index({ "members.userId": 1 });
 
-export default model("Project", projectSchema);
+export default model("Project", projectSchema, 'applicados_model');

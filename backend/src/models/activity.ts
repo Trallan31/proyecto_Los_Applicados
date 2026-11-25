@@ -83,4 +83,4 @@ const activitySchema = new Schema(
 activitySchema.index({ projectId: 1, order: 1 });
 activitySchema.index({ sprintId: 1 });
 
-export default model("Activity", activitySchema);
+export default model("Activity", activitySchema, 'applicados_activity');

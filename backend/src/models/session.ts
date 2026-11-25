@@ -63,4 +63,4 @@ sessionSchema.pre("validate", function () {
 
 sessionSchema.index({ courseId: 1 });
 
-export default model<ISession>("Session", sessionSchema);
+export default model<ISession>("Session", sessionSchema, 'applicados_session');

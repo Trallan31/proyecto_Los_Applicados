@@ -44,6 +44,18 @@ export function getPort(): number {
   return port;
 }
 
+export function getHost(): string {
+  return process.env.HOST ?? '0.0.0.0';
+}
+
+export function getDBName(): string {
+  const dbName = !isTestEnv() ? process.env.MONGODB_DBNAME?.trim() : process.env.TEST_MONGODB_DBNAME?.trim()
+  if (!dbName) {
+    throw new Error("Falta nombre de la base de datos");
+  }
+  return dbName;
+}
+
 /** Devuelve el secreto JWT validando que exista y tenga al menos 16 caracteres. */
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET?.trim();

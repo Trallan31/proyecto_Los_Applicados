@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import mongoose, { Types } from "mongoose";
-import { getMongodbUri, isProductionEnv } from "./utils/config";
+import { getMongodbUri, getDBName, isProductionEnv } from "./utils/config";
 import Activity from "./models/activity";
 import Course from "./models/course";
 import Project from "./models/project";
@@ -137,6 +137,7 @@ async function seed(): Promise<void> {
     );
   }
   const mongodbUri = getMongodbUri();
+  const dbName = getDBName();
   const demoUserId = process.env.SEED_DEMO_USER_ID ?? "user-1";
   const demoPassword = process.env.SEED_DEMO_PASSWORD;
   if (
@@ -282,7 +283,7 @@ async function seed(): Promise<void> {
     await createPlan("activities", Activity, prepare("activities")),
   ];
 
-  await mongoose.connect(mongodbUri);
+  await mongoose.connect(mongodbUri, { dbName: dbName});
 
   console.log(
     `Base de datos destino: ${mongoose.connection.name}`

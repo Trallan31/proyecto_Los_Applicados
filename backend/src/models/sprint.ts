@@ -15,4 +15,4 @@ const sprintSchema = new Schema(
 
 sprintSchema.index({ projectId: 1 });
 
-export default model("Sprint", sprintSchema);
+export default model("Sprint", sprintSchema, 'applicados_sprint');

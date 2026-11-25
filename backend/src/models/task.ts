@@ -87,4 +87,4 @@ taskSchema.pre("validate", function () {
 taskSchema.index({ userId: 1, endDate: 1 });
 taskSchema.index({ courseId: 1 });
 
-export default model<ITask>("Task", taskSchema);
+export default model<ITask>("Task", taskSchema, 'applicados_task');

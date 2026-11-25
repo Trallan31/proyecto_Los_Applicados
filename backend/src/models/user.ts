@@ -62,4 +62,4 @@ userSchema.set("toJSON", {
   },
 });
 
-export default model<UserData>("User", userSchema);
+export default model<UserData>("User", userSchema, 'applicados_user');
