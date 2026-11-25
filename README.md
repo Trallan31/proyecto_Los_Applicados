@@ -4,9 +4,10 @@ Applicate es una plataforma web orientada a estudiantes (especialmente de comput
 
 ## Tecnologías
 
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS y React Router.
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, React Router y Zustand (estado global).
 - **Backend:** Node.js, TypeScript y Express.
 - **Base de datos:** MongoDB, utilizando Mongoose.
+- **Pruebas:** Vitest y Testing Library (frontend), node:test y Supertest (backend), Playwright (E2E).
 - **MongoDB puede ejecutarse localmente o en Docker.**
 
 Mongoose es una biblioteca del backend instalada mediante npm; lo que se ejecuta en Docker es MongoDB.
@@ -15,37 +16,68 @@ Mongoose es una biblioteca del backend instalada mediante npm; lo que se ejecuta
 
 ```text
 frontend/
-  src/                Componentes, vistas, rutas y cliente HTTP
+  src/
+    api/              Cliente HTTP (axios)
+    components/       Componentes del organizador, de scrum y compartidos
+    constants/        Colores, prioridades y estados de la UI
+    context/          Tema claro/oscuro
+    hooks/            Lógica de los tableros sobre los stores
+    pages/            Login, registro y 404
+    store/            Stores Zustand (auth, organizador, scrum, toasts)
+    utils/            Fechas, navegación, URLs y sincronización scrum
+    App.tsx           Rutas y layout principal
   vite.config.ts      Configuración de Vite y proxy de la API
 
 backend/
   src/
     controllers/      Lógica de las operaciones CRUD
-    middleware/       Manejo centralizado de errores
+    middleware/       Autenticación, rate limiting y manejo de errores
     models/           Esquemas y modelos de Mongoose
     routes/           Rutas de la API
+    utils/            Configuración de entorno y logging
     app.ts            Configuración de Express
     index.ts          Conexión a MongoDB e inicio del servidor
+    seed.ts           Importador de datos iniciales
+    createUser.ts     Alta manual de usuarios
+  tests/              Pruebas de API con node:test y Supertest
   .env.example        Plantilla de variables de entorno
-  db.json             Datos antiguos; ya no es la base de datos activa
+  db.json             Datos iniciales que importa el seed
+
+e2etests/
+  tests/              Pruebas E2E con Playwright
+  playwright.config.ts  Servidores, navegador y reporte de las pruebas
 ```
 
 ## Funcionalidades
 
 ### Organizador personal
 
-- Horario semanal y mensual.
-- Gestión de tareas con estado, prioridad y fecha de entrega.
-- Organización por ramos.
-- Enlaces asociados a cada ramo.
+- Horario semanal y mensual con bloques de clases (cátedra, auxiliar, laboratorio).
+- Gestión de tareas con estado, prioridad, tipo y fecha de entrega.
+- Organización por ramos, con filtros por tiempo, tipo y estado.
+- Enlaces útiles por ramo (U-Cursos, Drive, Zoom, etc.).
+- Marcar actividades como completadas con notificación y opción de deshacer.
+- Las actividades de los proyectos de equipo aparecen integradas en el
+  organizador; se editan y eliminan desde su tablero.
 
 ### Proyectos de equipo
 
-- Tablero de actividades.
+- Tablero tipo planilla con edición en línea de cada celda.
 - Organización por proyectos, categorías y sprints.
-- Miembros y responsables.
-- Estadísticas de horas.
+- Roles Admin y Miembro: invitar, quitar y cambiar roles (solo Admin).
+- Reordenar actividades con drag & drop (ratón y táctil) o con el teclado.
+- Miembros y responsables por actividad.
+- Estadísticas de horas y progreso del proyecto.
 - Enlaces asociados a cada proyecto.
+- El proyecto activo se sincroniza con la URL (`/scrum?project=<id>`).
+
+### Experiencia general
+
+- Tema claro/oscuro persistente entre sesiones.
+- Interfaz responsive para móvil, tablet y escritorio.
+- Accesibilidad: foco visible, modales con Escape y restauración de foco,
+  roles ARIA y contraste AA.
+- Notificaciones (toasts) de errores y acciones, con deshacer cuando aplica.
 
 ## Requisitos previos
 
@@ -348,11 +380,38 @@ Las rutas disponibles para la sesión son:
 
 | Método | Ruta | Operación |
 |---|---|---|
+| POST | `/api/auth/register` | Crear una cuenta |
 | POST | `/api/auth/login` | Iniciar sesión |
 | GET | `/api/auth/me` | Restaurar y validar la sesión |
 | POST | `/api/auth/logout` | Cerrar sesión |
 
 El registro público está disponible en `/registro`.
+
+## Ejecutar en producción
+
+El backend puede servir el frontend compilado en el mismo puerto, tal como
+se despliega en el servidor del curso:
+
+```powershell
+npm run build --prefix frontend
+npm run build --prefix backend
+npm start --prefix backend
+```
+
+`npm start` ejecuta el backend compilado con `NODE_ENV=production`. En ese
+modo:
+
+- Sirve los estáticos de `frontend/dist` y responde con `index.html` a las
+  rutas del frontend (fallback SPA), de modo que `/organizador` y `/scrum`
+  siguen funcionando al recargar la página.
+- Escucha en la interfaz indicada por `HOST` (por defecto `0.0.0.0`), para
+  aceptar conexiones externas.
+- Confía en el proxy frontal (`trust proxy`) y marca la cookie de sesión
+  como `Secure` solo cuando la petición llega por HTTPS.
+- El seed de presentación queda bloqueado.
+
+La API y el frontend quedan disponibles en el mismo puerto (por defecto,
+`3001`).
 
 ## Comunicación entre frontend y backend
 
@@ -383,6 +442,7 @@ http://localhost:3001/api
 | `/api/projects` | Proyectos de equipo |
 | `/api/sprints` | Sprints de cada proyecto |
 | `/api/activities` | Actividades de los proyectos |
+| `/api/users` | Usuarios registrados (para invitar al equipo) |
 
 Cada recurso dispone de estas operaciones:
 
@@ -395,6 +455,10 @@ Cada recurso dispone de estas operaciones:
 | DELETE | `/api/<recurso>/:id` | Eliminar |
 
 MongoDB genera los identificadores. Las respuestas los exponen mediante la propiedad `id`.
+
+Además, `/api/health` expone el estado de la conexión a MongoDB. En entorno
+de pruebas (`NODE_ENV=test`) existe `POST /api/testing/reset`, que vacía las
+colecciones de la base de pruebas; en cualquier otro entorno responde 404.
 
 ### Respuestas y errores
 
@@ -454,6 +518,24 @@ npm run seed --prefix backend
 
 Importa los datos iniciales de `backend/db.json` a MongoDB. Requiere MongoDB disponible y `backend/.env` configurado. No elimina ni sobrescribe documentos existentes.
 
+```powershell
+npm test --prefix backend
+```
+
+Ejecuta las pruebas de API con node:test y Supertest en entorno de pruebas. Requiere MongoDB disponible y la base de pruebas configurada en `backend/.env`.
+
+```powershell
+npm run start:test --prefix backend
+```
+
+Inicia el backend en entorno de pruebas (`NODE_ENV=test`). Es el comando que Playwright usa para levantar la API en las pruebas E2E.
+
+```powershell
+npm run create-user --prefix backend -- <usuario> <contraseña> [nombre] [correo]
+```
+
+Crea un usuario manualmente, sin pasar por el registro público.
+
 ### Frontend
 
 ```powershell
@@ -472,19 +554,40 @@ Comprueba TypeScript y genera los archivos de producción en `frontend/dist`.
 npm run lint --prefix frontend
 ```
 
+Ejecuta ESLint sobre el frontend.
+
+```powershell
+npm test --prefix frontend
+```
+
+Ejecuta las pruebas de componentes, stores y utilidades con Vitest.
+
 ## Pruebas E2E
 
-Las pruebas E2E estan en la carpeta independiente [e2etests](e2etests/).
-Usan Playwright y cubren el acceso restringido y el inicio de sesion.
-También incluyen un flujo de Organizador que crea un ramo, crea una actividad
-asociada, edita la actividad y después la elimina.
+Las pruebas E2E están en la carpeta independiente [e2etests](e2etests/).
+Usan Playwright y suman 25 casos que cubren:
+
+- **Autenticación y registro:** acceso restringido, conservación del destino
+  `next` tras el login, credenciales inválidas, cierre de sesión con
+  revocación de acceso, alta de cuentas desde la interfaz y validaciones del
+  formulario de registro.
+- **Organizador:** ramos, horarios de clase, enlaces útiles, creación,
+  edición y borrado de actividades, completar con deshacer desde la
+  notificación y filtros por estado.
+- **Tablero scrum:** proyectos, tareas con sprint y categoría, edición en
+  línea de título y estado, reordenamiento con teclado y persistencia del
+  orden, estadísticas, confirmación de borrado y eliminación del proyecto.
+- **Permisos (RBAC):** invitación de miembros, restricciones de la vista
+  Miembro y cambio de roles por el Admin.
+- **Navegación y preferencias:** sincronización del proyecto activo con la
+  URL, página 404, redirección de la raíz y tema claro/oscuro persistente.
 
 Antes de ejecutarlas, ten MongoDB activo y configura `TEST_MONGODB_URI` y
 `TEST_MONGODB_DBNAME` en `backend/.env`. La base de pruebas debe ser distinta
 de la de desarrollo (tanto en la URI como entre `TEST_MONGODB_DBNAME` y
 `MONGODB_DBNAME`), porque la suite elimina sus colecciones antes de cada caso.
 
-Instala Playwright y sus navegadores desde la raiz del repositorio:
+Instala Playwright y sus navegadores desde la raíz del repositorio:
 
 ```powershell
 npm install --prefix e2etests
@@ -497,7 +600,7 @@ Ejecuta las pruebas:
 npm test --prefix e2etests
 ```
 
-Playwright iniciara automaticamente el backend y el frontend si no detecta
+Playwright iniciará automáticamente el backend y el frontend si no detecta
 servidores existentes en los puertos 3001 y 5173.
 
 Para ejecutar las pruebas con interfaz visual (modo UI de Playwright):
@@ -506,10 +609,25 @@ Para ejecutar las pruebas con interfaz visual (modo UI de Playwright):
 npm run test:ui --prefix e2etests
 ```
 
-Para abrir el reporte HTML de la ultima ejecucion:
+Para abrir el reporte HTML de la última ejecución:
 
 ```powershell
 npm run test:report --prefix e2etests
+```
+
+## Pruebas del backend
+
+Las pruebas de API viven en `backend/tests/` y usan el runner nativo
+`node:test` con Supertest. Cubren autenticación, usuarios, organizador,
+permisos (RBAC) de scrum, seguridad y el reset de la base de pruebas.
+
+Requieren MongoDB activo y `TEST_MONGODB_URI` + `TEST_MONGODB_DBNAME`
+configurados en `backend/.env`. Se ejecutan con `NODE_ENV=test` y se conectan
+a la base indicada en la URI de pruebas, por lo que nunca tocan la base de
+desarrollo:
+
+```powershell
+npm test --prefix backend
 ```
 
 ## Pruebas de componentes del frontend
@@ -519,16 +637,14 @@ DOM de React y permiten buscar elementos renderizados con `screen`, sin abrir
 un navegador real. Las interacciones escriben y hacen clic mediante
 `@testing-library/user-event`.
 
+La suite cubre las páginas (login, registro y 404), los stores Zustand
+(auth, organizador, scrum y toasts), utilidades (fechas, navegación, URLs y
+sincronización con scrum), la sincronización de la URL con el tablero, y
+componentes como AddRowForm, los permisos y estadísticas de scrum, y
+accesibilidad.
+
 Ejecuta las pruebas desde la raiz del repositorio:
 
 ```powershell
 npm test --prefix frontend
 ```
-
-La prueba inicial esta en
-[LoginPage.test.tsx](frontend/src/pages/LoginPage.test.tsx) y verifica que:
-
-- el formulario de login se renderice;
-- los campos sean accesibles mediante sus etiquetas;
-- las credenciales se entreguen a la accion de login;
-- el mensaje de error se muestre en un elemento con rol `alert`.
